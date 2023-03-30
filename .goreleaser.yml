@@ -1,0 +1,51 @@
+archives:
+  - id: default
+    builds:
+      - deep
+builds:
+  - id: "deep"
+    main: ./cmd/deep
+    binary: deep
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    ignore:
+      - goarch: arm
+        goos: darwin
+      - goarch: arm
+        goos: windows
+      - goarch: arm64
+        goos: windows
+    flags:
+      - -v
+      - -trimpath
+    ldflags:
+      - -s
+      - -w
+      - -X main.Branch={{ .Branch }}
+      - -X main.Revision={{ .ShortCommit }}
+      - -X main.Version={{ .Version }}
+    mod_timestamp: '{{ .CommitTimestamp }}'
+changelog:
+  skip: true
+  sort: asc
+  filters:
+    exclude:
+      - '^.github:'
+      - '^example:'
+      - '^integration:'
+      - '^vendor:'
+checksum:
+  name_template: SHA256SUMS
+release:
+  draft: true
+  prerelease: auto
+snapshot:
+  name_template: '{{ .Version }}-SNAPSHOT-{{ .ShortCommit }}'
