@@ -32,3 +32,6 @@ services:
       - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
     ports:
       - "3000:3000"
+
+  test_app:
+    image: ghcr.io/intergral/deep-python-client:simple-app
