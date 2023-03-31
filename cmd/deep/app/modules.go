@@ -46,6 +46,8 @@ import (
 	"github.com/intergral/deep/pkg/usagestats"
 	"github.com/intergral/deep/pkg/util/log"
 	util_log "github.com/intergral/deep/pkg/util/log"
+	pb "github.com/intergral/go-deep-proto/poll/v1"
+	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
@@ -186,15 +188,18 @@ func (t *App) initOverrides() (services.Service, error) {
 
 func (t *App) initDistributor() (services.Service, error) {
 	// todo: make ingester client a module instead of passing the config everywhere
-	distributor, err := distributor.New(t.cfg.Distributor, t.cfg.IngesterClient, t.ring, t.cfg.GeneratorClient, t.generatorRing, t.overrides, t.TracesConsumerMiddleware, log.Logger, t.cfg.Server.LogLevel, prometheus.DefaultRegisterer)
+	newDistributor, err := distributor.New(t.cfg.Distributor, t.cfg.IngesterClient, t.ring, t.cfg.GeneratorClient, t.generatorRing, t.overrides, log.Logger, t.cfg.Server.LogLevel, prometheus.DefaultRegisterer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create distributor %w", err)
 	}
-	t.distributor = distributor
+	t.distributor = newDistributor
 
-	if distributor.DistributorRing != nil {
-		t.Server.HTTP.Handle("/distributor/ring", distributor.DistributorRing)
+	if newDistributor.DistributorRing != nil {
+		t.Server.HTTP.Handle("/distributor/ring", newDistributor.DistributorRing)
 	}
+
+	pb.RegisterPollConfigServer(t.Server.GRPC, newDistributor)
+	tp.RegisterSnapshotServiceServer(t.Server.GRPC, newDistributor.SnapshotReceiver)
 
 	return t.distributor, nil
 }

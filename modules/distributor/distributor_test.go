@@ -871,7 +871,6 @@ func TestLogSpans(t *testing.T) {
 			logger := kitlog.NewJSONLogger(kitlog.NewSyncWriter(buf))
 
 			d := prepare(t, limits, nil, logger)
-			d.cfg.LogReceivedTraces = tc.LogReceivedTraces
 			d.cfg.LogReceivedSpans = LogReceivedSpansConfig{
 				Enabled:              tc.LogReceivedSpansEnabled,
 				FilterByStatusError:  tc.filterByStatusError,

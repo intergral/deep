@@ -2,6 +2,7 @@ package distributor
 
 import (
 	"context"
+	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
 	"sync"
 	"time"
 
@@ -236,4 +237,8 @@ func (f *generatorForwarder) createQueueAndStartWorkers(tenantID string, size, w
 	q.StartWorkers()
 
 	return q
+}
+
+func (f *generatorForwarder) SendSnapshot(ctx context.Context, id string, keys []uint32, snapshot *tp.Snapshot) {
+
 }

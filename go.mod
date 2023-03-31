@@ -17,7 +17,7 @@ require (
 	github.com/cristalhq/hedgedhttp v0.7.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/drone/envsubst v1.0.3
-	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/dustin/go-humanize v1.0.0
 	github.com/facette/natsort v0.0.0-20181210072756-2cd4dd1e2dcb
 	github.com/go-kit/log v0.2.1
 	github.com/go-logfmt/logfmt v0.5.1
@@ -47,7 +47,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.57.2
 	github.com/opentracing-contrib/go-grpc v0.0.0-20210225150812-73cb765af46e // indirect
 	github.com/opentracing/opentracing-go v1.2.0
-	github.com/pierrec/lz4/v4 v4.1.17 // indirect
+	github.com/pierrec/lz4/v4 v4.1.17
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.13.1
 	github.com/prometheus/client_model v0.3.0
@@ -90,7 +90,9 @@ require (
 
 require (
 	github.com/Azure/go-autorest/autorest v0.11.28
+	github.com/googleapis/gax-go/v2 v2.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
+	github.com/intergral/go-deep-proto v0.0.6
 	golang.org/x/exp v0.0.0-20221002003631-540bb7301a08
 )
 
@@ -145,7 +147,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect
-	github.com/googleapis/gax-go/v2 v2.6.0 // indirect
 	github.com/gorilla/handlers v1.5.1 // indirect
 	github.com/grafana/regexp v0.0.0-20221005093135-b4c2bcb0a4b6 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect

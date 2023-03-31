@@ -3,7 +3,7 @@ package util
 import (
 	"strconv"
 
-	v1common "github.com/intergral/deep/pkg/deeppb/common/v1"
+	v1common "github.com/intergral/go-deep-proto/common/v1"
 )
 
 func StringifyAnyValue(anyValue *v1common.AnyValue) string {

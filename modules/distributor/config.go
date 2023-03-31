@@ -32,10 +32,10 @@ type Config struct {
 	// receivers map for shim.
 	//  This receivers node is equivalent in format to the receiver node in the
 	//  otel collector: https://github.com/open-telemetry/opentelemetry-collector/tree/main/receiver
-	Receivers         map[string]interface{} `yaml:"receivers"`
-	OverrideRingKey   string                 `yaml:"override_ring_key"`
-	LogReceivedTraces bool                   `yaml:"log_received_traces"` // Deprecated
-	LogReceivedSpans  LogReceivedSpansConfig `yaml:"log_received_spans,omitempty"`
+	Receivers            map[string]interface{}     `yaml:"receivers"`
+	OverrideRingKey      string                     `yaml:"override_ring_key"`
+	LogReceivedSpans     LogReceivedSpansConfig     `yaml:"log_received_spans,omitempty"`
+	LogReceivedSnapshots LogReceivedSnapshotsConfig `yaml:"log_received_snapshots"`
 
 	Forwarders forwarder.ConfigList `yaml:"forwarders"`
 
@@ -45,6 +45,11 @@ type Config struct {
 
 	// For testing.
 	factory func(addr string) (ring_client.PoolClient, error) `yaml:"-"`
+}
+
+type LogReceivedSnapshotsConfig struct {
+	Enabled              bool `yaml:"enabled"`
+	IncludeAllAttributes bool `yaml:"include_all_attributes"`
 }
 
 type LogReceivedSpansConfig struct {
@@ -62,8 +67,10 @@ func (cfg *Config) RegisterFlagsAndApplyDefaults(prefix string, f *flag.FlagSet)
 	cfg.OverrideRingKey = distributorRingKey
 	cfg.ExtendWrites = true
 
-	f.BoolVar(&cfg.LogReceivedTraces, util.PrefixConfig(prefix, "log-received-traces"), false, "Enable to log every received trace id to help debug ingestion.")
 	f.BoolVar(&cfg.LogReceivedSpans.Enabled, util.PrefixConfig(prefix, "log-received-spans.enabled"), false, "Enable to log every received span to help debug ingestion or calculate span error distributions using the logs.")
 	f.BoolVar(&cfg.LogReceivedSpans.IncludeAllAttributes, util.PrefixConfig(prefix, "log-received-spans.include-attributes"), false, "Enable to include span attributes in the logs.")
 	f.BoolVar(&cfg.LogReceivedSpans.FilterByStatusError, util.PrefixConfig(prefix, "log-received-spans.filter-by-status-error"), false, "Enable to filter out spans without status error.")
+
+	f.BoolVar(&cfg.LogReceivedSnapshots.Enabled, util.PrefixConfig(prefix, "log-received-snapshots.enabled"), false, "Enable to log every received snapshot to help debug ingestion using the logs.")
+	f.BoolVar(&cfg.LogReceivedSnapshots.IncludeAllAttributes, util.PrefixConfig(prefix, "log-received-snapshots.include-attributes"), false, "Enable to include snapshot attributes in the logs.")
 }

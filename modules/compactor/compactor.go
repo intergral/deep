@@ -237,15 +237,15 @@ func (c *Compactor) Combine(dataEncoding string, tenantID string, objs ...[]byte
 		return objs[0], wasCombined, nil
 	}
 
-	totalDiscarded := countSpans(dataEncoding, objs[1:]...)
-	overrides.RecordDiscardedSpans(totalDiscarded, reasonCompactorDiscardedSpans, tenantID)
+	//totalDiscarded := countSpans(dataEncoding, objs[1:]...)
+	//overrides.RecordDiscardedSpans(totalDiscarded, reasonCompactorDiscardedSpans, tenantID)
 	return objs[0], wasCombined, nil
 }
 
 // RecordDiscardedSpans implements deepdb.CompactorSharder
 func (c *Compactor) RecordDiscardedSpans(count int, tenantID string, traceID string) {
 	level.Warn(log.Logger).Log("msg", "max size of trace exceeded", "tenant", tenantID, "traceId", traceID, "discarded_span_count", count)
-	overrides.RecordDiscardedSpans(count, reasonCompactorDiscardedSpans, tenantID)
+	//overrides.RecordDiscardedSpans(count, reasonCompactorDiscardedSpans, tenantID)
 }
 
 // BlockRetentionForTenant implements CompactorOverrides

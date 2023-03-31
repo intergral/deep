@@ -3,6 +3,7 @@ package forwarder
 import (
 	"context"
 	"fmt"
+	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
 	"time"
 
 	"github.com/go-kit/log"
@@ -29,6 +30,11 @@ func (l List) ForwardTraces(ctx context.Context, traces ptrace.Traces) error {
 	}
 
 	return multierr.Combine(errs...)
+}
+
+func (l List) ForwardSnapshot(ctx context.Context, snapshot *tp.Snapshot) error {
+	print("ForwardSnapshot")
+	return nil
 }
 
 func New(cfg Config, logger log.Logger) (Forwarder, error) {
