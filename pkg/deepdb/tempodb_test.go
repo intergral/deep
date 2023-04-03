@@ -22,9 +22,9 @@ import (
 	v2 "github.com/intergral/deep/pkg/deepdb/encoding/v2"
 	"github.com/intergral/deep/pkg/deepdb/encoding/vparquet"
 	"github.com/intergral/deep/pkg/deepdb/wal"
-	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/model/trace"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/util/test"
 )
 
@@ -89,7 +89,7 @@ func TestDB(t *testing.T) {
 
 	// write
 	numMsgs := 10
-	reqs := make([]*deeppb.Trace, numMsgs)
+	reqs := make([]*tempopb.Trace, numMsgs)
 	ids := make([]common.ID, numMsgs)
 	for i := 0; i < numMsgs; i++ {
 		ids[i] = test.ValidTraceID(nil)
@@ -522,7 +522,7 @@ func TestSearchCompactedBlocks(t *testing.T) {
 
 	// write
 	numMsgs := 10
-	reqs := make([]*deeppb.Trace, 0, numMsgs)
+	reqs := make([]*tempopb.Trace, 0, numMsgs)
 	ids := make([][]byte, 0, numMsgs)
 	for i := 0; i < numMsgs; i++ {
 		id := test.ValidTraceID(nil)
@@ -604,7 +604,7 @@ func testCompleteBlock(t *testing.T, from, to string) {
 	dec := model.MustNewSegmentDecoder(model.CurrentEncoding)
 
 	numMsgs := 100
-	reqs := make([]*deeppb.Trace, 0, numMsgs)
+	reqs := make([]*tempopb.Trace, 0, numMsgs)
 	ids := make([][]byte, 0, numMsgs)
 	for i := 0; i < numMsgs; i++ {
 		id := test.ValidTraceID(nil)
@@ -753,7 +753,7 @@ func TestShouldCache(t *testing.T) {
 	}
 }
 
-func writeTraceToWal(t require.TestingT, b common.WALBlock, dec model.SegmentDecoder, id common.ID, tr *deeppb.Trace, start, end uint32) {
+func writeTraceToWal(t require.TestingT, b common.WALBlock, dec model.SegmentDecoder, id common.ID, tr *tempopb.Trace, start, end uint32) {
 	b1, err := dec.PrepareForWrite(tr, 0, 0)
 	require.NoError(t, err)
 

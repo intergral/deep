@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"google.golang.org/grpc/status"
 	"hash"
 	"hash/fnv"
 	"sort"
@@ -12,7 +13,6 @@ import (
 	"time"
 
 	"github.com/go-kit/log/level"
-	"github.com/gogo/status"
 	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
@@ -27,9 +27,9 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/backend/local"
 	"github.com/intergral/deep/pkg/deepdb/encoding"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/model/trace"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/util/log"
 	"github.com/intergral/deep/pkg/validation"
 )
@@ -142,7 +142,7 @@ func newInstance(instanceID string, limiter *Limiter, writer deepdb.Writer, l *l
 	return i, nil
 }
 
-func (i *instance) PushBytesRequest(ctx context.Context, req *deeppb.PushBytesRequest) error {
+func (i *instance) PushBytesRequest(ctx context.Context, req *tempopb.PushBytesRequest) error {
 	for j := range req.Traces {
 		err := i.PushBytes(ctx, req.Ids[j].Slice, req.Traces[j].Slice)
 		if err != nil {
@@ -152,7 +152,7 @@ func (i *instance) PushBytesRequest(ctx context.Context, req *deeppb.PushBytesRe
 	return nil
 }
 
-// PushBytes is used to push an unmarshalled deeppb.Trace to the instance
+// PushBytes is used to push an unmarshalled tempopb.Trace to the instance
 func (i *instance) PushBytes(ctx context.Context, id []byte, traceBytes []byte) error {
 	i.measureReceivedBytes(traceBytes)
 
@@ -234,7 +234,7 @@ func (i *instance) CutCompleteTraces(cutoff time.Duration, immediate bool) error
 
 		// return trace byte slices to be reused by proto marshalling
 		//  WARNING: can't reuse traceid's b/c the appender takes ownership of byte slices that are passed to it
-		deeppb.ReuseByteSlices(t.batches)
+		tempopb.ReuseByteSlices(t.batches)
 	}
 
 	i.blocksMtx.Lock()
@@ -368,12 +368,12 @@ func (i *instance) ClearFlushedBlocks(completeBlockTimeout time.Duration) error 
 	return err
 }
 
-func (i *instance) FindTraceByID(ctx context.Context, id []byte) (*deeppb.Trace, error) {
+func (i *instance) FindTraceByID(ctx context.Context, id []byte) (*tempopb.Trace, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "instance.FindTraceByID")
 	defer span.Finish()
 
 	var err error
-	var completeTrace *deeppb.Trace
+	var completeTrace *tempopb.Trace
 
 	// live traces
 	i.tracesMtx.Lock()

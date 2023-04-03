@@ -10,11 +10,9 @@ import (
 const (
 	Name = "span-metrics"
 
-	dimService       = "service"
-	dimSpanName      = "span_name"
-	dimSpanKind      = "span_kind"
-	dimStatusCode    = "status_code"
-	dimStatusMessage = "status_message"
+	dimService  = "service"
+	dimFilePath = "file_path"
+	dimLineNo   = "line_no"
 )
 
 type Config struct {
@@ -35,17 +33,14 @@ type Config struct {
 func (cfg *Config) RegisterFlagsAndApplyDefaults(prefix string, f *flag.FlagSet) {
 	cfg.HistogramBuckets = prometheus.ExponentialBuckets(0.002, 2, 14)
 	cfg.IntrinsicDimensions.Service = true
-	cfg.IntrinsicDimensions.SpanName = true
-	cfg.IntrinsicDimensions.SpanKind = true
-	cfg.IntrinsicDimensions.StatusCode = true
+	cfg.IntrinsicDimensions.FilePath = true
+	cfg.IntrinsicDimensions.LineNo = true
 }
 
 type IntrinsicDimensions struct {
-	Service       bool `yaml:"service"`
-	SpanName      bool `yaml:"span_name"`
-	SpanKind      bool `yaml:"span_kind"`
-	StatusCode    bool `yaml:"status_code"`
-	StatusMessage bool `yaml:"status_message,omitempty"`
+	Service  bool `yaml:"service"`
+	FilePath bool `yaml:"file_path"`
+	LineNo   bool `yaml:"line_no"`
 }
 
 func (ic *IntrinsicDimensions) ApplyFromMap(dimensions map[string]bool) error {
@@ -53,14 +48,10 @@ func (ic *IntrinsicDimensions) ApplyFromMap(dimensions map[string]bool) error {
 		switch label {
 		case dimService:
 			ic.Service = active
-		case dimSpanName:
-			ic.SpanName = active
-		case dimSpanKind:
-			ic.SpanKind = active
-		case dimStatusCode:
-			ic.StatusCode = active
-		case dimStatusMessage:
-			ic.StatusMessage = active
+		case dimFilePath:
+			ic.FilePath = active
+		case dimLineNo:
+			ic.LineNo = active
 		default:
 			return errors.Errorf("%s is not a valid intrinsic dimension", label)
 		}

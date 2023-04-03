@@ -1,0 +1,19 @@
+syntax="proto3";
+import "tracepoint/v1/tracepoint.proto";
+
+package deeppb;
+
+option go_package = "github.com/intergral/deep/pkg/deeppb";
+
+
+service MetricsGenerator {
+  rpc PushSnapshot(PushSnapshotRequest) returns (PushResponse) {};
+}
+
+message PushSnapshotRequest {
+  deeppb.tracepoint.v1.Snapshot snapshot = 1;
+}
+
+// Write
+message PushResponse {
+}

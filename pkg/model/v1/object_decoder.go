@@ -3,10 +3,10 @@ package v1
 import (
 	"fmt"
 
-	"github.com/gogo/protobuf/proto"
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/golang/protobuf/proto"
 	"github.com/intergral/deep/pkg/model/decoder"
 	"github.com/intergral/deep/pkg/model/trace"
+	"github.com/intergral/deep/pkg/tempopb"
 )
 
 const Encoding = "v1"
@@ -20,16 +20,16 @@ func NewObjectDecoder() *ObjectDecoder {
 	return staticDecoder
 }
 
-func (d *ObjectDecoder) PrepareForRead(obj []byte) (*deeppb.Trace, error) {
-	trace := &deeppb.Trace{}
-	traceBytes := &deeppb.TraceBytes{}
+func (d *ObjectDecoder) PrepareForRead(obj []byte) (*tempopb.Trace, error) {
+	trace := &tempopb.Trace{}
+	traceBytes := &tempopb.TraceBytes{}
 	err := proto.Unmarshal(obj, traceBytes)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, bytes := range traceBytes.Traces {
-		innerTrace := &deeppb.Trace{}
+		innerTrace := &tempopb.Trace{}
 		err = proto.Unmarshal(bytes, innerTrace)
 		if err != nil {
 			return nil, err
@@ -64,8 +64,8 @@ func (d *ObjectDecoder) FastRange([]byte) (uint32, uint32, error) {
 	return 0, 0, decoder.ErrUnsupported
 }
 
-func (d *ObjectDecoder) Marshal(t *deeppb.Trace) ([]byte, error) {
-	traceBytes := &deeppb.TraceBytes{}
+func (d *ObjectDecoder) Marshal(t *tempopb.Trace) ([]byte, error) {
+	traceBytes := &tempopb.TraceBytes{}
 	bytes, err := proto.Marshal(t)
 	if err != nil {
 		return nil, err

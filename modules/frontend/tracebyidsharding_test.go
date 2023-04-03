@@ -11,9 +11,9 @@ import (
 	"testing"
 
 	"github.com/go-kit/log"
-	"github.com/gogo/protobuf/proto"
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/golang/protobuf/proto"
 	"github.com/intergral/deep/pkg/model/trace"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/util/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -80,8 +80,8 @@ func TestBuildShardedRequests(t *testing.T) {
 func TestShardingWareDoRequest(t *testing.T) {
 	// create and split a splitTrace
 	splitTrace := test.MakeTrace(10, []byte{0x01, 0x02})
-	trace1 := &deeppb.Trace{}
-	trace2 := &deeppb.Trace{}
+	trace1 := &tempopb.Trace{}
+	trace2 := &tempopb.Trace{}
 
 	for _, b := range splitTrace.Batches {
 		if rand.Int()%2 == 0 {
@@ -95,14 +95,14 @@ func TestShardingWareDoRequest(t *testing.T) {
 		name                string
 		status1             int
 		status2             int
-		trace1              *deeppb.Trace
-		trace2              *deeppb.Trace
+		trace1              *tempopb.Trace
+		trace2              *tempopb.Trace
 		err1                error
 		err2                error
 		failedBlockQueries1 int
 		failedBlockQueries2 int
 		expectedStatus      int
-		expectedTrace       *deeppb.Trace
+		expectedTrace       *tempopb.Trace
 		expectedError       error
 	}{
 		{
@@ -110,7 +110,7 @@ func TestShardingWareDoRequest(t *testing.T) {
 			status1:        200,
 			status2:        200,
 			expectedStatus: 200,
-			expectedTrace:  &deeppb.Trace{},
+			expectedTrace:  &tempopb.Trace{},
 		},
 		{
 			name:           "404",
@@ -267,7 +267,7 @@ func TestShardingWareDoRequest(t *testing.T) {
 			sharder := newTraceByIDSharder(2, 2, testSLOcfg, log.NewNopLogger())
 
 			next := RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
-				var testTrace *deeppb.Trace
+				var testTrace *tempopb.Trace
 				var statusCode int
 				var err error
 				var failedBlockQueries int
@@ -290,16 +290,16 @@ func TestShardingWareDoRequest(t *testing.T) {
 				resBytes := []byte("error occurred")
 				if statusCode != 500 {
 					if testTrace != nil {
-						resBytes, err = proto.Marshal(&deeppb.TraceByIDResponse{
+						resBytes, err = proto.Marshal(&tempopb.TraceByIDResponse{
 							Trace: testTrace,
-							Metrics: &deeppb.TraceByIDMetrics{
+							Metrics: &tempopb.TraceByIDMetrics{
 								FailedBlocks: uint32(failedBlockQueries),
 							},
 						})
 						require.NoError(t, err)
 					} else {
-						resBytes, err = proto.Marshal(&deeppb.TraceByIDResponse{
-							Metrics: &deeppb.TraceByIDMetrics{
+						resBytes, err = proto.Marshal(&tempopb.TraceByIDResponse{
+							Metrics: &tempopb.TraceByIDMetrics{
 								FailedBlocks: uint32(failedBlockQueries),
 							},
 						})
@@ -331,7 +331,7 @@ func TestShardingWareDoRequest(t *testing.T) {
 				assert.Equal(t, "application/protobuf", resp.Header.Get("Content-Type"))
 			}
 			if tc.expectedTrace != nil {
-				actualResp := &deeppb.TraceByIDResponse{}
+				actualResp := &tempopb.TraceByIDResponse{}
 				bytesTrace, err := io.ReadAll(resp.Body)
 				require.NoError(t, err)
 				err = proto.Unmarshal(bytesTrace, actualResp)

@@ -17,12 +17,12 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	v2 "github.com/intergral/deep/pkg/deepdb/encoding/v2"
 	"github.com/intergral/deep/pkg/deepdb/wal"
-	"github.com/intergral/deep/pkg/deeppb"
-	v1_common "github.com/intergral/deep/pkg/deeppb/common/v1"
-	v1_resource "github.com/intergral/deep/pkg/deeppb/resource/v1"
-	v1 "github.com/intergral/deep/pkg/deeppb/trace/v1"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/model/trace"
+	"github.com/intergral/deep/pkg/tempopb"
+	v1_common "github.com/intergral/deep/pkg/tempopb/common/v1"
+	v1_resource "github.com/intergral/deep/pkg/tempopb/resource/v1"
+	v1 "github.com/intergral/deep/pkg/tempopb/trace/v1"
 	"github.com/intergral/deep/pkg/traceql"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/intergral/deep/pkg/util/math"
@@ -40,7 +40,7 @@ func TestSearchCompleteBlock(t *testing.T) {
 }
 
 func testSearchCompleteBlock(t *testing.T, blockVersion string) {
-	runCompleteBlockSearchTest(t, blockVersion, func(_ *deeppb.Trace, wantMeta *deeppb.TraceSearchMetadata, searchesThatMatch, searchesThatDontMatch []*deeppb.SearchRequest, meta *backend.BlockMeta, r Reader) {
+	runCompleteBlockSearchTest(t, blockVersion, func(_ *tempopb.Trace, wantMeta *tempopb.TraceSearchMetadata, searchesThatMatch, searchesThatDontMatch []*tempopb.SearchRequest, meta *backend.BlockMeta, r Reader) {
 		ctx := context.Background()
 
 		for _, req := range searchesThatMatch {
@@ -74,7 +74,7 @@ func TestTraceQLCompleteBlock(t *testing.T) {
 func testTraceQLCompleteBlock(t *testing.T, blockVersion string) {
 	e := traceql.NewEngine()
 
-	runCompleteBlockSearchTest(t, blockVersion, func(_ *deeppb.Trace, wantMeta *deeppb.TraceSearchMetadata, searchesThatMatch, searchesThatDontMatch []*deeppb.SearchRequest, meta *backend.BlockMeta, r Reader) {
+	runCompleteBlockSearchTest(t, blockVersion, func(_ *tempopb.Trace, wantMeta *tempopb.TraceSearchMetadata, searchesThatMatch, searchesThatDontMatch []*tempopb.SearchRequest, meta *backend.BlockMeta, r Reader) {
 		ctx := context.Background()
 
 		for _, req := range searchesThatMatch {
@@ -116,7 +116,7 @@ func TestAdvancedTraceQLCompleteBlock(t *testing.T) {
 func testAdvancedTraceQLCompleteBlock(t *testing.T, blockVersion string) {
 	e := traceql.NewEngine()
 
-	runCompleteBlockSearchTest(t, blockVersion, func(wantTr *deeppb.Trace, wantMeta *deeppb.TraceSearchMetadata, _, _ []*deeppb.SearchRequest, meta *backend.BlockMeta, r Reader) {
+	runCompleteBlockSearchTest(t, blockVersion, func(wantTr *tempopb.Trace, wantMeta *tempopb.TraceSearchMetadata, _, _ []*tempopb.SearchRequest, meta *backend.BlockMeta, r Reader) {
 		ctx := context.Background()
 
 		// collect some info about wantTr to use below
@@ -156,7 +156,7 @@ func testAdvancedTraceQLCompleteBlock(t *testing.T, blockVersion string) {
 			return s[rand.Intn(len(s))]
 		}
 
-		searchesThatMatch := []*deeppb.SearchRequest{
+		searchesThatMatch := []*tempopb.SearchRequest{
 			// conditions
 			{Query: fmt.Sprintf("{%s && %s && %s && %s && %s}", rando(trueConditionsBySpan[0]), rando(trueConditionsBySpan[0]), rando(trueConditionsBySpan[0]), rando(trueConditionsBySpan[0]), rando(trueConditionsBySpan[0]))},
 			{Query: fmt.Sprintf("{%s || %s || %s || %s || %s}", rando(falseConditions), rando(falseConditions), rando(falseConditions), rando(trueConditionsBySpan[0]), rando(falseConditions))},
@@ -197,7 +197,7 @@ func testAdvancedTraceQLCompleteBlock(t *testing.T, blockVersion string) {
 				rando(trueConditionsBySpan[1]), rando(trueConditionsBySpan[1]),
 				durationBySpan[0]+durationBySpan[1])},
 		}
-		searchesThatDontMatch := []*deeppb.SearchRequest{
+		searchesThatDontMatch := []*tempopb.SearchRequest{
 			// conditions
 			{Query: fmt.Sprintf("{%s && %s}", rando(trueConditionsBySpan[0]), rando(falseConditions))},
 			{Query: fmt.Sprintf("{%s || %s}", rando(falseConditions), rando(falseConditions))},
@@ -282,7 +282,7 @@ func conditionsForAttributes(atts []*v1_common.KeyValue, scope string) ([]string
 	return trueConditions, falseConditions
 }
 
-func actualForExpectedMeta(wantMeta *deeppb.TraceSearchMetadata, res *deeppb.SearchResponse) *deeppb.TraceSearchMetadata {
+func actualForExpectedMeta(wantMeta *tempopb.TraceSearchMetadata, res *tempopb.SearchResponse) *tempopb.TraceSearchMetadata {
 	// find wantMeta in res
 	for _, tr := range res.Traces {
 		if tr.TraceID == wantMeta.TraceID {
@@ -293,7 +293,7 @@ func actualForExpectedMeta(wantMeta *deeppb.TraceSearchMetadata, res *deeppb.Sea
 	return nil
 }
 
-type runnerFn func(*deeppb.Trace, *deeppb.TraceSearchMetadata, []*deeppb.SearchRequest, []*deeppb.SearchRequest, *backend.BlockMeta, Reader)
+type runnerFn func(*tempopb.Trace, *tempopb.TraceSearchMetadata, []*tempopb.SearchRequest, []*tempopb.SearchRequest, *backend.BlockMeta, Reader)
 
 func runCompleteBlockSearchTest(t testing.TB, blockVersion string, runner runnerFn) {
 	// v2 doesn't support any search. just bail here before doing the work below to save resources
@@ -350,7 +350,7 @@ func runCompleteBlockSearchTest(t testing.TB, blockVersion string, runner runner
 	totalTraces := 250
 	wantTrIdx := rand.Intn(250)
 	for i := 0; i < totalTraces; i++ {
-		var tr *deeppb.Trace
+		var tr *tempopb.Trace
 		var id []byte
 		if i == wantTrIdx {
 			tr = wantTr
@@ -393,15 +393,15 @@ func intKV(k string, v int) *v1_common.KeyValue {
 }
 
 // Helper function to make a tag search
-func makeReq(k, v string) *deeppb.SearchRequest {
-	return &deeppb.SearchRequest{
+func makeReq(k, v string) *tempopb.SearchRequest {
+	return &tempopb.SearchRequest{
 		Tags: map[string]string{
 			k: v,
 		},
 	}
 }
 
-func addTraceQL(req *deeppb.SearchRequest) {
+func addTraceQL(req *tempopb.SearchRequest) {
 	// todo: traceql concepts are different than search concepts. this code maps key/value pairs
 	// from search to traceql. we can clean this up after we drop old search and move these tests into
 	// the deepdb package.
@@ -453,18 +453,18 @@ func addTraceQL(req *deeppb.SearchRequest) {
 //   - searchesThatDontMatch - List of requests that don't match the trace
 func searchTestSuite() (
 	id []byte,
-	tr *deeppb.Trace,
+	tr *tempopb.Trace,
 	start, end uint32,
-	expected *deeppb.TraceSearchMetadata,
-	searchesThatMatch []*deeppb.SearchRequest,
-	searchesThatDontMatch []*deeppb.SearchRequest,
+	expected *tempopb.TraceSearchMetadata,
+	searchesThatMatch []*tempopb.SearchRequest,
+	searchesThatDontMatch []*tempopb.SearchRequest,
 ) {
 	id = test.ValidTraceID(nil)
 
 	start = 1000
 	end = 1001
 
-	tr = &deeppb.Trace{
+	tr = &tempopb.Trace{
 		Batches: []*v1.ResourceSpans{
 			{
 				Resource: &v1_resource.Resource{
@@ -528,7 +528,7 @@ func searchTestSuite() (
 		},
 	}
 
-	expected = &deeppb.TraceSearchMetadata{
+	expected = &tempopb.TraceSearchMetadata{
 		TraceID:           util.TraceIDToHexString(id),
 		StartTimeUnixNano: uint64(1000 * time.Second),
 		DurationMs:        2000,
@@ -537,7 +537,7 @@ func searchTestSuite() (
 	}
 
 	// Matches
-	searchesThatMatch = []*deeppb.SearchRequest{
+	searchesThatMatch = []*tempopb.SearchRequest{
 		{
 			// Empty request
 		},
@@ -596,7 +596,7 @@ func searchTestSuite() (
 	}
 
 	// Excludes
-	searchesThatDontMatch = []*deeppb.SearchRequest{
+	searchesThatDontMatch = []*tempopb.SearchRequest{
 		{
 			MinDurationMs: 2001,
 		},

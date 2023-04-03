@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/tempopb"
 )
 
 // IsBackendSearch returns true if the request has a start, end and tags parameter and is the /api/search path
@@ -21,6 +21,6 @@ func IsSearchBlock(r *http.Request) bool {
 }
 
 // IsTraceQLQuery returns true if the request contains a traceQL query.
-func IsTraceQLQuery(r *deeppb.SearchRequest) bool {
+func IsTraceQLQuery(r *tempopb.SearchRequest) bool {
 	return len(r.Query) > 0
 }

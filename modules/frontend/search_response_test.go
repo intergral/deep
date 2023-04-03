@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -46,17 +46,17 @@ func TestSearchResponseShouldQuit(t *testing.T) {
 
 	// limit reached should quit
 	sr = newSearchResponse(ctx, 2, cancelFunc)
-	sr.addResponse(&deeppb.SearchResponse{
-		Traces: []*deeppb.TraceSearchMetadata{
+	sr.addResponse(&tempopb.SearchResponse{
+		Traces: []*tempopb.TraceSearchMetadata{
 			{
 				TraceID: "something",
 			},
 		},
-		Metrics: &deeppb.SearchMetrics{},
+		Metrics: &tempopb.SearchMetrics{},
 	})
 	assert.False(t, sr.shouldQuit())
-	sr.addResponse(&deeppb.SearchResponse{
-		Traces: []*deeppb.TraceSearchMetadata{
+	sr.addResponse(&tempopb.SearchResponse{
+		Traces: []*tempopb.TraceSearchMetadata{
 			{
 				TraceID: "something",
 			},
@@ -64,11 +64,11 @@ func TestSearchResponseShouldQuit(t *testing.T) {
 				TraceID: "something",
 			},
 		},
-		Metrics: &deeppb.SearchMetrics{},
+		Metrics: &tempopb.SearchMetrics{},
 	})
 	assert.False(t, sr.shouldQuit())
-	sr.addResponse(&deeppb.SearchResponse{
-		Traces: []*deeppb.TraceSearchMetadata{
+	sr.addResponse(&tempopb.SearchResponse{
+		Traces: []*tempopb.TraceSearchMetadata{
 			{
 				TraceID: "otherthing",
 			},
@@ -76,7 +76,7 @@ func TestSearchResponseShouldQuit(t *testing.T) {
 				TraceID: "thingthatsdifferent",
 			},
 		},
-		Metrics: &deeppb.SearchMetrics{},
+		Metrics: &tempopb.SearchMetrics{},
 	})
 	assert.True(t, sr.shouldQuit())
 }
@@ -126,13 +126,13 @@ func TestCancelFuncEvents(t *testing.T) {
 	// addResponse within limit should NOT call cancelFunc
 	called = false
 	sr = newSearchResponse(ctx, 100, cancelFunc)
-	sr.addResponse(&deeppb.SearchResponse{
-		Traces: []*deeppb.TraceSearchMetadata{
+	sr.addResponse(&tempopb.SearchResponse{
+		Traces: []*tempopb.TraceSearchMetadata{
 			{
 				TraceID: "something",
 			},
 		},
-		Metrics: &deeppb.SearchMetrics{},
+		Metrics: &tempopb.SearchMetrics{},
 	})
 	assert.False(t, sr.shouldQuit())
 	assert.False(t, called)
@@ -140,24 +140,24 @@ func TestCancelFuncEvents(t *testing.T) {
 	// addResponse over limit should call cancelFunc
 	called = false
 	sr = newSearchResponse(ctx, 1, cancelFunc)
-	sr.addResponse(&deeppb.SearchResponse{
-		Traces: []*deeppb.TraceSearchMetadata{
+	sr.addResponse(&tempopb.SearchResponse{
+		Traces: []*tempopb.TraceSearchMetadata{
 			{
 				TraceID: "something",
 			},
 		},
-		Metrics: &deeppb.SearchMetrics{},
+		Metrics: &tempopb.SearchMetrics{},
 	})
 	assert.False(t, sr.internalShouldQuit()) // internalShouldQuit should return false
 	assert.False(t, called)                  // first response should not call cancelFunc
 
-	sr.addResponse(&deeppb.SearchResponse{
-		Traces: []*deeppb.TraceSearchMetadata{
+	sr.addResponse(&tempopb.SearchResponse{
+		Traces: []*tempopb.TraceSearchMetadata{
 			{
 				TraceID: "something else", // needs unique traceID to hit limits
 			},
 		},
-		Metrics: &deeppb.SearchMetrics{},
+		Metrics: &tempopb.SearchMetrics{},
 	})
 	assert.True(t, sr.internalShouldQuit()) // internalShouldQuit should return true
 	assert.True(t, called)                  // addResponse calls cancelFunc (without calling shouldQuit)
@@ -168,8 +168,8 @@ func TestSearchResponseCombineResults(t *testing.T) {
 	traceID := "traceID"
 
 	sr := newSearchResponse(context.Background(), 10, func() {})
-	sr.addResponse(&deeppb.SearchResponse{
-		Traces: []*deeppb.TraceSearchMetadata{
+	sr.addResponse(&tempopb.SearchResponse{
+		Traces: []*tempopb.TraceSearchMetadata{
 			{
 				TraceID:           traceID,
 				StartTimeUnixNano: uint64(start.Add(time.Second).UnixNano()),
@@ -186,14 +186,14 @@ func TestSearchResponseCombineResults(t *testing.T) {
 				DurationMs:        uint32(time.Millisecond.Milliseconds()),
 			}, // 1 hour after start and shorter duration
 		},
-		Metrics: &deeppb.SearchMetrics{},
+		Metrics: &tempopb.SearchMetrics{},
 	})
 
-	expected := &deeppb.SearchResponse{
-		Traces: []*deeppb.TraceSearchMetadata{
+	expected := &tempopb.SearchResponse{
+		Traces: []*tempopb.TraceSearchMetadata{
 			{TraceID: traceID, StartTimeUnixNano: uint64(start.UnixNano()), DurationMs: uint32(time.Hour.Milliseconds())},
 		},
-		Metrics: &deeppb.SearchMetrics{},
+		Metrics: &tempopb.SearchMetrics{},
 	}
 
 	assert.Equal(t, expected, sr.result())

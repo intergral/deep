@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,7 +34,7 @@ func TestResultsDoesNotRace(t *testing.T) {
 				go func() {
 					defer sr.FinishWorker()
 					for j := 0; j < 10_000; j++ {
-						if sr.AddResult(ctx, &deeppb.TraceSearchMetadata{}) {
+						if sr.AddResult(ctx, &tempopb.TraceSearchMetadata{}) {
 							break
 						}
 					}

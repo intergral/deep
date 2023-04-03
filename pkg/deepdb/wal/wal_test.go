@@ -22,9 +22,9 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	v2 "github.com/intergral/deep/pkg/deepdb/encoding/v2"
 	"github.com/intergral/deep/pkg/deepdb/encoding/vparquet"
-	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/model/trace"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/traceql"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/intergral/deep/pkg/util/test"
@@ -178,7 +178,7 @@ func TestFindByTraceID(t *testing.T) {
 }
 
 func testFindByTraceID(t *testing.T, e encoding.VersionedEncoding) {
-	runWALTest(t, e.Version(), func(ids [][]byte, objs []*deeppb.Trace, block common.WALBlock) {
+	runWALTest(t, e.Version(), func(ids [][]byte, objs []*tempopb.Trace, block common.WALBlock) {
 		// find all traces pushed
 		ctx := context.Background()
 		for i, id := range ids {
@@ -198,7 +198,7 @@ func TestIterator(t *testing.T) {
 }
 
 func testIterator(t *testing.T, e encoding.VersionedEncoding) {
-	runWALTest(t, e.Version(), func(ids [][]byte, objs []*deeppb.Trace, block common.WALBlock) {
+	runWALTest(t, e.Version(), func(ids [][]byte, objs []*tempopb.Trace, block common.WALBlock) {
 		ctx := context.Background()
 
 		iterator, err := block.Iterator()
@@ -242,7 +242,7 @@ func TestSearch(t *testing.T) {
 }
 
 func testSearch(t *testing.T, e encoding.VersionedEncoding) {
-	runWALTest(t, e.Version(), func(ids [][]byte, objs []*deeppb.Trace, block common.WALBlock) {
+	runWALTest(t, e.Version(), func(ids [][]byte, objs []*tempopb.Trace, block common.WALBlock) {
 		ctx := context.Background()
 
 		for i, o := range objs {
@@ -250,7 +250,7 @@ func testSearch(t *testing.T, e encoding.VersionedEncoding) {
 			require.NotEmpty(t, k)
 			require.NotEmpty(t, v)
 
-			resp, err := block.Search(ctx, &deeppb.SearchRequest{
+			resp, err := block.Search(ctx, &tempopb.SearchRequest{
 				Tags: map[string]string{
 					k: v,
 				},
@@ -275,7 +275,7 @@ func TestFetch(t *testing.T) {
 }
 
 func testFetch(t *testing.T, e encoding.VersionedEncoding) {
-	runWALTest(t, e.Version(), func(ids [][]byte, objs []*deeppb.Trace, block common.WALBlock) {
+	runWALTest(t, e.Version(), func(ids [][]byte, objs []*tempopb.Trace, block common.WALBlock) {
 		ctx := context.Background()
 
 		for i, o := range objs {
@@ -309,7 +309,7 @@ func testFetch(t *testing.T, e encoding.VersionedEncoding) {
 	})
 }
 
-func findFirstAttribute(obj *deeppb.Trace) (string, string) {
+func findFirstAttribute(obj *tempopb.Trace) (string, string) {
 	for _, b := range obj.Batches {
 		for _, s := range b.ScopeSpans {
 			for _, span := range s.Spans {
@@ -374,7 +374,7 @@ func TestInvalidFilesAndFoldersAreHandled(t *testing.T) {
 	require.DirExists(t, filepath.Join(tempDir, "fe0b83eb-a86b-4b6c-9a74-dc272cd5700e+tenant+vOther"))
 }
 
-func runWALTest(t testing.TB, encoding string, runner func([][]byte, []*deeppb.Trace, common.WALBlock)) {
+func runWALTest(t testing.TB, encoding string, runner func([][]byte, []*tempopb.Trace, common.WALBlock)) {
 	wal, err := New(&Config{
 		Filepath: t.TempDir(),
 		Encoding: backend.EncNone,
@@ -390,7 +390,7 @@ func runWALTest(t testing.TB, encoding string, runner func([][]byte, []*deeppb.T
 	enc := model.MustNewSegmentDecoder(model.CurrentEncoding)
 
 	objects := 250
-	objs := make([]*deeppb.Trace, 0, objects)
+	objs := make([]*tempopb.Trace, 0, objects)
 	ids := make([][]byte, 0, objects)
 	for i := 0; i < objects; i++ {
 		id := make([]byte, 16)
@@ -453,7 +453,7 @@ func BenchmarkFindTraceByID(b *testing.B) {
 	}
 	for _, enc := range encodings {
 		b.Run(enc, func(b *testing.B) {
-			runWALBenchmark(b, enc, 1, func(ids [][]byte, objs []*deeppb.Trace, block common.WALBlock) {
+			runWALBenchmark(b, enc, 1, func(ids [][]byte, objs []*tempopb.Trace, block common.WALBlock) {
 				ctx := context.Background()
 				for i := 0; i < b.N; i++ {
 					j := i % len(ids)
@@ -474,7 +474,7 @@ func BenchmarkFindUnknownTraceID(b *testing.B) {
 	}
 	for _, enc := range encodings {
 		b.Run(enc, func(b *testing.B) {
-			runWALBenchmark(b, enc, 1, func(ids [][]byte, objs []*deeppb.Trace, block common.WALBlock) {
+			runWALBenchmark(b, enc, 1, func(ids [][]byte, objs []*tempopb.Trace, block common.WALBlock) {
 				for i := 0; i < b.N; i++ {
 					_, err := block.FindTraceByID(context.Background(), common.ID{}, common.DefaultSearchOptions())
 					require.NoError(b, err)
@@ -491,7 +491,7 @@ func BenchmarkSearch(b *testing.B) {
 	}
 	for _, enc := range encodings {
 		b.Run(enc, func(b *testing.B) {
-			runWALBenchmark(b, enc, 1, func(ids [][]byte, objs []*deeppb.Trace, block common.WALBlock) {
+			runWALBenchmark(b, enc, 1, func(ids [][]byte, objs []*tempopb.Trace, block common.WALBlock) {
 				ctx := context.Background()
 
 				for i := 0; i < b.N; i++ {
@@ -502,7 +502,7 @@ func BenchmarkSearch(b *testing.B) {
 					require.NotEmpty(b, k)
 					require.NotEmpty(b, v)
 
-					resp, err := block.Search(ctx, &deeppb.SearchRequest{
+					resp, err := block.Search(ctx, &tempopb.SearchRequest{
 						Tags: map[string]string{
 							k: v,
 						},
@@ -520,7 +520,7 @@ func BenchmarkSearch(b *testing.B) {
 	}
 }
 
-func runWALBenchmark(b *testing.B, encoding string, flushCount int, runner func([][]byte, []*deeppb.Trace, common.WALBlock)) {
+func runWALBenchmark(b *testing.B, encoding string, flushCount int, runner func([][]byte, []*tempopb.Trace, common.WALBlock)) {
 	wal, err := New(&Config{
 		Filepath: b.TempDir(),
 		Encoding: backend.EncNone,
@@ -536,7 +536,7 @@ func runWALBenchmark(b *testing.B, encoding string, flushCount int, runner func(
 	dec := model.MustNewSegmentDecoder(model.CurrentEncoding)
 
 	objects := 250
-	traces := make([]*deeppb.Trace, 0, objects)
+	traces := make([]*tempopb.Trace, 0, objects)
 	objs := make([][]byte, 0, objects)
 	ids := make([][]byte, 0, objects)
 	for i := 0; i < objects; i++ {

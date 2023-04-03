@@ -3,7 +3,7 @@ package forwarder
 import (
 	"context"
 	"fmt"
-	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
+	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"time"
 
 	"github.com/go-kit/log"

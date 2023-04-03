@@ -3,9 +3,9 @@ package model
 import (
 	"fmt"
 
-	"github.com/intergral/deep/pkg/deeppb"
 	v1 "github.com/intergral/deep/pkg/model/v1"
 	v2 "github.com/intergral/deep/pkg/model/v2"
+	"github.com/intergral/deep/pkg/tempopb"
 )
 
 // CurrentEncoding is a string representing the encoding that all new blocks should be created with
@@ -19,9 +19,9 @@ var AllEncodings = []string{
 
 // ObjectDecoder is used to work with opaque byte slices that contain trace data in the backend
 type ObjectDecoder interface {
-	// PrepareForRead converts the byte slice into a deeppb.Trace for reading. This can be very expensive
+	// PrepareForRead converts the byte slice into a tempopb.Trace for reading. This can be very expensive
 	//  and should only be used when surfacing a byte slice from deepdb and preparing it for reads.
-	PrepareForRead(obj []byte) (*deeppb.Trace, error)
+	PrepareForRead(obj []byte) (*tempopb.Trace, error)
 
 	// Combine combines the passed byte slice
 	Combine(objs ...[]byte) ([]byte, error)

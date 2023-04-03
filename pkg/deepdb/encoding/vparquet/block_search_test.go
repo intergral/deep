@@ -2,8 +2,8 @@ package vparquet
 
 import (
 	"context"
-	"github.com/intergral/deep/pkg/deeppb"
 	deep_io "github.com/intergral/deep/pkg/io"
+	"github.com/intergral/deep/pkg/tempopb"
 	"math/rand"
 	"path"
 	"testing"
@@ -13,7 +13,7 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/backend/local"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	v1 "github.com/intergral/deep/pkg/deeppb/trace/v1"
+	v1 "github.com/intergral/deep/pkg/tempopb/trace/v1"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/intergral/deep/pkg/util/test"
 	"github.com/stretchr/testify/require"
@@ -92,8 +92,8 @@ func TestBackendBlockSearch(t *testing.T) {
 	ctx := context.TODO()
 
 	// Helper function to make a tag search
-	makeReq := func(k, v string) *deeppb.SearchRequest {
-		return &deeppb.SearchRequest{
+	makeReq := func(k, v string) *tempopb.SearchRequest {
+		return &tempopb.SearchRequest{
 			Tags: map[string]string{
 				k: v,
 			},
@@ -101,7 +101,7 @@ func TestBackendBlockSearch(t *testing.T) {
 	}
 
 	// Matches
-	searchesThatMatch := []*deeppb.SearchRequest{
+	searchesThatMatch := []*tempopb.SearchRequest{
 		{
 			// Empty request
 		},
@@ -156,7 +156,7 @@ func TestBackendBlockSearch(t *testing.T) {
 			},
 		},
 	}
-	expected := &deeppb.TraceSearchMetadata{
+	expected := &tempopb.TraceSearchMetadata{
 		TraceID:           util.TraceIDToHexString(wantTr.TraceID),
 		StartTimeUnixNano: wantTr.StartTimeUnixNano,
 		DurationMs:        uint32(wantTr.DurationNanos / uint64(time.Millisecond)),
@@ -164,7 +164,7 @@ func TestBackendBlockSearch(t *testing.T) {
 		RootTraceName:     wantTr.RootSpanName,
 	}
 
-	findInResults := func(id string, res []*deeppb.TraceSearchMetadata) *deeppb.TraceSearchMetadata {
+	findInResults := func(id string, res []*tempopb.TraceSearchMetadata) *tempopb.TraceSearchMetadata {
 		for _, r := range res {
 			if r.TraceID == id {
 				return r
@@ -183,7 +183,7 @@ func TestBackendBlockSearch(t *testing.T) {
 	}
 
 	// Excludes
-	searchesThatDontMatch := []*deeppb.SearchRequest{
+	searchesThatDontMatch := []*tempopb.SearchRequest{
 		{
 			MinDurationMs: 101,
 		},
@@ -385,7 +385,7 @@ func BenchmarkBackendBlockSearchTraces(b *testing.B) {
 
 	for _, tc := range testCases {
 
-		req := &deeppb.SearchRequest{
+		req := &tempopb.SearchRequest{
 			Tags:  tc.tags,
 			Limit: 20,
 		}

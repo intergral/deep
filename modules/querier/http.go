@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/intergral/deep/pkg/api"
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/traceql"
 )
 
@@ -57,7 +57,7 @@ func (q *Querier) TraceByIDHandler(w http.ResponseWriter, r *http.Request) {
 		ot_log.String("timeStart", fmt.Sprint(timeStart)),
 		ot_log.String("timeEnd", fmt.Sprint(timeEnd)))
 
-	resp, err := q.FindTraceByID(ctx, &deeppb.TraceByIDRequest{
+	resp, err := q.FindTraceByID(ctx, &tempopb.TraceByIDRequest{
 		TraceID:    byteID,
 		BlockStart: blockStart,
 		BlockEnd:   blockEnd,
@@ -113,7 +113,7 @@ func (q *Querier) SearchHandler(w http.ResponseWriter, r *http.Request) {
 	span.SetTag("requestURI", r.RequestURI)
 	span.SetTag("isSearchBlock", isSearchBlock)
 
-	var resp *deeppb.SearchResponse
+	var resp *tempopb.SearchResponse
 	if !isSearchBlock {
 		req, err := api.ParseSearchRequest(r)
 		if err != nil {
@@ -161,7 +161,7 @@ func (q *Querier) SearchTagsHandler(w http.ResponseWriter, r *http.Request) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "Querier.SearchTagsHandler")
 	defer span.Finish()
 
-	req := &deeppb.SearchTagsRequest{}
+	req := &tempopb.SearchTagsRequest{}
 
 	resp, err := q.SearchTags(ctx, req)
 	if err != nil {
@@ -192,7 +192,7 @@ func (q *Querier) SearchTagValuesHandler(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "please provide a tagName", http.StatusBadRequest)
 		return
 	}
-	req := &deeppb.SearchTagValuesRequest{
+	req := &tempopb.SearchTagValuesRequest{
 		TagName: tagName,
 	}
 
@@ -232,7 +232,7 @@ func (q *Querier) SearchTagValuesV2Handler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	req := &deeppb.SearchTagValuesRequest{
+	req := &tempopb.SearchTagValuesRequest{
 		TagName: tagName,
 	}
 

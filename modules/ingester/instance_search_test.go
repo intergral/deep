@@ -17,10 +17,10 @@ import (
 	"github.com/weaveworks/common/user"
 
 	"github.com/intergral/deep/modules/overrides"
-	"github.com/intergral/deep/pkg/deeppb"
-	v1 "github.com/intergral/deep/pkg/deeppb/common/v1"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/model/trace"
+	"github.com/intergral/deep/pkg/tempopb"
+	v1 "github.com/intergral/deep/pkg/tempopb/common/v1"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/intergral/deep/pkg/util/test"
 )
@@ -32,7 +32,7 @@ func TestInstanceSearch(t *testing.T) {
 	var tagValue = "bar"
 	ids, _ := writeTracesForSearch(t, i, tagKey, tagValue, false)
 
-	var req = &deeppb.SearchRequest{
+	var req = &tempopb.SearchRequest{
 		Tags: map[string]string{},
 	}
 	req.Tags[tagKey] = tagValue
@@ -96,7 +96,7 @@ func TestInstanceSearchTraceQL(t *testing.T) {
 			// `service.name = "test-service"` and duration >= 1s
 			_, ids := pushTracesToInstance(t, i, 10)
 
-			req := &deeppb.SearchRequest{Query: query, Limit: 20}
+			req := &tempopb.SearchRequest{Query: query, Limit: 20}
 
 			// Test live traces
 			sr, err := i.Search(context.Background(), req)
@@ -160,7 +160,7 @@ func TestInstanceSearchTraceQL(t *testing.T) {
 	}
 }
 
-func checkEqual(t *testing.T, ids [][]byte, sr *deeppb.SearchResponse) {
+func checkEqual(t *testing.T, ids [][]byte, sr *tempopb.SearchResponse) {
 	for _, meta := range sr.Traces {
 		parsedTraceID, err := util.HexStringToTraceID(meta.TraceID)
 		assert.NoError(t, err)
@@ -293,7 +293,7 @@ func writeTracesForSearch(t *testing.T, i *instance, tagKey string, tagValue str
 func TestInstanceSearchNoData(t *testing.T) {
 	i, _ := defaultInstance(t)
 
-	var req = &deeppb.SearchRequest{
+	var req = &tempopb.SearchRequest{
 		Tags: map[string]string{},
 	}
 
@@ -315,7 +315,7 @@ func TestInstanceSearchDoesNotRace(t *testing.T) {
 	var tagKey = "foo"
 	var tagValue = "bar"
 
-	var req = &deeppb.SearchRequest{
+	var req = &tempopb.SearchRequest{
 		Tags: map[string]string{tagKey: tagValue},
 	}
 
@@ -443,7 +443,7 @@ func TestWALBlockDeletedDuringSearch(t *testing.T) {
 	require.NoError(t, err)
 
 	go concurrent(func() {
-		_, err := i.Search(context.Background(), &deeppb.SearchRequest{
+		_, err := i.Search(context.Background(), &tempopb.SearchRequest{
 			Tags: map[string]string{
 				// Not present in the data, so it will be an exhaustive
 				// search
@@ -489,8 +489,8 @@ func TestInstanceSearchMetrics(t *testing.T) {
 		assert.Equal(t, int(i.traceCount.Load()), len(i.traces))
 	}
 
-	search := func() *deeppb.SearchMetrics {
-		sr, err := i.Search(context.Background(), &deeppb.SearchRequest{
+	search := func() *tempopb.SearchMetrics {
+		sr, err := i.Search(context.Background(), &tempopb.SearchRequest{
 			Tags: map[string]string{"foo": "bar"},
 		})
 		require.NoError(t, err)
@@ -591,7 +591,7 @@ func BenchmarkInstanceSearchUnderLoad(b *testing.B) {
 	for j := 0; j < 2; j++ {
 		go concurrent(func() {
 			// time.Sleep(1 * time.Millisecond)
-			var req = &deeppb.SearchRequest{}
+			var req = &tempopb.SearchRequest{}
 			resp, err := i.Search(ctx, req)
 			require.NoError(b, err)
 			searches.Inc()

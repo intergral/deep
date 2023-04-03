@@ -29,7 +29,7 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	"github.com/intergral/deep/pkg/deepdb/pool"
 	"github.com/intergral/deep/pkg/deepdb/wal"
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/traceql"
 	"github.com/intergral/deep/pkg/util/log"
 )
@@ -75,8 +75,8 @@ type Writer interface {
 type IterateObjectCallback func(id common.ID, obj []byte) bool
 
 type Reader interface {
-	Find(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) ([]*deeppb.Trace, []error, error)
-	Search(ctx context.Context, meta *backend.BlockMeta, req *deeppb.SearchRequest, opts common.SearchOptions) (*deeppb.SearchResponse, error)
+	Find(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) ([]*tempopb.Trace, []error, error)
+	Search(ctx context.Context, meta *backend.BlockMeta, req *tempopb.SearchRequest, opts common.SearchOptions) (*tempopb.SearchResponse, error)
 	Fetch(ctx context.Context, meta *backend.BlockMeta, req traceql.FetchSpansRequest, opts common.SearchOptions) (traceql.FetchSpansResponse, error)
 	BlockMetas(tenantID string) []*backend.BlockMeta
 	EnablePolling(sharder blocklist.JobSharder)
@@ -264,7 +264,7 @@ func (rw *readerWriter) BlockMetas(tenantID string) []*backend.BlockMeta {
 	return rw.blocklist.Metas(tenantID)
 }
 
-func (rw *readerWriter) Find(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) ([]*deeppb.Trace, []error, error) {
+func (rw *readerWriter) Find(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) ([]*tempopb.Trace, []error, error) {
 	// tracing instrumentation
 	logger := log.WithContext(ctx, log.Logger)
 	span, ctx := opentracing.StartSpanFromContext(ctx, "store.Find")
@@ -333,9 +333,9 @@ func (rw *readerWriter) Find(ctx context.Context, tenantID string, id common.ID,
 		return foundObject, nil
 	})
 
-	partialTraceObjs := make([]*deeppb.Trace, len(partialTraces))
+	partialTraceObjs := make([]*tempopb.Trace, len(partialTraces))
 	for i := range partialTraces {
-		partialTraceObjs[i] = partialTraces[i].(*deeppb.Trace)
+		partialTraceObjs[i] = partialTraces[i].(*tempopb.Trace)
 	}
 
 	span.SetTag("blockErrs", len(funcErrs))
@@ -349,7 +349,7 @@ func (rw *readerWriter) Find(ctx context.Context, tenantID string, id common.ID,
 
 // Search the given block.  This method takes the pre-loaded block meta instead of a block ID, which
 // eliminates a read per search request.
-func (rw *readerWriter) Search(ctx context.Context, meta *backend.BlockMeta, req *deeppb.SearchRequest, opts common.SearchOptions) (*deeppb.SearchResponse, error) {
+func (rw *readerWriter) Search(ctx context.Context, meta *backend.BlockMeta, req *tempopb.SearchRequest, opts common.SearchOptions) (*tempopb.SearchResponse, error) {
 	block, err := encoding.OpenBlock(meta, rw.r)
 	if err != nil {
 		return nil, err

@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	v1 "github.com/intergral/deep/pkg/deeppb/trace/v1"
 	"github.com/intergral/deep/pkg/parquetquery"
+	v1 "github.com/intergral/deep/pkg/tempopb/trace/v1"
 	"github.com/intergral/deep/pkg/traceql"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/pkg/errors"

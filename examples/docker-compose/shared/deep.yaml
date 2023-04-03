@@ -1,6 +1,7 @@
 server:
   http_listen_port: 3200
   grpc_listen_port: 43315
+  log_level: debug
 
 distributor:
 
@@ -32,4 +33,4 @@ storage:
       path: /tmp/deep/blocks
 
 overrides:
-  metrics_generator_processors: [service-graphs, span-metrics] # enables metrics generator
+  metrics_generator_processors: [span-metrics] # enables metrics generator

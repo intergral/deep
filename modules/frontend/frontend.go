@@ -23,7 +23,7 @@ import (
 	"github.com/intergral/deep/modules/storage"
 	"github.com/intergral/deep/pkg/api"
 	"github.com/intergral/deep/pkg/deepdb"
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/tempopb"
 )
 
 const (
@@ -135,7 +135,7 @@ func newTraceByIDMiddleware(cfg Config, logger log.Logger) Middleware {
 				if err != nil {
 					return nil, errors.Wrap(err, "error reading response body at query frontend")
 				}
-				responseObject := &deeppb.TraceByIDResponse{}
+				responseObject := &tempopb.TraceByIDResponse{}
 				err = proto.Unmarshal(body, responseObject)
 				if err != nil {
 					return nil, err

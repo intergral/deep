@@ -14,8 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
 
-	"github.com/intergral/deep/pkg/deeppb"
-	v1 "github.com/intergral/deep/pkg/deeppb/common/v1"
+	"github.com/intergral/deep/pkg/tempopb"
+	v1 "github.com/intergral/deep/pkg/tempopb/common/v1"
 	"github.com/intergral/deep/pkg/util"
 )
 
@@ -23,7 +23,7 @@ func TestEngine_Execute(t *testing.T) {
 	now := time.Now()
 	e := Engine{}
 
-	req := &deeppb.SearchRequest{
+	req := &tempopb.SearchRequest{
 		Query: `{ .foo = .bar }`,
 	}
 	spanSetFetcher := MockSpanSetFetcher{
@@ -81,15 +81,15 @@ func TestEngine_Execute(t *testing.T) {
 	spanSetFetcher.capturedRequest.Filter = nil // have to set this to nil b/c assert.Equal does not handle function pointers
 	assert.Equal(t, expectedFetchSpansRequest, spanSetFetcher.capturedRequest)
 
-	expectedTraceSearchMetadata := []*deeppb.TraceSearchMetadata{
+	expectedTraceSearchMetadata := []*tempopb.TraceSearchMetadata{
 		{
 			TraceID:           "1",
 			RootServiceName:   "my-service",
 			RootTraceName:     "HTTP GET",
 			StartTimeUnixNano: 0,
 			DurationMs:        0,
-			SpanSet: &deeppb.SpanSet{
-				Spans: []*deeppb.Span{
+			SpanSet: &tempopb.SpanSet{
+				Spans: []*tempopb.Span{
 					{
 						SpanID:            "0000000000000002",
 						StartTimeUnixNano: uint64(now.UnixNano()),
@@ -121,7 +121,7 @@ func TestEngine_Execute(t *testing.T) {
 
 	// Sort attributes for consistent equality checks
 	// This is needed because they are internally stored in maps
-	sort := func(mm []*deeppb.TraceSearchMetadata) {
+	sort := func(mm []*tempopb.TraceSearchMetadata) {
 		for _, m := range mm {
 			for _, s := range m.SpanSet.Spans {
 				sort.Slice(s.Attributes, func(i, j int) bool {
@@ -179,15 +179,15 @@ func TestEngine_asTraceSearchMetadata(t *testing.T) {
 
 	traceSearchMetadata := e.asTraceSearchMetadata(spanSet)
 
-	expectedTraceSearchMetadata := &deeppb.TraceSearchMetadata{
+	expectedTraceSearchMetadata := &tempopb.TraceSearchMetadata{
 		TraceID:           util.TraceIDToHexString(traceID),
 		RootServiceName:   "my-service",
 		RootTraceName:     "HTTP GET",
 		StartTimeUnixNano: 1000,
 		DurationMs:        uint32(time.Second.Milliseconds()),
-		SpanSet: &deeppb.SpanSet{
+		SpanSet: &tempopb.SpanSet{
 			Matched: 2,
-			Spans: []*deeppb.Span{
+			Spans: []*tempopb.Span{
 				{
 					SpanID:            util.SpanIDToHexString(spanID1),
 					Name:              "HTTP GET",
@@ -350,7 +350,7 @@ func TestExamplesInEngine(t *testing.T) {
 
 	for _, q := range queries.Valid {
 		t.Run("valid - "+q, func(t *testing.T) {
-			_, err := e.parseQuery(&deeppb.SearchRequest{
+			_, err := e.parseQuery(&tempopb.SearchRequest{
 				Query: q,
 			})
 			require.NoError(t, err)
@@ -359,7 +359,7 @@ func TestExamplesInEngine(t *testing.T) {
 
 	for _, q := range queries.ParseFails {
 		t.Run("parse fails - "+q, func(t *testing.T) {
-			_, err := e.parseQuery(&deeppb.SearchRequest{
+			_, err := e.parseQuery(&tempopb.SearchRequest{
 				Query: q,
 			})
 			require.Error(t, err)
@@ -368,7 +368,7 @@ func TestExamplesInEngine(t *testing.T) {
 
 	for _, q := range queries.ValidateFails {
 		t.Run("validate fails - "+q, func(t *testing.T) {
-			_, err := e.parseQuery(&deeppb.SearchRequest{
+			_, err := e.parseQuery(&tempopb.SearchRequest{
 				Query: q,
 			})
 			require.Error(t, err)
@@ -378,7 +378,7 @@ func TestExamplesInEngine(t *testing.T) {
 
 	for _, q := range queries.Unsupported {
 		t.Run("unsupported - "+q, func(t *testing.T) {
-			_, err := e.parseQuery(&deeppb.SearchRequest{
+			_, err := e.parseQuery(&tempopb.SearchRequest{
 				Query: q,
 			})
 			require.Error(t, err)

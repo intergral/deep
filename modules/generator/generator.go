@@ -38,6 +38,7 @@ var (
 
 type Generator struct {
 	services.Service
+	deeppb.UnimplementedMetricsGeneratorServer
 
 	cfg       *Config
 	overrides metricsGeneratorOverrides
@@ -182,7 +183,7 @@ func (g *Generator) stopIncomingRequests() {
 	g.readOnly.Store(true)
 }
 
-func (g *Generator) PushSpans(ctx context.Context, req *deeppb.PushSpansRequest) (*deeppb.PushResponse, error) {
+func (g *Generator) PushSnapshot(ctx context.Context, req *deeppb.PushSnapshotRequest) (*deeppb.PushResponse, error) {
 	if g.readOnly.Load() {
 		return nil, ErrReadOnly
 	}
@@ -201,7 +202,7 @@ func (g *Generator) PushSpans(ctx context.Context, req *deeppb.PushSpansRequest)
 		return nil, err
 	}
 
-	instance.pushSpans(ctx, req)
+	instance.PushSnapshot(ctx, req)
 
 	return &deeppb.PushResponse{}, nil
 }

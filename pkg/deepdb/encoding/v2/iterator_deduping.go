@@ -7,9 +7,9 @@ import (
 	"io"
 
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/model/trace"
+	"github.com/intergral/deep/pkg/tempopb"
 )
 
 type dedupingIterator struct {
@@ -68,7 +68,7 @@ func (i *dedupingIterator) NextBytes(ctx context.Context) (common.ID, []byte, er
 }
 
 // Next implements common.Iterator
-func (i *dedupingIterator) Next(ctx context.Context) (common.ID, *deeppb.Trace, error) {
+func (i *dedupingIterator) Next(ctx context.Context) (common.ID, *tempopb.Trace, error) {
 	if i.decoder == nil {
 		return nil, nil, fmt.Errorf("dedupingIterator.Next() called but no decoder set")
 	}

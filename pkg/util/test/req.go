@@ -3,15 +3,15 @@ package test
 import (
 	crand "crypto/rand"
 	"encoding/json"
+	"github.com/intergral/deep/pkg/tempopb"
 	"math/rand"
 	"testing"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
-	"github.com/intergral/deep/pkg/deeppb"
-	v1_common "github.com/intergral/deep/pkg/deeppb/common/v1"
-	v1_resource "github.com/intergral/deep/pkg/deeppb/resource/v1"
-	v1_trace "github.com/intergral/deep/pkg/deeppb/trace/v1"
+	"github.com/golang/protobuf/proto"
+	v1_common "github.com/intergral/deep/pkg/tempopb/common/v1"
+	v1_resource "github.com/intergral/deep/pkg/tempopb/resource/v1"
+	v1_trace "github.com/intergral/deep/pkg/tempopb/trace/v1"
 	"github.com/stretchr/testify/require"
 )
 
@@ -140,10 +140,10 @@ func MakeBatch(spans int, traceID []byte) *v1_trace.ResourceSpans {
 	return batch
 }
 
-func MakeTrace(requests int, traceID []byte) *deeppb.Trace {
+func MakeTrace(requests int, traceID []byte) *tempopb.Trace {
 	traceID = ValidTraceID(traceID)
 
-	trace := &deeppb.Trace{
+	trace := &tempopb.Trace{
 		Batches: make([]*v1_trace.ResourceSpans, 0),
 	}
 
@@ -154,8 +154,8 @@ func MakeTrace(requests int, traceID []byte) *deeppb.Trace {
 	return trace
 }
 
-func MakeTraceBytes(requests int, traceID []byte) *deeppb.TraceBytes {
-	trace := &deeppb.Trace{
+func MakeTraceBytes(requests int, traceID []byte) *tempopb.TraceBytes {
+	trace := &tempopb.Trace{
 		Batches: make([]*v1_trace.ResourceSpans, 0),
 	}
 
@@ -168,15 +168,15 @@ func MakeTraceBytes(requests int, traceID []byte) *deeppb.TraceBytes {
 		panic(err)
 	}
 
-	traceBytes := &deeppb.TraceBytes{
+	traceBytes := &tempopb.TraceBytes{
 		Traces: [][]byte{bytes},
 	}
 
 	return traceBytes
 }
 
-func MakeTraceWithSpanCount(requests int, spansEach int, traceID []byte) *deeppb.Trace {
-	trace := &deeppb.Trace{
+func MakeTraceWithSpanCount(requests int, spansEach int, traceID []byte) *tempopb.Trace {
+	trace := &tempopb.Trace{
 		Batches: make([]*v1_trace.ResourceSpans, 0),
 	}
 
@@ -213,7 +213,7 @@ func RandomString() string {
 	return string(s)
 }
 
-func TracesEqual(t *testing.T, t1 *deeppb.Trace, t2 *deeppb.Trace) {
+func TracesEqual(t *testing.T, t1 *tempopb.Trace, t2 *tempopb.Trace) {
 	if !proto.Equal(t1, t2) {
 		wantJSON, _ := json.MarshalIndent(t1, "", "  ")
 		gotJSON, _ := json.MarshalIndent(t2, "", "  ")

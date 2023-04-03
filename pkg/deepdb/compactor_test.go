@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/go-kit/log"
-	proto "github.com/gogo/protobuf/proto"
+	proto "github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,10 +24,10 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/encoding/vparquet"
 	"github.com/intergral/deep/pkg/deepdb/pool"
 	"github.com/intergral/deep/pkg/deepdb/wal"
-	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/model/trace"
 	v1 "github.com/intergral/deep/pkg/model/v1"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/util/test"
 )
 
@@ -117,7 +117,7 @@ func testCompactionRoundtrip(t *testing.T, targetBlockVersion string) {
 
 	dec := model.MustNewSegmentDecoder(model.CurrentEncoding)
 
-	allReqs := make([]*deeppb.Trace, 0, blockCount*recordCount)
+	allReqs := make([]*tempopb.Trace, 0, blockCount*recordCount)
 	allIds := make([]common.ID, 0, blockCount*recordCount)
 
 	for i := 0; i < blockCount; i++ {
@@ -640,7 +640,7 @@ func testCompactionHonorsBlockStartEndTimes(t *testing.T, targetBlockVersion str
 
 type testData struct {
 	id         common.ID
-	t          *deeppb.Trace
+	t          *tempopb.Trace
 	start, end uint32
 }
 

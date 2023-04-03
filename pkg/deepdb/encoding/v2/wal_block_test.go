@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/intergral/deep/pkg/deepdb/backend"
-	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/model"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/util/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -175,7 +175,7 @@ func TestPartialBlock(t *testing.T) {
 	dec := model.MustNewObjectDecoder(model.CurrentEncoding)
 
 	numMsgs := 100
-	reqs := make([]*deeppb.Trace, 0, numMsgs)
+	reqs := make([]*tempopb.Trace, 0, numMsgs)
 	for i := 0; i < numMsgs; i++ {
 		id := make([]byte, 4)
 		binary.LittleEndian.PutUint32(id, uint32(i)) // using i for the id b/c the iterator below requires a sorted ascending list of ids

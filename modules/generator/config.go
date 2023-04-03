@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/intergral/deep/modules/generator/processor/servicegraphs"
 	"github.com/intergral/deep/modules/generator/processor/spanmetrics"
 	"github.com/intergral/deep/modules/generator/registry"
 	"github.com/intergral/deep/modules/generator/storage"
@@ -42,12 +41,10 @@ func (cfg *Config) RegisterFlagsAndApplyDefaults(prefix string, f *flag.FlagSet)
 }
 
 type ProcessorConfig struct {
-	ServiceGraphs servicegraphs.Config `yaml:"service_graphs"`
-	SpanMetrics   spanmetrics.Config   `yaml:"span_metrics"`
+	SpanMetrics spanmetrics.Config `yaml:"span_metrics"`
 }
 
 func (cfg *ProcessorConfig) RegisterFlagsAndApplyDefaults(prefix string, f *flag.FlagSet) {
-	cfg.ServiceGraphs.RegisterFlagsAndApplyDefaults(prefix, f)
 	cfg.SpanMetrics.RegisterFlagsAndApplyDefaults(prefix, f)
 }
 
@@ -55,12 +52,6 @@ func (cfg *ProcessorConfig) RegisterFlagsAndApplyDefaults(prefix string, f *flag
 func (cfg *ProcessorConfig) copyWithOverrides(o metricsGeneratorOverrides, userID string) (ProcessorConfig, error) {
 	copyCfg := *cfg
 
-	if buckets := o.MetricsGeneratorProcessorServiceGraphsHistogramBuckets(userID); buckets != nil {
-		copyCfg.ServiceGraphs.HistogramBuckets = buckets
-	}
-	if dimensions := o.MetricsGeneratorProcessorServiceGraphsDimensions(userID); dimensions != nil {
-		copyCfg.ServiceGraphs.Dimensions = dimensions
-	}
 	if buckets := o.MetricsGeneratorProcessorSpanMetricsHistogramBuckets(userID); buckets != nil {
 		copyCfg.SpanMetrics.HistogramBuckets = buckets
 	}

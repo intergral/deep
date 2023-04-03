@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/intergral/deep/pkg/tempopb"
 	"io"
 	"net/http"
 
@@ -11,8 +12,7 @@ import (
 	"github.com/golang/protobuf/proto" //nolint:all //deprecated
 	"github.com/opentracing/opentracing-go"
 
-	"github.com/intergral/deep/pkg/deeppb"
-	v1 "github.com/intergral/deep/pkg/deeppb/trace/v1"
+	v1 "github.com/intergral/deep/pkg/tempopb/trace/v1"
 )
 
 const (
@@ -37,7 +37,7 @@ func newDeduper(logger log.Logger) Middleware {
 type spanIDDeduper struct {
 	next      http.RoundTripper
 	logger    log.Logger
-	trace     *deeppb.Trace
+	trace     *tempopb.Trace
 	spansByID map[uint64][]*v1.Span
 	maxUsedID uint64
 }
@@ -63,7 +63,7 @@ func (s spanIDDeduper) RoundTrip(req *http.Request) (*http.Response, error) {
 			return nil, err
 		}
 
-		responseObject := &deeppb.TraceByIDResponse{}
+		responseObject := &tempopb.TraceByIDResponse{}
 		err = proto.Unmarshal(body, responseObject)
 		if err != nil {
 			return nil, err

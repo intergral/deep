@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/gogo/protobuf/proto"
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/golang/protobuf/proto"
 	"github.com/intergral/deep/pkg/model/trace"
+	"github.com/intergral/deep/pkg/tempopb"
 )
 
 // SegmentDecoder maintains the relationship between distributor -> ingester
 // Segment format:
 // | uint32 | uint32 | variable length          |
-// | start  | end    | marshalled deeppb.Trace |
+// | start  | end    | marshalled tempopb.Trace |
 // start and end are unix epoch seconds
 type SegmentDecoder struct {
 }
@@ -24,11 +24,11 @@ func NewSegmentDecoder() *SegmentDecoder {
 	return segmentDecoder
 }
 
-func (d *SegmentDecoder) PrepareForWrite(trace *deeppb.Trace, start uint32, end uint32) ([]byte, error) {
+func (d *SegmentDecoder) PrepareForWrite(trace *tempopb.Trace, start uint32, end uint32) ([]byte, error) {
 	return marshalWithStartEnd(trace, start, end)
 }
 
-func (d *SegmentDecoder) PrepareForRead(segments [][]byte) (*deeppb.Trace, error) {
+func (d *SegmentDecoder) PrepareForRead(segments [][]byte) (*tempopb.Trace, error) {
 	combiner := trace.NewCombiner()
 	for i, obj := range segments {
 		obj, _, _, err := stripStartEnd(obj)
@@ -36,7 +36,7 @@ func (d *SegmentDecoder) PrepareForRead(segments [][]byte) (*deeppb.Trace, error
 			return nil, fmt.Errorf("error stripping start/end: %w", err)
 		}
 
-		t := &deeppb.Trace{}
+		t := &tempopb.Trace{}
 		err = proto.Unmarshal(obj, t)
 		if err != nil {
 			return nil, fmt.Errorf("error unmarshaling trace: %w", err)
@@ -73,7 +73,7 @@ func (d *SegmentDecoder) ToObject(segments [][]byte) ([]byte, error) {
 		}
 	}
 
-	return marshalWithStartEnd(&deeppb.TraceBytes{
+	return marshalWithStartEnd(&tempopb.TraceBytes{
 		Traces: segments,
 	}, minStart, maxEnd)
 }

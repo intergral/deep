@@ -1,24 +1,24 @@
 package frontend
 
 import (
+	"github.com/intergral/deep/pkg/tempopb"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/intergral/deep/pkg/deeppb"
-	v1 "github.com/intergral/deep/pkg/deeppb/trace/v1"
+	v1 "github.com/intergral/deep/pkg/tempopb/trace/v1"
 	"github.com/intergral/deep/pkg/util/test"
 )
 
 func TestDedupeSpanIDs(t *testing.T) {
 	tests := []struct {
 		name        string
-		trace       *deeppb.Trace
-		expectedRes *deeppb.Trace
+		trace       *tempopb.Trace
+		expectedRes *tempopb.Trace
 	}{
 		{
 			name: "no duplicates",
-			trace: &deeppb.Trace{
+			trace: &tempopb.Trace{
 				Batches: []*v1.ResourceSpans{
 					{
 						ScopeSpans: []*v1.ScopeSpans{
@@ -41,7 +41,7 @@ func TestDedupeSpanIDs(t *testing.T) {
 					},
 				},
 			},
-			expectedRes: &deeppb.Trace{
+			expectedRes: &tempopb.Trace{
 				Batches: []*v1.ResourceSpans{
 					{
 						ScopeSpans: []*v1.ScopeSpans{
@@ -67,7 +67,7 @@ func TestDedupeSpanIDs(t *testing.T) {
 		},
 		{
 			name: "duplicate span id",
-			trace: &deeppb.Trace{
+			trace: &tempopb.Trace{
 				Batches: []*v1.ResourceSpans{
 					{
 						ScopeSpans: []*v1.ScopeSpans{
@@ -90,7 +90,7 @@ func TestDedupeSpanIDs(t *testing.T) {
 					},
 				},
 			},
-			expectedRes: &deeppb.Trace{
+			expectedRes: &tempopb.Trace{
 				Batches: []*v1.ResourceSpans{
 					{
 						ScopeSpans: []*v1.ScopeSpans{
@@ -117,7 +117,7 @@ func TestDedupeSpanIDs(t *testing.T) {
 		},
 		{
 			name: "duplicate multi level",
-			trace: &deeppb.Trace{
+			trace: &tempopb.Trace{
 				Batches: []*v1.ResourceSpans{
 					{
 						ScopeSpans: []*v1.ScopeSpans{
@@ -150,7 +150,7 @@ func TestDedupeSpanIDs(t *testing.T) {
 					},
 				},
 			},
-			expectedRes: &deeppb.Trace{
+			expectedRes: &tempopb.Trace{
 				Batches: []*v1.ResourceSpans{
 					{
 						ScopeSpans: []*v1.ScopeSpans{

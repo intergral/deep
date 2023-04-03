@@ -3,23 +3,23 @@ package trace
 import (
 	"testing"
 
-	"github.com/intergral/deep/pkg/deeppb"
-	v1 "github.com/intergral/deep/pkg/deeppb/trace/v1"
+	"github.com/intergral/deep/pkg/tempopb"
+	v1 "github.com/intergral/deep/pkg/tempopb/trace/v1"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSortTrace(t *testing.T) {
 	tests := []struct {
-		input    *deeppb.Trace
-		expected *deeppb.Trace
+		input    *tempopb.Trace
+		expected *tempopb.Trace
 	}{
 		{
-			input:    &deeppb.Trace{},
-			expected: &deeppb.Trace{},
+			input:    &tempopb.Trace{},
+			expected: &tempopb.Trace{},
 		},
 
 		{
-			input: &deeppb.Trace{
+			input: &tempopb.Trace{
 				Batches: []*v1.ResourceSpans{
 					{
 						ScopeSpans: []*v1.ScopeSpans{
@@ -45,7 +45,7 @@ func TestSortTrace(t *testing.T) {
 					},
 				},
 			},
-			expected: &deeppb.Trace{
+			expected: &tempopb.Trace{
 				Batches: []*v1.ResourceSpans{
 					{
 						ScopeSpans: []*v1.ScopeSpans{

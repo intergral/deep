@@ -7,12 +7,12 @@ import (
 	"github.com/intergral/deep/modules/distributor/snapshotreciever"
 	pb "github.com/intergral/go-deep-proto/poll/v1"
 	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
+	"google.golang.org/grpc/status"
 	"strings"
 	"time"
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	"github.com/gogo/status"
 	"github.com/grafana/dskit/limiter"
 	"github.com/grafana/dskit/ring"
 	ring_client "github.com/grafana/dskit/ring/client"
@@ -32,7 +32,7 @@ import (
 	ingester_client "github.com/intergral/deep/modules/ingester/client"
 	"github.com/intergral/deep/modules/overrides"
 	"github.com/intergral/deep/pkg/deeppb"
-	_ "github.com/intergral/deep/pkg/gogocodec" // force gogo codec registration
+	deeppb_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/model"
 	deep_util "github.com/intergral/deep/pkg/util"
 )
@@ -90,14 +90,6 @@ var (
 		Help:      "The current number of metrics-generator clients.",
 	})
 )
-
-// rebatchedTrace is used to more cleanly pass the set of data
-type rebatchedTrace struct {
-	id    []byte
-	trace *deeppb.Trace
-	start uint32 // unix epoch seconds
-	end   uint32 // unix epoch seconds
-}
 
 // Distributor coordinates replicates and distribution of log streams.
 type Distributor struct {
@@ -257,6 +249,7 @@ func New(cfg Config, clientCfg ingester_client.Config, ingestersRing ring.ReadRi
 }
 
 func (d *Distributor) starting(ctx context.Context) error {
+	level.Info(d.logger).Log("msg", "Distributor started")
 	// Only report success if all sub-services start properly
 	err := services.StartManagerAndAwaitHealthy(ctx, d.subservices)
 	if err != nil {
@@ -280,9 +273,24 @@ func (d *Distributor) stopping(_ error) error {
 	return services.StopManagerAndAwaitStopped(context.Background(), d.subservices)
 }
 
-func (d *Distributor) PushSnapshot(ctx context.Context, snapshot *tp.Snapshot) (*tp.SnapshotResponse, error) {
+func (d *Distributor) PushSnapshot(ctx context.Context, in *tp.Snapshot) (*tp.SnapshotResponse, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "distributor.PushSnapshot")
 	defer span.Finish()
+
+	// todo is this really needed?
+	// Convert to bytes and back. This is unfortunate for efficiency, but it works
+	// around to allow deep agent to be installed in deep service
+	convert, err := proto.Marshal(in)
+	if err != nil {
+		return nil, err
+	}
+
+	// deeppb_tp.Snapshot is wire-compatible with go-deep-proto
+	snapshot := &deeppb_tp.Snapshot{}
+	err = proto.Unmarshal(convert, snapshot)
+	if err != nil {
+		return nil, err
+	}
 
 	userID, err := user.ExtractOrgID(ctx)
 	if err != nil {
@@ -333,10 +341,10 @@ func (d *Distributor) PushSnapshot(ctx context.Context, snapshot *tp.Snapshot) (
 		_ = level.Warn(d.logger).Log("msg", "failed to forward batches for tenant=%s: %w", userID, err)
 	}
 
-	return nil, nil
+	return &tp.SnapshotResponse{}, nil
 }
 
-func extractKeys(snapshot *tp.Snapshot, userId string) ([]uint32, error) {
+func extractKeys(snapshot *deeppb_tp.Snapshot, userId string) ([]uint32, error) {
 	keys := make([]uint32, 1)
 
 	keys[0] = deep_util.TokenFor(userId, []byte(snapshot.GetId()))
@@ -344,11 +352,11 @@ func extractKeys(snapshot *tp.Snapshot, userId string) ([]uint32, error) {
 	return keys, nil
 }
 
-func logSnapshot(snapshot *tp.Snapshot, logger log.Logger) {
+func logSnapshot(snapshot *deeppb_tp.Snapshot, logger log.Logger) {
 	level.Info(logger).Log("msg", "received", "snapshotId", snapshot.GetId())
 }
 
-func logSnapshotWithAllAttributes(snapshot *tp.Snapshot, logger log.Logger) {
+func logSnapshotWithAllAttributes(snapshot *deeppb_tp.Snapshot, logger log.Logger) {
 	for _, a := range snapshot.GetResource() {
 		logger = log.With(
 			logger,
@@ -375,7 +383,7 @@ func logSnapshotWithAllAttributes(snapshot *tp.Snapshot, logger log.Logger) {
 	logSnapshot(snapshot, logger)
 }
 
-func (d *Distributor) sendToGenerators(ctx context.Context, userID string, keys []uint32, traces []*rebatchedTrace) error {
+func (d *Distributor) sendToGenerators(ctx context.Context, userID string, keys []uint32, snapshot *deeppb_tp.Snapshot) error {
 	// If an instance is unhealthy write to the next one (i.e. write extend is enabled)
 	op := ring.Write
 
@@ -386,11 +394,8 @@ func (d *Distributor) sendToGenerators(ctx context.Context, userID string, keys 
 		defer cancel()
 		localCtx = user.InjectOrgID(localCtx, userID)
 
-		req := deeppb.PushSpansRequest{
-			Batches: nil,
-		}
-		for _, j := range indexes {
-			req.Batches = append(req.Batches, traces[j].trace.Batches...)
+		req := deeppb.PushSnapshotRequest{
+			Snapshot: snapshot,
 		}
 
 		c, err := d.generatorsPool.GetClientFor(generator.Addr)
@@ -398,7 +403,7 @@ func (d *Distributor) sendToGenerators(ctx context.Context, userID string, keys 
 			return errors.Wrap(err, "failed to get client for generator")
 		}
 
-		_, err = c.(deeppb.MetricsGeneratorClient).PushSpans(localCtx, &req)
+		_, err = c.(deeppb.MetricsGeneratorClient).PushSnapshot(localCtx, &req)
 		metricGeneratorPushes.WithLabelValues(generator.Addr).Inc()
 		if err != nil {
 			metricGeneratorPushesFailures.WithLabelValues(generator.Addr).Inc()
@@ -414,7 +419,7 @@ func (*Distributor) Check(_ context.Context, _ *grpc_health_v1.HealthCheckReques
 	return &grpc_health_v1.HealthCheckResponse{Status: grpc_health_v1.HealthCheckResponse_SERVING}, nil
 }
 
-func (d *Distributor) sendToIngester(ctx context.Context, id string, keys []uint32, snapshot *tp.Snapshot) error {
+func (d *Distributor) sendToIngester(ctx context.Context, id string, keys []uint32, snapshot *deeppb_tp.Snapshot) error {
 	return nil
 }
 

@@ -3,6 +3,7 @@ package generator
 import (
 	"context"
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	"reflect"
 	"strings"
 	"sync"
@@ -14,16 +15,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/intergral/deep/modules/generator/processor"
-	"github.com/intergral/deep/modules/generator/processor/servicegraphs"
 	"github.com/intergral/deep/modules/generator/processor/spanmetrics"
 	"github.com/intergral/deep/modules/generator/registry"
 	"github.com/intergral/deep/modules/generator/storage"
 	"github.com/intergral/deep/pkg/deeppb"
-	v1 "github.com/intergral/deep/pkg/deeppb/trace/v1"
 )
 
 var (
-	allSupportedProcessors = []string{servicegraphs.Name, spanmetrics.Name}
+	allSupportedProcessors = []string{spanmetrics.Name}
 
 	metricActiveProcessors = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "deep",
@@ -176,19 +175,15 @@ func (i *instance) diffProcessors(desiredProcessors map[string]struct{}, desired
 			toAdd = append(toAdd, processorName)
 		}
 	}
-	for processorName, processor := range i.processors {
+	for processorName, proc := range i.processors {
 		if _, ok := desiredProcessors[processorName]; !ok {
 			toRemove = append(toRemove, processorName)
 			continue
 		}
 
-		switch p := processor.(type) {
+		switch p := proc.(type) {
 		case *spanmetrics.Processor:
 			if !reflect.DeepEqual(p.Cfg, desiredCfg.SpanMetrics) {
-				toReplace = append(toReplace, processorName)
-			}
-		case *servicegraphs.Processor:
-			if !reflect.DeepEqual(p.Cfg, desiredCfg.ServiceGraphs) {
 				toReplace = append(toReplace, processorName)
 			}
 		default:
@@ -212,8 +207,6 @@ func (i *instance) addProcessor(processorName string, cfg ProcessorConfig) error
 	switch processorName {
 	case spanmetrics.Name:
 		newProcessor = spanmetrics.New(cfg.SpanMetrics, i.registry)
-	case servicegraphs.Name:
-		newProcessor = servicegraphs.New(cfg.ServiceGraphs, i.instanceID, i.registry, i.logger)
 	default:
 		level.Error(i.logger).Log(
 			"msg", fmt.Sprintf("processor does not exist, supported processors: [%s]", strings.Join(allSupportedProcessors, ", ")),
@@ -258,38 +251,25 @@ func (i *instance) updateProcessorMetrics() {
 	}
 }
 
-func (i *instance) pushSpans(ctx context.Context, req *deeppb.PushSpansRequest) {
+func (i *instance) PushSnapshot(ctx context.Context, req *deeppb.PushSnapshotRequest) {
 	i.preprocessSpans(req)
 	i.processorsMtx.RLock()
 	defer i.processorsMtx.RUnlock()
 
 	for _, processor := range i.processors {
-		processor.PushSpans(ctx, req)
+		processor.PushSnapshot(ctx, req)
 	}
 }
 
-func (i *instance) preprocessSpans(req *deeppb.PushSpansRequest) {
-	size := 0
+func (i *instance) preprocessSpans(req *deeppb.PushSnapshotRequest) {
+	size := proto.Size(req)
 	spanCount := 0
 	expiredSpanCount := 0
-	for _, b := range req.Batches {
-		size += b.Size()
-		for _, ss := range b.ScopeSpans {
-			spanCount += len(ss.Spans)
-			// filter spans that have end time > max_age and end time more than 5 days in the future
-			newSpansArr := make([]*v1.Span, len(ss.Spans))
-			timeNow := time.Now()
-			index := 0
-			for _, span := range ss.Spans {
-				if span.EndTimeUnixNano >= uint64(timeNow.Add(-i.cfg.MetricsIngestionSlack).UnixNano()) && span.EndTimeUnixNano <= uint64(timeNow.Add(i.cfg.MetricsIngestionSlack).UnixNano()) {
-					newSpansArr[index] = span
-					index++
-				} else {
-					expiredSpanCount++
-				}
-			}
-			ss.Spans = newSpansArr[0:index]
-		}
+	timeNow := time.Now()
+	if req.Snapshot.Ts >= timeNow.Add(-i.cfg.MetricsIngestionSlack).UnixMilli() && req.Snapshot.Ts <= timeNow.Add(i.cfg.MetricsIngestionSlack).UnixMilli() {
+		spanCount++
+	} else {
+		expiredSpanCount++
 	}
 	i.updatePushMetrics(size, spanCount, expiredSpanCount)
 }

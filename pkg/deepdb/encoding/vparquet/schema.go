@@ -5,10 +5,10 @@ import (
 
 	"github.com/golang/protobuf/jsonpb" //nolint:all //deprecated
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	"github.com/intergral/deep/pkg/deeppb"
-	v1 "github.com/intergral/deep/pkg/deeppb/common/v1"
-	v1_resource "github.com/intergral/deep/pkg/deeppb/resource/v1"
-	v1_trace "github.com/intergral/deep/pkg/deeppb/trace/v1"
+	"github.com/intergral/deep/pkg/tempopb"
+	v1 "github.com/intergral/deep/pkg/tempopb/common/v1"
+	v1_resource "github.com/intergral/deep/pkg/tempopb/resource/v1"
+	v1_trace "github.com/intergral/deep/pkg/tempopb/trace/v1"
 	"github.com/intergral/deep/pkg/util"
 )
 
@@ -211,7 +211,7 @@ func attrToParquet(a *v1.KeyValue, p *Attribute) {
 	}
 }
 
-func traceToParquet(id common.ID, tr *deeppb.Trace, ot *Trace) *Trace {
+func traceToParquet(id common.ID, tr *tempopb.Trace, ot *Trace) *Trace {
 	if ot == nil {
 		ot = &Trace{}
 	}
@@ -333,7 +333,7 @@ func traceToParquet(id common.ID, tr *deeppb.Trace, ot *Trace) *Trace {
 				ss.HttpUrl = nil
 				ss.HttpStatusCode = nil
 				if len(s.Links) > 0 {
-					links := deeppb.LinkSlice{
+					links := tempopb.LinkSlice{
 						Links: s.Links,
 					}
 					ss.Links = extendReuseSlice(links.Size(), ss.Links)
@@ -492,8 +492,8 @@ func parquetToProtoEvents(parquetEvents []Event) []*v1_trace.Span_Event {
 	return protoEvents
 }
 
-func parquetTraceToTempopbTrace(parquetTrace *Trace) *deeppb.Trace {
-	protoTrace := &deeppb.Trace{}
+func parquetTraceToTempopbTrace(parquetTrace *Trace) *tempopb.Trace {
+	protoTrace := &tempopb.Trace{}
 	protoTrace.Batches = make([]*v1_trace.ResourceSpans, 0, len(parquetTrace.ResourceSpans))
 
 	for _, rs := range parquetTrace.ResourceSpans {
@@ -573,7 +573,7 @@ func parquetTraceToTempopbTrace(parquetTrace *Trace) *deeppb.Trace {
 
 				// unmarshal links
 				if len(span.Links) > 0 {
-					links := deeppb.LinkSlice{}
+					links := tempopb.LinkSlice{}
 					_ = links.Unmarshal(span.Links) // todo: bubble these errors up
 					protoSpan.Links = links.Links
 				}

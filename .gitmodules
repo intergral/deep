@@ -1,0 +1,3 @@
+[submodule "deep-proto"]
+	path = deep-proto
+	url = https://github.com/intergral/deep-proto

@@ -3,11 +3,11 @@ package ingester
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc/status"
 	"sync"
 	"time"
 
 	"github.com/go-kit/log/level"
-	"github.com/gogo/status"
 	"github.com/grafana/dskit/ring"
 	"github.com/grafana/dskit/services"
 	"github.com/opentracing/opentracing-go"
@@ -22,12 +22,11 @@ import (
 	"github.com/intergral/deep/modules/storage"
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/backend/local"
-	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/flushqueues"
-	_ "github.com/intergral/deep/pkg/gogocodec" // force gogo codec registration
 	"github.com/intergral/deep/pkg/model"
 	v1 "github.com/intergral/deep/pkg/model/v1"
 	v2 "github.com/intergral/deep/pkg/model/v2"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/util/log"
 	"github.com/intergral/deep/pkg/validation"
 )
@@ -171,10 +170,10 @@ func (i *Ingester) markUnavailable() {
 	i.stopIncomingRequests()
 }
 
-// PushBytes implements deeppb.Pusher.PushBytes. Traces pushed to this endpoint are expected to be in the formats
+// PushBytes implements tempopb.Pusher.PushBytes. Traces pushed to this endpoint are expected to be in the formats
 // defined by ./pkg/model/v1
 // This push function is extremely inefficient and is only provided as a migration path from the v1->v2 encodings
-func (i *Ingester) PushBytes(ctx context.Context, req *deeppb.PushBytesRequest) (*deeppb.PushResponse, error) {
+func (i *Ingester) PushBytes(ctx context.Context, req *tempopb.PushBytesRequest) (*tempopb.PushResponse, error) {
 	var err error
 	v1Decoder, err := model.NewSegmentDecoder(v1.Encoding)
 	if err != nil {
@@ -203,9 +202,9 @@ func (i *Ingester) PushBytes(ctx context.Context, req *deeppb.PushBytesRequest) 
 	return i.PushBytesV2(ctx, req)
 }
 
-// PushBytes implements deeppb.Pusher.PushBytes. Traces pushed to this endpoint are expected to be in the formats
+// PushBytes implements tempopb.Pusher.PushBytes. Traces pushed to this endpoint are expected to be in the formats
 // defined by ./pkg/model/v2
-func (i *Ingester) PushBytesV2(ctx context.Context, req *deeppb.PushBytesRequest) (*deeppb.PushResponse, error) {
+func (i *Ingester) PushBytesV2(ctx context.Context, req *tempopb.PushBytesRequest) (*tempopb.PushResponse, error) {
 	if i.readonly {
 		return nil, ErrReadOnly
 	}
@@ -229,11 +228,11 @@ func (i *Ingester) PushBytesV2(ctx context.Context, req *deeppb.PushBytesRequest
 		return nil, err
 	}
 
-	return &deeppb.PushResponse{}, nil
+	return &tempopb.PushResponse{}, nil
 }
 
-// FindTraceByID implements deeppb.Querier.f
-func (i *Ingester) FindTraceByID(ctx context.Context, req *deeppb.TraceByIDRequest) (*deeppb.TraceByIDResponse, error) {
+// FindTraceByID implements tempopb.Querier.f
+func (i *Ingester) FindTraceByID(ctx context.Context, req *tempopb.TraceByIDRequest) (*tempopb.TraceByIDResponse, error) {
 	if !validation.ValidTraceID(req.TraceID) {
 		return nil, fmt.Errorf("invalid trace id")
 	}
@@ -248,7 +247,7 @@ func (i *Ingester) FindTraceByID(ctx context.Context, req *deeppb.TraceByIDReque
 	}
 	inst, ok := i.getInstanceByID(instanceID)
 	if !ok || inst == nil {
-		return &deeppb.TraceByIDResponse{}, nil
+		return &tempopb.TraceByIDResponse{}, nil
 	}
 
 	trace, err := inst.FindTraceByID(ctx, req.TraceID)
@@ -258,7 +257,7 @@ func (i *Ingester) FindTraceByID(ctx context.Context, req *deeppb.TraceByIDReque
 
 	span.LogFields(ot_log.Bool("trace found", trace != nil))
 
-	return &deeppb.TraceByIDResponse{
+	return &tempopb.TraceByIDResponse{
 		Trace: trace,
 	}, nil
 }

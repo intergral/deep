@@ -60,3 +60,69 @@ fmt:
 
 check-fmt: fmt
 	@git diff --exit-code -- $(FILES_TO_FMT)
+
+
+# #########
+# Gen Proto
+# #########
+UNAME := $(shell uname -s)
+ifeq ($(UNAME), Darwin)
+    SED_OPTS := ''
+endif
+DOCKER_PROTOBUF_IMAGE ?= otel/build-protobuf:0.14.0
+PROTOC = docker run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD} ${DOCKER_PROTOBUF_IMAGE} --proto_path=${PWD}
+PROTO_INTERMEDIATE_DIR = pkg/.patched-proto
+
+PROTOC_ARGS=--go_out=${PROTO_INTERMEDIATE_DIR}/out
+GRPC_PROTOC_ARGS=--go-grpc_out=${PROTO_INTERMEDIATE_DIR}/out
+
+.PHONY: gen-proto
+gen-proto:
+	@echo --
+	@echo -- Deleting existing
+	@echo --
+	rm -rf deep-proto
+	rm -rf $(PROTO_INTERMEDIATE_DIR)
+	find pkg/deeppb -name *.pb.go | xargs -L 1 -I rm
+	# Here we avoid removing our deep.proto and our frontend.proto due to reliance on the gogoproto bits.
+	find pkg/deeppb -name *.proto | grep -v deep.proto | grep -v frontend.proto | xargs -L 1 -I rm
+
+	@echo --
+	@echo -- Copying to $(PROTO_INTERMEDIATE_DIR)
+	@echo --
+	git submodule update --init
+	mkdir -p $(PROTO_INTERMEDIATE_DIR)
+	mkdir -p $(PROTO_INTERMEDIATE_DIR)/out
+	cp -R deep-proto/deepproto/proto/* $(PROTO_INTERMEDIATE_DIR)
+	cp pkg/deeppb/deep.proto $(PROTO_INTERMEDIATE_DIR)
+
+	@echo --
+	@echo -- Editing proto
+	@echo --
+
+	@# Update package and types from opentelemetry.proto.* -> deeppb.*
+	@# giving final types like "deeppb.common.v1.InstrumentationLibrary" which
+	@# will not conflict with other usages of opentelemetry proto in downstream apps.
+	find $(PROTO_INTERMEDIATE_DIR) -name "*.proto" | xargs -L 1 sed -i $(SED_OPTS) 's+ deepproto.proto+ deeppb+g'
+
+	@# Update go_package
+	find $(PROTO_INTERMEDIATE_DIR) -name "*.proto" | xargs -L 1 sed -i $(SED_OPTS) 's+github.com/intergral/go-deep-proto+github.com/intergral/deep/pkg/deeppb+g'
+
+	@# Update import paths
+	find $(PROTO_INTERMEDIATE_DIR) -name "*.proto" | xargs -L 1 sed -i $(SED_OPTS) 's+import "deepproto/proto/+import "+g'
+
+	@echo --
+	@echo -- Gen proto --
+	@echo --
+	$(foreach file, $(shell find ${PROTO_INTERMEDIATE_DIR} -name '*.proto'), ${PROTOC} --proto_path ${PROTO_INTERMEDIATE_DIR} ${PROTOC_ARGS} $(file);)
+
+	${PROTOC} --proto_path ${PROTO_INTERMEDIATE_DIR} ${PROTOC_ARGS} ${GRPC_PROTOC_ARGS} ${PROTO_INTERMEDIATE_DIR}/poll/v1/poll.proto
+	${PROTOC} --proto_path ${PROTO_INTERMEDIATE_DIR} ${PROTOC_ARGS} ${GRPC_PROTOC_ARGS} ${PROTO_INTERMEDIATE_DIR}/tracepoint/v1/tracepoint.proto
+
+	${PROTOC} --proto_path ${PROTO_INTERMEDIATE_DIR} ${PROTOC_ARGS} ${GRPC_PROTOC_ARGS} ${PROTO_INTERMEDIATE_DIR}/deep.proto
+
+	@echo --
+	@echo -- Move output --
+	@echo --
+	cp -r $(PROTO_INTERMEDIATE_DIR)/out/github.com/intergral/deep/pkg/deeppb/* pkg/deeppb
+

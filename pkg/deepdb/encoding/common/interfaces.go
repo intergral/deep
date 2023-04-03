@@ -7,13 +7,13 @@ import (
 	"github.com/go-kit/log"
 
 	"github.com/intergral/deep/pkg/deepdb/backend"
-	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/model"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/traceql"
 )
 
 type Finder interface {
-	FindTraceByID(ctx context.Context, id ID, opts SearchOptions) (*deeppb.Trace, error)
+	FindTraceByID(ctx context.Context, id ID, opts SearchOptions) (*tempopb.Trace, error)
 }
 
 type TagCallback func(t string)
@@ -21,7 +21,7 @@ type TagCallback func(t string)
 type TagCallbackV2 func(traceql.Static) (stop bool)
 
 type Searcher interface {
-	Search(ctx context.Context, req *deeppb.SearchRequest, opts SearchOptions) (*deeppb.SearchResponse, error)
+	Search(ctx context.Context, req *tempopb.SearchRequest, opts SearchOptions) (*tempopb.SearchResponse, error)
 	SearchTags(ctx context.Context, cb TagCallback, opts SearchOptions) error
 	SearchTagValues(ctx context.Context, tag string, cb TagCallback, opts SearchOptions) error
 	SearchTagValuesV2(ctx context.Context, tag traceql.Attribute, cb TagCallbackV2, opts SearchOptions) error
@@ -79,7 +79,7 @@ type CompactionOptions struct {
 }
 
 type Iterator interface {
-	Next(ctx context.Context) (ID, *deeppb.Trace, error)
+	Next(ctx context.Context) (ID, *tempopb.Trace, error)
 	Close()
 }
 

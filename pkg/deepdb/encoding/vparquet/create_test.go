@@ -10,7 +10,7 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/backend/local"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/util/test"
 	"github.com/stretchr/testify/require"
 )
@@ -91,7 +91,7 @@ func TestCreateBlockHonorsTraceStartEndTimesFromWalMeta(t *testing.T) {
 // }
 
 type testIterator struct {
-	traces []*deeppb.Trace
+	traces []*tempopb.Trace
 }
 
 var _ common.Iterator = (*testIterator)(nil)
@@ -100,11 +100,11 @@ func newTestIterator() *testIterator {
 	return &testIterator{}
 }
 
-func (i *testIterator) Add(tr *deeppb.Trace, start, end uint32) {
+func (i *testIterator) Add(tr *tempopb.Trace, start, end uint32) {
 	i.traces = append(i.traces, tr)
 }
 
-func (i *testIterator) Next(ctx context.Context) (common.ID, *deeppb.Trace, error) {
+func (i *testIterator) Next(ctx context.Context) (common.ID, *tempopb.Trace, error) {
 	if len(i.traces) == 0 {
 		return nil, nil, io.EOF
 	}

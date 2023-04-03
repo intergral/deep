@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/go-kit/log"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/grafana/dskit/flagext"
 	"github.com/grafana/dskit/kv/consul"
 	"github.com/grafana/dskit/ring"
@@ -24,12 +24,12 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/encoding"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	"github.com/intergral/deep/pkg/deepdb/wal"
-	"github.com/intergral/deep/pkg/deeppb"
-	v1 "github.com/intergral/deep/pkg/deeppb/trace/v1"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/model/trace"
 	model_v1 "github.com/intergral/deep/pkg/model/v1"
 	model_v2 "github.com/intergral/deep/pkg/model/v2"
+	"github.com/intergral/deep/pkg/tempopb"
+	v1 "github.com/intergral/deep/pkg/tempopb/trace/v1"
 	"github.com/intergral/deep/pkg/util/test"
 )
 
@@ -53,7 +53,7 @@ func TestPushQueryAllEncodings(t *testing.T) {
 
 			// live trace search
 			for pos, traceID := range traceIDs {
-				foundTrace, err := ingester.FindTraceByID(ctx, &deeppb.TraceByIDRequest{
+				foundTrace, err := ingester.FindTraceByID(ctx, &tempopb.TraceByIDRequest{
 					TraceID: traceID,
 				})
 				require.NoError(t, err, "unexpected error querying")
@@ -68,7 +68,7 @@ func TestPushQueryAllEncodings(t *testing.T) {
 
 			// head block search
 			for i, traceID := range traceIDs {
-				foundTrace, err := ingester.FindTraceByID(ctx, &deeppb.TraceByIDRequest{
+				foundTrace, err := ingester.FindTraceByID(ctx, &tempopb.TraceByIDRequest{
 					TraceID: traceID,
 				})
 				require.NoError(t, err, "unexpected error querying")
@@ -103,7 +103,7 @@ func TestFullTraceReturned(t *testing.T) {
 	pushBatchV2(t, ingester, testTrace.Batches[1], traceID)
 
 	// make sure the trace comes back whole
-	foundTrace, err := ingester.FindTraceByID(ctx, &deeppb.TraceByIDRequest{
+	foundTrace, err := ingester.FindTraceByID(ctx, &tempopb.TraceByIDRequest{
 		TraceID: traceID,
 	})
 	require.NoError(t, err, "unexpected error querying")
@@ -116,7 +116,7 @@ func TestFullTraceReturned(t *testing.T) {
 	}
 
 	// make sure the trace comes back whole
-	foundTrace, err = ingester.FindTraceByID(ctx, &deeppb.TraceByIDRequest{
+	foundTrace, err = ingester.FindTraceByID(ctx, &tempopb.TraceByIDRequest{
 		TraceID: traceID,
 	})
 	require.NoError(t, err, "unexpected error querying")
@@ -130,7 +130,7 @@ func TestWal(t *testing.T) {
 	ingester, traces, traceIDs := defaultIngester(t, tmpDir)
 
 	for pos, traceID := range traceIDs {
-		foundTrace, err := ingester.FindTraceByID(ctx, &deeppb.TraceByIDRequest{
+		foundTrace, err := ingester.FindTraceByID(ctx, &tempopb.TraceByIDRequest{
 			TraceID: traceID,
 		})
 		require.NoError(t, err, "unexpected error querying")
@@ -148,7 +148,7 @@ func TestWal(t *testing.T) {
 
 	// should be able to find old traces that were replayed
 	for i, traceID := range traceIDs {
-		foundTrace, err := ingester.FindTraceByID(ctx, &deeppb.TraceByIDRequest{
+		foundTrace, err := ingester.FindTraceByID(ctx, &tempopb.TraceByIDRequest{
 			TraceID: traceID,
 		})
 		require.NoError(t, err, "unexpected error querying")
@@ -169,7 +169,7 @@ func TestWal(t *testing.T) {
 
 	// should be able to find old traces that were replayed
 	for i, traceID := range traceIDs {
-		foundTrace, err := ingester.FindTraceByID(ctx, &deeppb.TraceByIDRequest{
+		foundTrace, err := ingester.FindTraceByID(ctx, &tempopb.TraceByIDRequest{
 			TraceID: traceID,
 		})
 		require.NoError(t, err, "unexpected error querying")
@@ -233,7 +233,7 @@ func TestSearchWAL(t *testing.T) {
 
 	// search WAL
 	ctx := user.InjectOrgID(context.Background(), "test")
-	searchReq := &deeppb.SearchRequest{Tags: map[string]string{
+	searchReq := &tempopb.SearchRequest{Tags: map[string]string{
 		"foo": "bar",
 	}}
 	results, err := inst.Search(ctx, searchReq)
@@ -314,7 +314,7 @@ func TestFlush(t *testing.T) {
 	ingester, traces, traceIDs := defaultIngester(t, tmpDir)
 
 	for pos, traceID := range traceIDs {
-		foundTrace, err := ingester.FindTraceByID(ctx, &deeppb.TraceByIDRequest{
+		foundTrace, err := ingester.FindTraceByID(ctx, &tempopb.TraceByIDRequest{
 			TraceID: traceID,
 		})
 		require.NoError(t, err, "unexpected error querying")
@@ -329,7 +329,7 @@ func TestFlush(t *testing.T) {
 
 	// should be able to find old traces that were replayed
 	for i, traceID := range traceIDs {
-		foundTrace, err := ingester.FindTraceByID(ctx, &deeppb.TraceByIDRequest{
+		foundTrace, err := ingester.FindTraceByID(ctx, &tempopb.TraceByIDRequest{
 			TraceID: traceID,
 		})
 		require.NoError(t, err, "unexpected error querying")
@@ -375,15 +375,15 @@ func defaultIngesterModule(t testing.TB, tmpDir string) *Ingester {
 	return ingester
 }
 
-func defaultIngester(t testing.TB, tmpDir string) (*Ingester, []*deeppb.Trace, [][]byte) {
+func defaultIngester(t testing.TB, tmpDir string) (*Ingester, []*tempopb.Trace, [][]byte) {
 	return defaultIngesterWithPush(t, tmpDir, pushBatchV2)
 }
 
-func defaultIngesterWithPush(t testing.TB, tmpDir string, push func(testing.TB, *Ingester, *v1.ResourceSpans, []byte)) (*Ingester, []*deeppb.Trace, [][]byte) {
+func defaultIngesterWithPush(t testing.TB, tmpDir string, push func(testing.TB, *Ingester, *v1.ResourceSpans, []byte)) (*Ingester, []*tempopb.Trace, [][]byte) {
 	ingester := defaultIngesterModule(t, tmpDir)
 
 	// make some fake traceIDs/requests
-	traces := make([]*deeppb.Trace, 0)
+	traces := make([]*tempopb.Trace, 0)
 
 	traceIDs := make([][]byte, 0)
 	for i := 0; i < 10; i++ {
@@ -440,20 +440,20 @@ func pushBatchV2(t testing.TB, i *Ingester, batch *v1.ResourceSpans, id []byte) 
 	ctx := user.InjectOrgID(context.Background(), "test")
 	batchDecoder := model.MustNewSegmentDecoder(model_v2.Encoding)
 
-	pbTrace := &deeppb.Trace{
+	pbTrace := &tempopb.Trace{
 		Batches: []*v1.ResourceSpans{batch},
 	}
 
 	buffer, err := batchDecoder.PrepareForWrite(pbTrace, 0, 0)
 	require.NoError(t, err)
 
-	_, err = i.PushBytesV2(ctx, &deeppb.PushBytesRequest{
-		Traces: []deeppb.PreallocBytes{
+	_, err = i.PushBytesV2(ctx, &tempopb.PushBytesRequest{
+		Traces: []tempopb.PreallocBytes{
 			{
 				Slice: buffer,
 			},
 		},
-		Ids: []deeppb.PreallocBytes{
+		Ids: []tempopb.PreallocBytes{
 			{
 				Slice: id,
 			},
@@ -467,20 +467,20 @@ func pushBatchV1(t testing.TB, i *Ingester, batch *v1.ResourceSpans, id []byte) 
 
 	batchDecoder := model.MustNewSegmentDecoder(model_v1.Encoding)
 
-	pbTrace := &deeppb.Trace{
+	pbTrace := &tempopb.Trace{
 		Batches: []*v1.ResourceSpans{batch},
 	}
 
 	buffer, err := batchDecoder.PrepareForWrite(pbTrace, 0, 0)
 	require.NoError(t, err)
 
-	_, err = i.PushBytes(ctx, &deeppb.PushBytesRequest{
-		Traces: []deeppb.PreallocBytes{
+	_, err = i.PushBytes(ctx, &tempopb.PushBytesRequest{
+		Traces: []tempopb.PreallocBytes{
 			{
 				Slice: buffer,
 			},
 		},
-		Ids: []deeppb.PreallocBytes{
+		Ids: []tempopb.PreallocBytes{
 			{
 				Slice: id,
 			},

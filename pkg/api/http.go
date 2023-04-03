@@ -15,7 +15,7 @@ import (
 
 	"github.com/intergral/deep/pkg/deepdb"
 	"github.com/intergral/deep/pkg/deepdb/backend"
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/traceql"
 	"github.com/intergral/deep/pkg/util"
 )
@@ -87,9 +87,9 @@ func ParseTraceID(r *http.Request) ([]byte, error) {
 	return byteID, nil
 }
 
-// ParseSearchRequest takes an http.Request and decodes query params to create a deeppb.SearchRequest
-func ParseSearchRequest(r *http.Request) (*deeppb.SearchRequest, error) {
-	req := &deeppb.SearchRequest{
+// ParseSearchRequest takes an http.Request and decodes query params to create a tempopb.SearchRequest
+func ParseSearchRequest(r *http.Request) (*tempopb.SearchRequest, error) {
+	req := &tempopb.SearchRequest{
 		Tags:  map[string]string{},
 		Limit: defaultLimit,
 	}
@@ -212,7 +212,7 @@ func ParseSearchRequest(r *http.Request) (*deeppb.SearchRequest, error) {
 }
 
 // ParseSearchBlockRequest parses all http parameters necessary to perform a block search.
-func ParseSearchBlockRequest(r *http.Request) (*deeppb.SearchBlockRequest, error) {
+func ParseSearchBlockRequest(r *http.Request) (*tempopb.SearchBlockRequest, error) {
 	searchReq, err := ParseSearchRequest(r)
 	if err != nil {
 		return nil, err
@@ -223,7 +223,7 @@ func ParseSearchBlockRequest(r *http.Request) (*deeppb.SearchBlockRequest, error
 		return nil, errors.New("start and end required")
 	}
 
-	req := &deeppb.SearchBlockRequest{
+	req := &tempopb.SearchBlockRequest{
 		SearchReq: searchReq,
 	}
 
@@ -309,9 +309,9 @@ func ParseSearchBlockRequest(r *http.Request) (*deeppb.SearchBlockRequest, error
 	return req, nil
 }
 
-// BuildSearchRequest takes a deeppb.SearchRequest and populates the passed http.Request
+// BuildSearchRequest takes a tempopb.SearchRequest and populates the passed http.Request
 // with the appropriate params. If no http.Request is provided a new one is created.
-func BuildSearchRequest(req *http.Request, searchReq *deeppb.SearchRequest) (*http.Request, error) {
+func BuildSearchRequest(req *http.Request, searchReq *tempopb.SearchRequest) (*http.Request, error) {
 	if req == nil {
 		req = &http.Request{
 			URL: &url.URL{},
@@ -358,9 +358,9 @@ func BuildSearchRequest(req *http.Request, searchReq *deeppb.SearchRequest) (*ht
 	return req, nil
 }
 
-// BuildSearchBlockRequest takes a deeppb.SearchBlockRequest and populates the passed http.Request
+// BuildSearchBlockRequest takes a tempopb.SearchBlockRequest and populates the passed http.Request
 // with the appropriate params. If no http.Request is provided a new one is created.
-func BuildSearchBlockRequest(req *http.Request, searchReq *deeppb.SearchBlockRequest) (*http.Request, error) {
+func BuildSearchBlockRequest(req *http.Request, searchReq *tempopb.SearchBlockRequest) (*http.Request, error) {
 	if req == nil {
 		req = &http.Request{
 			URL: &url.URL{},

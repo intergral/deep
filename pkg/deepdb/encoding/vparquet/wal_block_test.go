@@ -7,13 +7,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/model/trace"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/traceql"
 	"github.com/intergral/deep/pkg/util/test"
 
@@ -70,7 +70,7 @@ func TestPartialReplay(t *testing.T) {
 	// Flush a set of traces across 2 pages
 	count := 10
 	ids := make([]common.ID, count)
-	trs := make([]*deeppb.Trace, count)
+	trs := make([]*tempopb.Trace, count)
 	for i := 0; i < count; i++ {
 		ids[i] = test.ValidTraceID(nil)
 		trs[i] = test.MakeTrace(10, ids[i])
@@ -216,7 +216,7 @@ func TestParseFilename(t *testing.T) {
 }
 
 func TestWalBlockFindTraceByID(t *testing.T) {
-	testWalBlock(t, func(w *walBlock, ids []common.ID, trs []*deeppb.Trace) {
+	testWalBlock(t, func(w *walBlock, ids []common.ID, trs []*tempopb.Trace) {
 		for i := range ids {
 			found, err := w.FindTraceByID(context.Background(), ids[i], common.DefaultSearchOptions())
 			require.NoError(t, err)
@@ -227,7 +227,7 @@ func TestWalBlockFindTraceByID(t *testing.T) {
 }
 
 func TestWalBlockIterator(t *testing.T) {
-	testWalBlock(t, func(w *walBlock, ids []common.ID, trs []*deeppb.Trace) {
+	testWalBlock(t, func(w *walBlock, ids []common.ID, trs []*tempopb.Trace) {
 
 		iter, err := w.Iterator()
 		require.NoError(t, err)
@@ -261,7 +261,7 @@ func TestWalBlockIterator(t *testing.T) {
 // of walblock. it also ignores the passed in traces and ids and simply asserts that the row iterator
 // is internally consistent.
 func TestRowIterator(t *testing.T) {
-	testWalBlock(t, func(w *walBlock, _ []common.ID, _ []*deeppb.Trace) {
+	testWalBlock(t, func(w *walBlock, _ []common.ID, _ []*tempopb.Trace) {
 		for _, f := range w.flushed {
 			ri, err := f.rowIterator()
 			require.NoError(t, err)
@@ -291,7 +291,7 @@ func TestRowIterator(t *testing.T) {
 	})
 }
 
-func testWalBlock(t *testing.T, f func(w *walBlock, ids []common.ID, trs []*deeppb.Trace)) {
+func testWalBlock(t *testing.T, f func(w *walBlock, ids []common.ID, trs []*tempopb.Trace)) {
 	w, err := createWALBlock(uuid.New(), "fake", t.TempDir(), backend.EncNone, model.CurrentEncoding, 0)
 	require.NoError(t, err)
 
@@ -299,7 +299,7 @@ func testWalBlock(t *testing.T, f func(w *walBlock, ids []common.ID, trs []*deep
 
 	count := 30
 	ids := make([]common.ID, count)
-	trs := make([]*deeppb.Trace, count)
+	trs := make([]*tempopb.Trace, count)
 	for i := 0; i < count; i++ {
 		ids[i] = test.ValidTraceID(nil)
 		trs[i] = test.MakeTrace(10, ids[i])

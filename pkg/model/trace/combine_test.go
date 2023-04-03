@@ -4,7 +4,7 @@ import (
 	"bytes"
 	crand "crypto/rand"
 	"fmt"
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/tempopb"
 	"sort"
 	"strconv"
 	"testing"
@@ -16,8 +16,8 @@ import (
 
 func TestCombineProtoTotals(t *testing.T) {
 
-	methods := []func(a, b *deeppb.Trace) (*deeppb.Trace, int){
-		func(a, b *deeppb.Trace) (*deeppb.Trace, int) {
+	methods := []func(a, b *tempopb.Trace) (*tempopb.Trace, int){
+		func(a, b *tempopb.Trace) (*tempopb.Trace, int) {
 			c := NewCombiner()
 			c.Consume(a)
 			c.Consume(b)
@@ -27,8 +27,8 @@ func TestCombineProtoTotals(t *testing.T) {
 
 	sameTrace := test.MakeTraceWithSpanCount(10, 10, []byte{0x01, 0x03})
 	tests := []struct {
-		traceA        *deeppb.Trace
-		traceB        *deeppb.Trace
+		traceA        *tempopb.Trace
+		traceB        *tempopb.Trace
 		expectedTotal int
 	}{
 		{
@@ -121,11 +121,11 @@ func BenchmarkCombine(b *testing.B) {
 
 	methods := []struct {
 		name   string
-		method func(traces []*deeppb.Trace) int
+		method func(traces []*tempopb.Trace) int
 	}{
 		{
 			"Combiner",
-			func(traces []*deeppb.Trace) int {
+			func(traces []*tempopb.Trace) int {
 				c := NewCombiner()
 				for i := range traces {
 					c.ConsumeWithFinal(traces[i], i == len(traces)-1)
@@ -144,7 +144,7 @@ func BenchmarkCombine(b *testing.B) {
 						// Generate input data. Since combination is destructive
 						// this must be done each time.
 						b.StopTimer()
-						var traces []*deeppb.Trace
+						var traces []*tempopb.Trace
 						for i := 0; i < p; i++ {
 							traces = append(traces, test.MakeTraceWithSpanCount(requests, spansEach, id))
 						}

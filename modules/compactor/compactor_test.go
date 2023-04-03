@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/intergral/deep/modules/overrides"
-	"github.com/intergral/deep/pkg/deeppb"
-	v1 "github.com/intergral/deep/pkg/deeppb/trace/v1"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/model/trace"
+	"github.com/intergral/deep/pkg/tempopb"
+	v1 "github.com/intergral/deep/pkg/tempopb/trace/v1"
 	"github.com/intergral/deep/pkg/util/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,12 +25,12 @@ func TestCombineLimitsNotHit(t *testing.T) {
 	}
 
 	trace := test.MakeTraceWithSpanCount(2, 10, nil)
-	t1 := &deeppb.Trace{
+	t1 := &tempopb.Trace{
 		Batches: []*v1.ResourceSpans{
 			trace.Batches[0],
 		},
 	}
-	t2 := &deeppb.Trace{
+	t2 := &tempopb.Trace{
 		Batches: []*v1.ResourceSpans{
 			trace.Batches[1],
 		},
@@ -55,12 +55,12 @@ func TestCombineLimitsHit(t *testing.T) {
 	}
 
 	trace := test.MakeTraceWithSpanCount(2, 10, nil)
-	t1 := &deeppb.Trace{
+	t1 := &tempopb.Trace{
 		Batches: []*v1.ResourceSpans{
 			trace.Batches[0],
 		},
 	}
-	t2 := &deeppb.Trace{
+	t2 := &tempopb.Trace{
 		Batches: []*v1.ResourceSpans{
 			trace.Batches[1],
 		},
@@ -85,12 +85,12 @@ func TestCombineDoesntEnforceZero(t *testing.T) {
 	}
 
 	trace := test.MakeTraceWithSpanCount(2, 10, nil)
-	t1 := &deeppb.Trace{
+	t1 := &tempopb.Trace{
 		Batches: []*v1.ResourceSpans{
 			trace.Batches[0],
 		},
 	}
-	t2 := &deeppb.Trace{
+	t2 := &tempopb.Trace{
 		Batches: []*v1.ResourceSpans{
 			trace.Batches[1],
 		},
@@ -122,7 +122,7 @@ func TestCountSpans(t *testing.T) {
 	assert.Equal(t, t1ExpectedSpans+t2ExpectedSpans, total)
 }
 
-func encode(t *testing.T, tr *deeppb.Trace) []byte {
+func encode(t *testing.T, tr *tempopb.Trace) []byte {
 	trace.SortTrace(tr)
 
 	sd := model.MustNewSegmentDecoder(model.CurrentEncoding)

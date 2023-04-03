@@ -212,8 +212,9 @@ func (t *App) initIngester() (services.Service, error) {
 	}
 	t.ingester = ingester
 
-	deeppb.RegisterPusherServer(t.Server.GRPC, t.ingester)
-	deeppb.RegisterQuerierServer(t.Server.GRPC, t.ingester)
+	// todo fix this
+	//deeppb.RegisterPusherServer(t.Server.GRPC, t.ingester)
+	//deeppb.RegisterQuerierServer(t.Server.GRPC, t.ingester)
 	t.Server.HTTP.Path("/flush").Handler(http.HandlerFunc(t.ingester.FlushHandler))
 	t.Server.HTTP.Path("/shutdown").Handler(http.HandlerFunc(t.ingester.ShutdownHandler))
 	return t.ingester, nil

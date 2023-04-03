@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/gogo/protobuf/proto"
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/golang/protobuf/proto"
 	"github.com/intergral/deep/pkg/model/trace"
+	"github.com/intergral/deep/pkg/tempopb"
 )
 
 const Encoding = "v2"
@@ -16,18 +16,18 @@ type ObjectDecoder struct {
 
 var staticDecoder = &ObjectDecoder{}
 
-// ObjectDecoder translates between opaque byte slices and deeppb.Trace
+// ObjectDecoder translates between opaque byte slices and tempopb.Trace
 // Object format:
 // | uint32 | uint32 | variable length               |
-// | start  | end    | marshalled deeppb.TraceBytes |
-// start and end are unix epoch seconds. The byte slices in deeppb.TraceBytes are marshalled deeppb.Trace's
+// | start  | end    | marshalled tempopb.TraceBytes |
+// start and end are unix epoch seconds. The byte slices in tempopb.TraceBytes are marshalled tempopb.Trace's
 func NewObjectDecoder() *ObjectDecoder {
 	return staticDecoder
 }
 
-func (d *ObjectDecoder) PrepareForRead(obj []byte) (*deeppb.Trace, error) {
+func (d *ObjectDecoder) PrepareForRead(obj []byte) (*tempopb.Trace, error) {
 	if len(obj) == 0 {
-		return &deeppb.Trace{}, nil
+		return &tempopb.Trace{}, nil
 	}
 
 	obj, _, _, err := stripStartEnd(obj)
@@ -35,15 +35,15 @@ func (d *ObjectDecoder) PrepareForRead(obj []byte) (*deeppb.Trace, error) {
 		return nil, err
 	}
 
-	trace := &deeppb.Trace{}
-	traceBytes := &deeppb.TraceBytes{}
+	trace := &tempopb.Trace{}
+	traceBytes := &tempopb.TraceBytes{}
 	err = proto.Unmarshal(obj, traceBytes)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, bytes := range traceBytes.Traces {
-		innerTrace := &deeppb.Trace{}
+		innerTrace := &tempopb.Trace{}
 		err = proto.Unmarshal(bytes, innerTrace)
 		if err != nil {
 			return nil, err
@@ -84,7 +84,7 @@ func (d *ObjectDecoder) Combine(objs ...[]byte) ([]byte, error) {
 
 	combinedTrace, _ := c.Result()
 
-	traceBytes := &deeppb.TraceBytes{}
+	traceBytes := &tempopb.TraceBytes{}
 	bytes, err := proto.Marshal(combinedTrace)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling traceBytes: %w", err)

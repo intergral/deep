@@ -8,8 +8,8 @@ import (
 	"github.com/go-kit/log/level"
 	"github.com/intergral/deep/pkg/api"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/search"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/traceql"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/intergral/deep/pkg/util/log"
@@ -18,7 +18,7 @@ import (
 	"github.com/weaveworks/common/user"
 )
 
-func (i *instance) Search(ctx context.Context, req *deeppb.SearchRequest) (*deeppb.SearchResponse, error) {
+func (i *instance) Search(ctx context.Context, req *tempopb.SearchRequest) (*tempopb.SearchResponse, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "instance.Search")
 	defer span.Finish()
 
@@ -47,7 +47,7 @@ func (i *instance) Search(ctx context.Context, req *deeppb.SearchRequest) (*deep
 	sr.AllWorkersStarted()
 
 	// read and combine search results
-	resultsMap := map[string]*deeppb.TraceSearchMetadata{}
+	resultsMap := map[string]*tempopb.TraceSearchMetadata{}
 
 	// collect results from all the goroutines via sr.Results channel.
 	// range loop will exit when sr.Results channel is closed.
@@ -75,7 +75,7 @@ func (i *instance) Search(ctx context.Context, req *deeppb.SearchRequest) (*deep
 		return nil, sr.Error()
 	}
 
-	results := make([]*deeppb.TraceSearchMetadata, 0, len(resultsMap))
+	results := make([]*tempopb.TraceSearchMetadata, 0, len(resultsMap))
 	for _, result := range resultsMap {
 		results = append(results, result)
 	}
@@ -85,9 +85,9 @@ func (i *instance) Search(ctx context.Context, req *deeppb.SearchRequest) (*deep
 		return results[i].StartTimeUnixNano > results[j].StartTimeUnixNano
 	})
 
-	return &deeppb.SearchResponse{
+	return &tempopb.SearchResponse{
 		Traces: results,
-		Metrics: &deeppb.SearchMetrics{
+		Metrics: &tempopb.SearchMetrics{
 			InspectedTraces: sr.TracesInspected(),
 			InspectedBytes:  sr.BytesInspected(),
 			InspectedBlocks: sr.BlocksInspected(),
@@ -97,7 +97,7 @@ func (i *instance) Search(ctx context.Context, req *deeppb.SearchRequest) (*deep
 }
 
 // searchWAL starts a search task for every WAL block. Must be called under lock.
-func (i *instance) searchWAL(ctx context.Context, req *deeppb.SearchRequest, sr *search.Results) {
+func (i *instance) searchWAL(ctx context.Context, req *tempopb.SearchRequest, sr *search.Results) {
 	searchWalBlock := func(b common.WALBlock) {
 		blockID := b.BlockMeta().BlockID.String()
 		span, ctx := opentracing.StartSpanFromContext(ctx, "instance.searchWALBlock", opentracing.Tags{
@@ -106,7 +106,7 @@ func (i *instance) searchWAL(ctx context.Context, req *deeppb.SearchRequest, sr 
 		defer span.Finish()
 		defer sr.FinishWorker()
 
-		var resp *deeppb.SearchResponse
+		var resp *tempopb.SearchResponse
 		var err error
 
 		opts := common.DefaultSearchOptions()
@@ -152,7 +152,7 @@ func (i *instance) searchWAL(ctx context.Context, req *deeppb.SearchRequest, sr 
 }
 
 // searchLocalBlocks starts a search task for every local block. Must be called under lock.
-func (i *instance) searchLocalBlocks(ctx context.Context, req *deeppb.SearchRequest, sr *search.Results) {
+func (i *instance) searchLocalBlocks(ctx context.Context, req *tempopb.SearchRequest, sr *search.Results) {
 	// next check all complete blocks to see if they were not searched, if they weren't then attempt to search them
 	for _, e := range i.completeBlocks {
 		sr.StartWorker()
@@ -167,7 +167,7 @@ func (i *instance) searchLocalBlocks(ctx context.Context, req *deeppb.SearchRequ
 			span.LogFields(ot_log.Event("local block entry mtx acquired"))
 			span.SetTag("blockID", blockID)
 
-			var resp *deeppb.SearchResponse
+			var resp *tempopb.SearchResponse
 			var err error
 
 			opts := common.DefaultSearchOptions()
@@ -202,7 +202,7 @@ func (i *instance) searchLocalBlocks(ctx context.Context, req *deeppb.SearchRequ
 	}
 }
 
-func (i *instance) SearchTags(ctx context.Context) (*deeppb.SearchTagsResponse, error) {
+func (i *instance) SearchTags(ctx context.Context) (*tempopb.SearchTagsResponse, error) {
 	userID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
@@ -248,12 +248,12 @@ func (i *instance) SearchTags(ctx context.Context) (*deeppb.SearchTagsResponse, 
 		level.Warn(log.Logger).Log("msg", "size of tags in instance exceeded limit, reduce cardinality or size of tags", "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
 	}
 
-	return &deeppb.SearchTagsResponse{
+	return &tempopb.SearchTagsResponse{
 		TagNames: distinctValues.Strings(),
 	}, nil
 }
 
-func (i *instance) SearchTagValues(ctx context.Context, tagName string) (*deeppb.SearchTagValuesResponse, error) {
+func (i *instance) SearchTagValues(ctx context.Context, tagName string) (*tempopb.SearchTagValuesResponse, error) {
 	userID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
@@ -299,12 +299,12 @@ func (i *instance) SearchTagValues(ctx context.Context, tagName string) (*deeppb
 		level.Warn(log.Logger).Log("msg", "size of tag values in instance exceeded limit, reduce cardinality or size of tags", "tag", tagName, "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
 	}
 
-	return &deeppb.SearchTagValuesResponse{
+	return &tempopb.SearchTagValuesResponse{
 		TagValues: distinctValues.Strings(),
 	}, nil
 }
 
-func (i *instance) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagValuesRequest) (*deeppb.SearchTagValuesV2Response, error) {
+func (i *instance) SearchTagValuesV2(ctx context.Context, req *tempopb.SearchTagValuesRequest) (*tempopb.SearchTagValuesV2Response, error) {
 	userID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
@@ -316,10 +316,10 @@ func (i *instance) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagV
 	}
 
 	limit := i.limiter.limits.MaxBytesPerTagValuesQuery(userID)
-	distinctValues := util.NewDistinctValueCollector[deeppb.TagValue](limit, func(v deeppb.TagValue) int { return len(v.Type) + len(v.Value) })
+	distinctValues := util.NewDistinctValueCollector[tempopb.TagValue](limit, func(v tempopb.TagValue) int { return len(v.Type) + len(v.Value) })
 
 	cb := func(v traceql.Static) bool {
-		tv := deeppb.TagValue{}
+		tv := tempopb.TagValue{}
 
 		switch v.Type {
 		case traceql.TypeString:
@@ -350,7 +350,7 @@ func (i *instance) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagV
 		return distinctValues.Collect(tv)
 	}
 
-	search := func(s common.Searcher, dv *util.DistinctValueCollector[deeppb.TagValue]) error {
+	search := func(s common.Searcher, dv *util.DistinctValueCollector[tempopb.TagValue]) error {
 		if s == nil || dv.Exceeded() {
 			return nil
 		}
@@ -387,7 +387,7 @@ func (i *instance) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagV
 		level.Warn(log.Logger).Log("msg", "size of tag values in instance exceeded limit, reduce cardinality or size of tags", "tag", req.TagName, "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
 	}
 
-	resp := &deeppb.SearchTagValuesV2Response{}
+	resp := &tempopb.SearchTagValuesV2Response{}
 
 	for _, v := range distinctValues.Values() {
 		v2 := v

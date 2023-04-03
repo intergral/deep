@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/golang/protobuf/jsonpb"
 	"io"
 	"math/rand"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/cristalhq/hedgedhttp"
 	"github.com/go-kit/log/level"
-	"github.com/gogo/protobuf/jsonpb"
 	"github.com/google/uuid"
 	"github.com/grafana/dskit/ring"
 	ring_client "github.com/grafana/dskit/ring/client"
@@ -34,10 +34,10 @@ import (
 	"github.com/intergral/deep/pkg/api"
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/hedgedmetrics"
 	"github.com/intergral/deep/pkg/model/trace"
 	"github.com/intergral/deep/pkg/search"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/traceql"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/intergral/deep/pkg/util/log"
@@ -182,8 +182,8 @@ func (q *Querier) stopping(_ error) error {
 	return nil
 }
 
-// FindTraceByID implements deeppb.Querier.
-func (q *Querier) FindTraceByID(ctx context.Context, req *deeppb.TraceByIDRequest, timeStart int64, timeEnd int64) (*deeppb.TraceByIDResponse, error) {
+// FindTraceByID implements tempopb.Querier.
+func (q *Querier) FindTraceByID(ctx context.Context, req *tempopb.TraceByIDRequest, timeStart int64, timeEnd int64) (*tempopb.TraceByIDResponse, error) {
 	if !validation.ValidTraceID(req.TraceID) {
 		return nil, fmt.Errorf("invalid trace id")
 	}
@@ -215,7 +215,7 @@ func (q *Querier) FindTraceByID(ctx context.Context, req *deeppb.TraceByIDReques
 
 		span.LogFields(ot_log.String("msg", "searching ingesters"))
 
-		forEachFunc := func(funcCtx context.Context, client deeppb.QuerierClient) (interface{}, error) {
+		forEachFunc := func(funcCtx context.Context, client tempopb.QuerierClient) (interface{}, error) {
 			return client.FindTraceByID(funcCtx, req)
 		}
 
@@ -227,7 +227,7 @@ func (q *Querier) FindTraceByID(ctx context.Context, req *deeppb.TraceByIDReques
 
 		found := false
 		for _, r := range responses {
-			t := r.response.(*deeppb.TraceByIDResponse).Trace
+			t := r.response.(*tempopb.TraceByIDResponse).Trace
 			if t != nil {
 				spanCount = combiner.Consume(t)
 				spanCountTotal += spanCount
@@ -273,16 +273,16 @@ func (q *Querier) FindTraceByID(ctx context.Context, req *deeppb.TraceByIDReques
 
 	completeTrace, _ := combiner.Result()
 
-	return &deeppb.TraceByIDResponse{
+	return &tempopb.TraceByIDResponse{
 		Trace: completeTrace,
-		Metrics: &deeppb.TraceByIDMetrics{
+		Metrics: &tempopb.TraceByIDMetrics{
 			FailedBlocks: uint32(failedBlocks),
 		},
 	}, nil
 }
 
 // forGivenIngesters runs f, in parallel, for given ingesters
-func (q *Querier) forGivenIngesters(ctx context.Context, replicationSet ring.ReplicationSet, f func(ctx context.Context, client deeppb.QuerierClient) (interface{}, error)) ([]responseFromIngesters, error) {
+func (q *Querier) forGivenIngesters(ctx context.Context, replicationSet ring.ReplicationSet, f func(ctx context.Context, client tempopb.QuerierClient) (interface{}, error)) ([]responseFromIngesters, error) {
 	if ctx.Err() != nil {
 		_ = level.Debug(log.Logger).Log("foreGivenIngesters context error", "ctx.Err()", ctx.Err().Error())
 		return nil, ctx.Err()
@@ -302,7 +302,7 @@ func (q *Querier) forGivenIngesters(ctx context.Context, replicationSet ring.Rep
 			return nil, errors.Wrap(err, fmt.Sprintf("failed to get client for %s", ingester.Addr))
 		}
 
-		resp, err := f(funcCtx, client.(deeppb.QuerierClient))
+		resp, err := f(funcCtx, client.(tempopb.QuerierClient))
 		if err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("failed to execute f() for %s", ingester.Addr))
 		}
@@ -323,7 +323,7 @@ func (q *Querier) forGivenIngesters(ctx context.Context, replicationSet ring.Rep
 	return responses, nil
 }
 
-func (q *Querier) SearchRecent(ctx context.Context, req *deeppb.SearchRequest) (*deeppb.SearchResponse, error) {
+func (q *Querier) SearchRecent(ctx context.Context, req *tempopb.SearchRequest) (*tempopb.SearchResponse, error) {
 	_, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "error extracting org id in Querier.Search")
@@ -334,7 +334,7 @@ func (q *Querier) SearchRecent(ctx context.Context, req *deeppb.SearchRequest) (
 		return nil, errors.Wrap(err, "error finding ingesters in Querier.Search")
 	}
 
-	responses, err := q.forGivenIngesters(ctx, replicationSet, func(ctx context.Context, client deeppb.QuerierClient) (interface{}, error) {
+	responses, err := q.forGivenIngesters(ctx, replicationSet, func(ctx context.Context, client tempopb.QuerierClient) (interface{}, error) {
 		return client.SearchRecent(ctx, req)
 	})
 	if err != nil {
@@ -344,7 +344,7 @@ func (q *Querier) SearchRecent(ctx context.Context, req *deeppb.SearchRequest) (
 	return q.postProcessIngesterSearchResults(req, responses), nil
 }
 
-func (q *Querier) SearchTags(ctx context.Context, req *deeppb.SearchTagsRequest) (*deeppb.SearchTagsResponse, error) {
+func (q *Querier) SearchTags(ctx context.Context, req *tempopb.SearchTagsRequest) (*tempopb.SearchTagsResponse, error) {
 	userID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "error extracting org id in Querier.SearchTags")
@@ -358,14 +358,14 @@ func (q *Querier) SearchTags(ctx context.Context, req *deeppb.SearchTagsRequest)
 	if err != nil {
 		return nil, errors.Wrap(err, "error finding ingesters in Querier.SearchTags")
 	}
-	lookupResults, err := q.forGivenIngesters(ctx, replicationSet, func(ctx context.Context, client deeppb.QuerierClient) (interface{}, error) {
+	lookupResults, err := q.forGivenIngesters(ctx, replicationSet, func(ctx context.Context, client tempopb.QuerierClient) (interface{}, error) {
 		return client.SearchTags(ctx, req)
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "error querying ingesters in Querier.SearchTags")
 	}
 	for _, resp := range lookupResults {
-		for _, res := range resp.response.(*deeppb.SearchTagsResponse).TagNames {
+		for _, res := range resp.response.(*tempopb.SearchTagsResponse).TagNames {
 			distinctValues.Collect(res)
 		}
 	}
@@ -374,14 +374,14 @@ func (q *Querier) SearchTags(ctx context.Context, req *deeppb.SearchTagsRequest)
 		level.Warn(log.Logger).Log("msg", "size of tags in instance exceeded limit, reduce cardinality or size of tags", "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
 	}
 
-	resp := &deeppb.SearchTagsResponse{
+	resp := &tempopb.SearchTagsResponse{
 		TagNames: distinctValues.Strings(),
 	}
 
 	return resp, nil
 }
 
-func (q *Querier) SearchTagValues(ctx context.Context, req *deeppb.SearchTagValuesRequest) (*deeppb.SearchTagValuesResponse, error) {
+func (q *Querier) SearchTagValues(ctx context.Context, req *tempopb.SearchTagValuesRequest) (*tempopb.SearchTagValuesResponse, error) {
 	userID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "error extracting org id in Querier.SearchTagValues")
@@ -400,14 +400,14 @@ func (q *Querier) SearchTagValues(ctx context.Context, req *deeppb.SearchTagValu
 	if err != nil {
 		return nil, errors.Wrap(err, "error finding ingesters in Querier.SearchTagValues")
 	}
-	lookupResults, err := q.forGivenIngesters(ctx, replicationSet, func(ctx context.Context, client deeppb.QuerierClient) (interface{}, error) {
+	lookupResults, err := q.forGivenIngesters(ctx, replicationSet, func(ctx context.Context, client tempopb.QuerierClient) (interface{}, error) {
 		return client.SearchTagValues(ctx, req)
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "error querying ingesters in Querier.SearchTagValues")
 	}
 	for _, resp := range lookupResults {
-		for _, res := range resp.response.(*deeppb.SearchTagValuesResponse).TagValues {
+		for _, res := range resp.response.(*tempopb.SearchTagValuesResponse).TagValues {
 			distinctValues.Collect(res)
 		}
 	}
@@ -416,21 +416,21 @@ func (q *Querier) SearchTagValues(ctx context.Context, req *deeppb.SearchTagValu
 		level.Warn(log.Logger).Log("msg", "size of tag values in instance exceeded limit, reduce cardinality or size of tags", "tag", req.TagName, "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
 	}
 
-	resp := &deeppb.SearchTagValuesResponse{
+	resp := &tempopb.SearchTagValuesResponse{
 		TagValues: distinctValues.Strings(),
 	}
 
 	return resp, nil
 }
 
-func (q *Querier) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagValuesRequest) (*deeppb.SearchTagValuesV2Response, error) {
+func (q *Querier) SearchTagValuesV2(ctx context.Context, req *tempopb.SearchTagValuesRequest) (*tempopb.SearchTagValuesV2Response, error) {
 	userID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "error extracting org id in Querier.SearchTagValues")
 	}
 
 	limit := q.limits.MaxBytesPerTagValuesQuery(userID)
-	distinctValues := util.NewDistinctValueCollector(limit, func(v deeppb.TagValue) int { return len(v.Type) + len(v.Value) })
+	distinctValues := util.NewDistinctValueCollector(limit, func(v tempopb.TagValue) int { return len(v.Type) + len(v.Value) })
 
 	// Virtual tags values. Get these first.
 	for _, v := range search.GetVirtualTagValuesV2(req.TagName) {
@@ -448,14 +448,14 @@ func (q *Querier) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagVa
 	if err != nil {
 		return nil, errors.Wrap(err, "error finding ingesters in Querier.SearchTagValues")
 	}
-	lookupResults, err := q.forGivenIngesters(ctx, replicationSet, func(ctx context.Context, client deeppb.QuerierClient) (interface{}, error) {
+	lookupResults, err := q.forGivenIngesters(ctx, replicationSet, func(ctx context.Context, client tempopb.QuerierClient) (interface{}, error) {
 		return client.SearchTagValuesV2(ctx, req)
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "error querying ingesters in Querier.SearchTagValues")
 	}
 	for _, resp := range lookupResults {
-		for _, res := range resp.response.(*deeppb.SearchTagValuesV2Response).TagValues {
+		for _, res := range resp.response.(*tempopb.SearchTagValuesV2Response).TagValues {
 			distinctValues.Collect(*res)
 		}
 	}
@@ -467,8 +467,8 @@ func (q *Querier) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagVa
 	return valuesToV2Response(distinctValues), nil
 }
 
-func valuesToV2Response(distinctValues *util.DistinctValueCollector[deeppb.TagValue]) *deeppb.SearchTagValuesV2Response {
-	resp := &deeppb.SearchTagValuesV2Response{}
+func valuesToV2Response(distinctValues *util.DistinctValueCollector[tempopb.TagValue]) *tempopb.SearchTagValuesV2Response {
+	resp := &tempopb.SearchTagValuesV2Response{}
 	for _, v := range distinctValues.Values() {
 		v2 := v
 		resp.TagValues = append(resp.TagValues, &v2)
@@ -478,7 +478,7 @@ func valuesToV2Response(distinctValues *util.DistinctValueCollector[deeppb.TagVa
 }
 
 // SearchBlock searches the specified subset of the block for the passed tags.
-func (q *Querier) SearchBlock(ctx context.Context, req *deeppb.SearchBlockRequest) (*deeppb.SearchResponse, error) {
+func (q *Querier) SearchBlock(ctx context.Context, req *tempopb.SearchBlockRequest) (*tempopb.SearchResponse, error) {
 	// if we have no external configuration always search in the querier
 	if len(q.cfg.Search.ExternalEndpoints) == 0 {
 		return q.internalSearchBlock(ctx, req)
@@ -501,7 +501,7 @@ func (q *Querier) SearchBlock(ctx context.Context, req *deeppb.SearchBlockReques
 	return q.searchExternalEndpoint(ctx, endpoint, maxBytes, req)
 }
 
-func (q *Querier) internalSearchBlock(ctx context.Context, req *deeppb.SearchBlockRequest) (*deeppb.SearchResponse, error) {
+func (q *Querier) internalSearchBlock(ctx context.Context, req *tempopb.SearchBlockRequest) (*tempopb.SearchResponse, error) {
 	tenantID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "error extracting org id in Querier.BackendSearch")
@@ -545,15 +545,15 @@ func (q *Querier) internalSearchBlock(ctx context.Context, req *deeppb.SearchBlo
 	return q.store.Search(ctx, meta, req.SearchReq, opts)
 }
 
-func (q *Querier) postProcessIngesterSearchResults(req *deeppb.SearchRequest, rr []responseFromIngesters) *deeppb.SearchResponse {
-	response := &deeppb.SearchResponse{
-		Metrics: &deeppb.SearchMetrics{},
+func (q *Querier) postProcessIngesterSearchResults(req *tempopb.SearchRequest, rr []responseFromIngesters) *tempopb.SearchResponse {
+	response := &tempopb.SearchResponse{
+		Metrics: &tempopb.SearchMetrics{},
 	}
 
-	traces := map[string]*deeppb.TraceSearchMetadata{}
+	traces := map[string]*tempopb.TraceSearchMetadata{}
 
 	for _, r := range rr {
-		sr := r.response.(*deeppb.SearchResponse)
+		sr := r.response.(*tempopb.SearchResponse)
 		for _, t := range sr.Traces {
 			// Just simply take first result for each trace
 			if _, ok := traces[t.TraceID]; !ok {
@@ -586,7 +586,7 @@ func (q *Querier) postProcessIngesterSearchResults(req *deeppb.SearchRequest, rr
 	return response
 }
 
-func (q *Querier) searchExternalEndpoint(ctx context.Context, externalEndpoint string, maxBytes int, searchReq *deeppb.SearchBlockRequest) (*deeppb.SearchResponse, error) {
+func (q *Querier) searchExternalEndpoint(ctx context.Context, externalEndpoint string, maxBytes int, searchReq *tempopb.SearchBlockRequest) (*tempopb.SearchResponse, error) {
 	req, err := http.NewRequest(http.MethodGet, externalEndpoint, nil)
 	if err != nil {
 		return nil, fmt.Errorf("external endpoint failed to make new request: %w", err)
@@ -614,7 +614,7 @@ func (q *Querier) searchExternalEndpoint(ctx context.Context, externalEndpoint s
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("external endpoint returned %d, %s", resp.StatusCode, string(body))
 	}
-	var searchResp deeppb.SearchResponse
+	var searchResp tempopb.SearchResponse
 	err = jsonpb.Unmarshal(bytes.NewReader(body), &searchResp)
 	if err != nil {
 		return nil, fmt.Errorf("external endpoint failed to unmarshal body: %s, %w", string(body), err)

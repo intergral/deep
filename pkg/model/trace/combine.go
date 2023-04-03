@@ -2,7 +2,7 @@ package trace
 
 import (
 	"encoding/binary"
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/tempopb"
 	"hash"
 	"hash/fnv"
 )
@@ -37,7 +37,7 @@ func tokenForID(h hash.Hash64, buffer []byte, kind int32, b []byte) token {
 // * Only sort the final result once and if needed.
 // * Don't scan/hash the spans for the last input (final=true).
 type Combiner struct {
-	result   *deeppb.Trace
+	result   *tempopb.Trace
 	spans    map[token]struct{}
 	combined bool
 }
@@ -47,13 +47,13 @@ func NewCombiner() *Combiner {
 }
 
 // Consume the given trace and destructively combines its contents.
-func (c *Combiner) Consume(tr *deeppb.Trace) (spanCount int) {
+func (c *Combiner) Consume(tr *tempopb.Trace) (spanCount int) {
 	return c.ConsumeWithFinal(tr, false)
 }
 
 // ConsumeWithFinal consumes the trace, but allows for performance savings when
 // it is known that this is the last expected input trace.
-func (c *Combiner) ConsumeWithFinal(tr *deeppb.Trace, final bool) (spanCount int) {
+func (c *Combiner) ConsumeWithFinal(tr *tempopb.Trace, final bool) (spanCount int) {
 	if tr == nil {
 		return
 	}
@@ -125,7 +125,7 @@ func (c *Combiner) ConsumeWithFinal(tr *deeppb.Trace, final bool) (spanCount int
 }
 
 // Result returns the final trace and span count.
-func (c *Combiner) Result() (*deeppb.Trace, int) {
+func (c *Combiner) Result() (*tempopb.Trace, int) {
 	spanCount := -1
 
 	if c.result != nil && c.combined {

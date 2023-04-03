@@ -1,7 +1,7 @@
 package search
 
 import (
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/traceql"
 )
 
@@ -28,17 +28,17 @@ func GetVirtualTagValues(tagName string) []string {
 	return nil
 }
 
-func GetVirtualTagValuesV2(tagName string) []deeppb.TagValue {
+func GetVirtualTagValuesV2(tagName string) []tempopb.TagValue {
 
 	switch tagName {
 	case traceql.IntrinsicStatus.String():
-		return []deeppb.TagValue{
+		return []tempopb.TagValue{
 			{Type: "keyword", Value: traceql.StatusOk.String()},
 			{Type: "keyword", Value: traceql.StatusError.String()},
 			{Type: "keyword", Value: traceql.StatusUnset.String()},
 		}
 	case traceql.IntrinsicKind.String():
-		return []deeppb.TagValue{
+		return []tempopb.TagValue{
 			{Type: "keyword", Value: traceql.KindClient.String()},
 			{Type: "keyword", Value: traceql.KindServer.String()},
 			{Type: "keyword", Value: traceql.KindProducer.String()},
@@ -54,7 +54,7 @@ func GetVirtualTagValuesV2(tagName string) []deeppb.TagValue {
 // CombineSearchResults overlays the incoming search result with the existing result. This is required
 // for the following reason:  a trace may be present in multiple blocks, or in partial segments
 // in live traces.  The results should reflect elements of all segments.
-func CombineSearchResults(existing *deeppb.TraceSearchMetadata, incoming *deeppb.TraceSearchMetadata) {
+func CombineSearchResults(existing *tempopb.TraceSearchMetadata, incoming *tempopb.TraceSearchMetadata) {
 	if existing.TraceID == "" {
 		existing.TraceID = incoming.TraceID
 	}

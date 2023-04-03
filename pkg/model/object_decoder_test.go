@@ -1,20 +1,20 @@
 package model
 
 import (
+	"github.com/golang/protobuf/proto"
 	"math/rand"
 	"testing"
 
-	"github.com/gogo/protobuf/proto"
-	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/model/decoder"
 	"github.com/intergral/deep/pkg/model/trace"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/util/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestObjectDecoderMarshalUnmarshal(t *testing.T) {
-	empty := &deeppb.Trace{}
+	empty := &tempopb.Trace{}
 
 	for _, e := range AllEncodings {
 		t.Run(e, func(t *testing.T) {
@@ -50,9 +50,9 @@ func TestCombines(t *testing.T) {
 	trace.SortTrace(t2)
 
 	// split t2 into 3 traces
-	t2a := &deeppb.Trace{}
-	t2b := &deeppb.Trace{}
-	t2c := &deeppb.Trace{}
+	t2a := &tempopb.Trace{}
+	t2b := &tempopb.Trace{}
+	t2c := &tempopb.Trace{}
 	for _, b := range t2.Batches {
 		switch rand.Int() % 3 {
 		case 0:
@@ -68,7 +68,7 @@ func TestCombines(t *testing.T) {
 		tests := []struct {
 			name          string
 			traces        [][]byte
-			expected      *deeppb.Trace
+			expected      *tempopb.Trace
 			expectedStart uint32
 			expectedEnd   uint32
 			expectError   bool

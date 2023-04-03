@@ -17,10 +17,10 @@ import (
 	"github.com/grafana/dskit/multierror"
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/model/trace"
 	"github.com/intergral/deep/pkg/parquetquery"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/traceql"
 	"github.com/intergral/deep/pkg/warnings"
 	"github.com/pkg/errors"
@@ -490,8 +490,8 @@ func (b *walBlock) Clear() error {
 	return errs.Err()
 }
 
-func (b *walBlock) FindTraceByID(ctx context.Context, id common.ID, _ common.SearchOptions) (*deeppb.Trace, error) {
-	trs := make([]*deeppb.Trace, 0)
+func (b *walBlock) FindTraceByID(ctx context.Context, id common.ID, _ common.SearchOptions) (*tempopb.Trace, error) {
+	trs := make([]*tempopb.Trace, 0)
 
 	for _, page := range b.flushed {
 		if rowNumber, ok := page.ids.Get(id); ok {
@@ -532,9 +532,9 @@ func (b *walBlock) FindTraceByID(ctx context.Context, id common.ID, _ common.Sea
 	return tr, nil
 }
 
-func (b *walBlock) Search(ctx context.Context, req *deeppb.SearchRequest, opts common.SearchOptions) (*deeppb.SearchResponse, error) {
-	results := &deeppb.SearchResponse{
-		Metrics: &deeppb.SearchMetrics{
+func (b *walBlock) Search(ctx context.Context, req *tempopb.SearchRequest, opts common.SearchOptions) (*tempopb.SearchResponse, error) {
+	results := &tempopb.SearchResponse{
+		Metrics: &tempopb.SearchMetrics{
 			InspectedBlocks: 1,
 		},
 	}
@@ -764,7 +764,7 @@ func newCommonIterator(iter *MultiBlockIterator[parquet.Row], schema *parquet.Sc
 	}
 }
 
-func (i *commonIterator) Next(ctx context.Context) (common.ID, *deeppb.Trace, error) {
+func (i *commonIterator) Next(ctx context.Context) (common.ID, *tempopb.Trace, error) {
 	id, row, err := i.iter.Next(ctx)
 	if err != nil && err != io.EOF {
 		return nil, nil, err

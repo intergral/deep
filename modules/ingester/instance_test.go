@@ -14,10 +14,10 @@ import (
 	"github.com/weaveworks/common/user"
 
 	"github.com/intergral/deep/modules/overrides"
-	"github.com/intergral/deep/pkg/deeppb"
-	v1_trace "github.com/intergral/deep/pkg/deeppb/trace/v1"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/model/trace"
+	"github.com/intergral/deep/pkg/tempopb"
+	v1_trace "github.com/intergral/deep/pkg/tempopb/trace/v1"
 	"github.com/intergral/deep/pkg/util/test"
 )
 
@@ -122,9 +122,9 @@ func TestInstanceFind(t *testing.T) {
 
 // pushTracesToInstance makes and pushes numTraces in the ingester instance,
 // returns traces and trace ids
-func pushTracesToInstance(t *testing.T, i *instance, numTraces int) ([]*deeppb.Trace, [][]byte) {
+func pushTracesToInstance(t *testing.T, i *instance, numTraces int) ([]*tempopb.Trace, [][]byte) {
 	var ids [][]byte
-	var traces []*deeppb.Trace
+	var traces []*tempopb.Trace
 
 	for j := 0; j < numTraces; j++ {
 		id := make([]byte, 16)
@@ -146,7 +146,7 @@ func pushTracesToInstance(t *testing.T, i *instance, numTraces int) ([]*deeppb.T
 	return traces, ids
 }
 
-func queryAll(t *testing.T, i *instance, ids [][]byte, traces []*deeppb.Trace) {
+func queryAll(t *testing.T, i *instance, ids [][]byte, traces []*tempopb.Trace) {
 	for j, id := range ids {
 		trace, err := i.FindTraceByID(context.Background(), id)
 		require.NoError(t, err)
@@ -220,7 +220,7 @@ func TestInstanceLimits(t *testing.T) {
 	ingester.limiter = limiter
 
 	type push struct {
-		req          *deeppb.PushBytesRequest
+		req          *tempopb.PushBytesRequest
 		expectsError bool
 	}
 
@@ -544,7 +544,7 @@ func TestSortByteSlices(t *testing.T) {
 	numTraces := 100
 
 	// create first trace
-	traceBytes := &deeppb.TraceBytes{
+	traceBytes := &tempopb.TraceBytes{
 		Traces: make([][]byte, numTraces),
 	}
 	for i := range traceBytes.Traces {
@@ -554,7 +554,7 @@ func TestSortByteSlices(t *testing.T) {
 	}
 
 	// dupe
-	traceBytes2 := &deeppb.TraceBytes{
+	traceBytes2 := &tempopb.TraceBytes{
 		Traces: make([][]byte, numTraces),
 	}
 	for i := range traceBytes.Traces {
@@ -687,7 +687,7 @@ func benchmarkInstanceSearch(b testing.TB) {
 	}
 }
 
-func makeRequest(traceID []byte) *deeppb.PushBytesRequest {
+func makeRequest(traceID []byte) *tempopb.PushBytesRequest {
 	const spans = 10
 
 	traceID = test.ValidTraceID(traceID)
@@ -695,7 +695,7 @@ func makeRequest(traceID []byte) *deeppb.PushBytesRequest {
 }
 
 // Note that this fn will generate a request with size **close to** maxBytes
-func makeRequestWithByteLimit(maxBytes int, traceID []byte) *deeppb.PushBytesRequest {
+func makeRequestWithByteLimit(maxBytes int, traceID []byte) *tempopb.PushBytesRequest {
 	traceID = test.ValidTraceID(traceID)
 	batch := test.MakeBatch(1, traceID)
 
@@ -706,19 +706,19 @@ func makeRequestWithByteLimit(maxBytes int, traceID []byte) *deeppb.PushBytesReq
 	return makePushBytesRequest(traceID, batch)
 }
 
-func makePushBytesRequest(traceID []byte, batch *v1_trace.ResourceSpans) *deeppb.PushBytesRequest {
-	trace := &deeppb.Trace{Batches: []*v1_trace.ResourceSpans{batch}}
+func makePushBytesRequest(traceID []byte, batch *v1_trace.ResourceSpans) *tempopb.PushBytesRequest {
+	trace := &tempopb.Trace{Batches: []*v1_trace.ResourceSpans{batch}}
 
 	buffer, err := model.MustNewSegmentDecoder(model.CurrentEncoding).PrepareForWrite(trace, 0, 0)
 	if err != nil {
 		panic(err)
 	}
 
-	return &deeppb.PushBytesRequest{
-		Ids: []deeppb.PreallocBytes{{
+	return &tempopb.PushBytesRequest{
+		Ids: []tempopb.PreallocBytes{{
 			Slice: traceID,
 		}},
-		Traces: []deeppb.PreallocBytes{{
+		Traces: []tempopb.PreallocBytes{{
 			Slice: buffer,
 		}},
 	}

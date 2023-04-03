@@ -12,8 +12,8 @@ import (
 	"github.com/weaveworks/common/user"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/intergral/deep/pkg/deeppb"
-	v1common "github.com/intergral/deep/pkg/deeppb/common/v1"
+	"github.com/intergral/deep/pkg/tempopb"
+	v1common "github.com/intergral/deep/pkg/tempopb/common/v1"
 )
 
 var (
@@ -191,13 +191,13 @@ func (t *TraceInfo) generateRandomLogs() []*thrift.Log {
 	return logs
 }
 
-func (t *TraceInfo) ConstructTraceFromEpoch() (*deeppb.Trace, error) {
-	trace := &deeppb.Trace{}
+func (t *TraceInfo) ConstructTraceFromEpoch() (*tempopb.Trace, error) {
+	trace := &tempopb.Trace{}
 
 	// Create a new trace from our timestamp to ensure a fresh rand.Rand is used for consistency.
 	info := NewTraceInfo(t.timestamp, t.deepOrgID)
 
-	addBatches := func(t *TraceInfo, trace *deeppb.Trace) error {
+	addBatches := func(t *TraceInfo, trace *tempopb.Trace) error {
 		for i := int64(0); i < t.generateRandomInt(1, maxBatchesPerWrite); i++ {
 			batch := t.makeThriftBatch(t.traceIDHigh, t.traceIDLow)
 			internalTrace, err := jaegerTrans.ThriftToTraces(batch)
@@ -209,7 +209,7 @@ func (t *TraceInfo) ConstructTraceFromEpoch() (*deeppb.Trace, error) {
 				return err
 			}
 
-			t := deeppb.Trace{}
+			t := tempopb.Trace{}
 			err = t.Unmarshal(conv)
 			if err != nil {
 				return err
@@ -251,7 +251,7 @@ func (t *TraceInfo) ConstructTraceFromEpoch() (*deeppb.Trace, error) {
 	return trace, nil
 }
 
-func RandomAttrFromTrace(t *deeppb.Trace) *v1common.KeyValue {
+func RandomAttrFromTrace(t *tempopb.Trace) *v1common.KeyValue {
 	r := newRand(time.Now())
 
 	if len(t.Batches) == 0 {

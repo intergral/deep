@@ -17,8 +17,8 @@ import (
 	"github.com/golang/protobuf/proto" //nolint:all //deprecated
 	"github.com/intergral/deep/modules/querier"
 	"github.com/intergral/deep/pkg/api"
-	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/model/trace"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/opentracing/opentracing-go"
 	"github.com/weaveworks/common/user"
 )
@@ -80,7 +80,7 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 	var overallError error
 	var totalFailedBlocks uint32
 	combiner := trace.NewCombiner()
-	combiner.Consume(&deeppb.Trace{}) // The query path returns a non-nil result even if no inputs (which is different than other paths which return nil for no inputs)
+	combiner.Consume(&tempopb.Trace{}) // The query path returns a non-nil result even if no inputs (which is different than other paths which return nil for no inputs)
 	statusCode := http.StatusNotFound
 	statusMsg := "trace not found"
 
@@ -130,8 +130,8 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 
 			// marshal into a trace to combine.
 			// todo: better define responsibilities between middleware. the parent middleware in frontend.go actually sets the header
-			//  which forces the body here to be a proto encoded deeppb.Trace{}
-			traceResp := &deeppb.TraceByIDResponse{}
+			//  which forces the body here to be a proto encoded tempopb.Trace{}
+			traceResp := &tempopb.TraceByIDResponse{}
 			err = proto.Unmarshal(buff, traceResp)
 			if err != nil {
 				_ = level.Error(s.logger).Log("msg", "error unmarshalling response", "url", innerR.RequestURI, "err", err, "body", string(buff))
@@ -185,9 +185,9 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 		}, nil
 	}
 
-	buff, err := proto.Marshal(&deeppb.TraceByIDResponse{
+	buff, err := proto.Marshal(&tempopb.TraceByIDResponse{
 		Trace: overallTrace,
-		Metrics: &deeppb.TraceByIDMetrics{
+		Metrics: &tempopb.TraceByIDMetrics{
 			FailedBlocks: totalFailedBlocks,
 		},
 	})

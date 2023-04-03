@@ -40,7 +40,7 @@ func (cfg *RingConfig) RegisterFlagsAndApplyDefaults(prefix string, f *flag.Flag
 		os.Exit(1)
 	}
 	cfg.InstanceID = hostname
-	cfg.InstanceInterfaceNames = []string{"eth0", "en0"}
+	cfg.InstanceInterfaceNames = []string{"eth0", "en0", "enp0s3"}
 }
 
 func (cfg *RingConfig) ToRingConfig() ring.Config {

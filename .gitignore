@@ -10,3 +10,4 @@
 /pkg/traceql/y.output
 private-key.key
 /vendor
+/pkg/.patched-proto

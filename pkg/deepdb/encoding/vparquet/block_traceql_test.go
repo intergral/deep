@@ -15,9 +15,9 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/backend/local"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	"github.com/intergral/deep/pkg/deeppb"
-	v1_common "github.com/intergral/deep/pkg/deeppb/common/v1"
-	v1 "github.com/intergral/deep/pkg/deeppb/trace/v1"
+	"github.com/intergral/deep/pkg/tempopb"
+	v1_common "github.com/intergral/deep/pkg/tempopb/common/v1"
+	v1 "github.com/intergral/deep/pkg/tempopb/trace/v1"
 	"github.com/intergral/deep/pkg/traceql"
 	"github.com/intergral/deep/pkg/util/test"
 )
@@ -330,7 +330,7 @@ func fullyPopulatedTestTrace(id common.ID) *Trace {
 	fltPtr := func(f float64) *float64 { return &f }
 	boolPtr := func(b bool) *bool { return &b }
 
-	links := deeppb.LinkSlice{
+	links := tempopb.LinkSlice{
 		Links: []*v1.Span_Link{
 			{
 				TraceId:                []byte{0x01},

@@ -3,7 +3,7 @@ package model
 import (
 	"bytes"
 	"fmt"
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/tempopb"
 
 	"github.com/intergral/deep/pkg/model/trace"
 	"github.com/pkg/errors"
@@ -52,7 +52,7 @@ func (o objectCombiner) Combine(dataEncoding string, objs ...[]byte) ([]byte, bo
 // CombineForRead is a convenience method used for combining while reading a trace. Due its
 // use of PrepareForRead() it is a costly method and should not be called during any write
 // or compaction operations.
-func CombineForRead(obj []byte, dataEncoding string, t *deeppb.Trace) (*deeppb.Trace, error) {
+func CombineForRead(obj []byte, dataEncoding string, t *tempopb.Trace) (*tempopb.Trace, error) {
 	decoder, err := NewObjectDecoder(dataEncoding)
 	if err != nil {
 		return nil, fmt.Errorf("error getting decoder: %w", err)

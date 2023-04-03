@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/tempopb"
 	"math/rand"
 	"testing"
 
@@ -19,9 +19,9 @@ func TestCombine(t *testing.T) {
 	trace.SortTrace(t2)
 
 	// split t2 into two traces
-	t2a := &deeppb.Trace{}
-	t2b := &deeppb.Trace{}
-	t2c := &deeppb.Trace{}
+	t2a := &tempopb.Trace{}
+	t2b := &tempopb.Trace{}
+	t2c := &tempopb.Trace{}
 	for _, b := range t2.Batches {
 		switch rand.Int() % 3 {
 		case 0:
@@ -36,7 +36,7 @@ func TestCombine(t *testing.T) {
 	tests := []struct {
 		name           string
 		traces         [][]byte
-		expected       *deeppb.Trace
+		expected       *tempopb.Trace
 		expectError    bool
 		expectCombined bool
 	}{
@@ -101,11 +101,11 @@ func TestCombine(t *testing.T) {
 	}
 }
 
-func mustMarshalToObject(trace *deeppb.Trace, encoding string) []byte {
+func mustMarshalToObject(trace *tempopb.Trace, encoding string) []byte {
 	return mustMarshalToObjectWithRange(trace, encoding, 0, 0)
 }
 
-func mustMarshalToObjectWithRange(trace *deeppb.Trace, encoding string, start, end uint32) []byte {
+func mustMarshalToObjectWithRange(trace *tempopb.Trace, encoding string, start, end uint32) []byte {
 	b := MustNewSegmentDecoder(encoding)
 	batch, err := b.PrepareForWrite(trace, start, end)
 	if err != nil {

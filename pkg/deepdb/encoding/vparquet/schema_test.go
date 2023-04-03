@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/intergral/deep/pkg/deeppb"
-	v1 "github.com/intergral/deep/pkg/deeppb/common/v1"
-	v1_resource "github.com/intergral/deep/pkg/deeppb/resource/v1"
-	v1_trace "github.com/intergral/deep/pkg/deeppb/trace/v1"
+	"github.com/intergral/deep/pkg/tempopb"
+	v1 "github.com/intergral/deep/pkg/tempopb/common/v1"
+	v1_resource "github.com/intergral/deep/pkg/tempopb/resource/v1"
+	v1_trace "github.com/intergral/deep/pkg/tempopb/trace/v1"
 	"github.com/intergral/deep/pkg/util/test"
 )
 
@@ -37,7 +37,7 @@ func TestProtoToParquetEmptyTrace(t *testing.T) {
 		ResourceSpans: nil,
 	}
 
-	got := traceToParquet(nil, &deeppb.Trace{}, nil)
+	got := traceToParquet(nil, &tempopb.Trace{}, nil)
 	require.Equal(t, want, got)
 }
 
@@ -57,7 +57,7 @@ func TestProtoParquetRando(t *testing.T) {
 func TestFieldsAreCleared(t *testing.T) {
 	traceID := []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
 	complexTrace := parquetTraceToTempopbTrace(fullyPopulatedTestTrace(traceID))
-	simpleTrace := &deeppb.Trace{
+	simpleTrace := &tempopb.Trace{
 		Batches: []*v1_trace.ResourceSpans{
 			{
 				Resource: &v1_resource.Resource{

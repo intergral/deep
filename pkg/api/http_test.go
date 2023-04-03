@@ -2,7 +2,7 @@ package api
 
 import (
 	"fmt"
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/tempopb"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -24,11 +24,11 @@ func TestQuerierParseSearchRequest(t *testing.T) {
 		name     string
 		urlQuery string
 		err      string
-		expected *deeppb.SearchRequest
+		expected *tempopb.SearchRequest
 	}{
 		{
 			name: "empty query",
-			expected: &deeppb.SearchRequest{
+			expected: &tempopb.SearchRequest{
 				Tags:  map[string]string{},
 				Limit: defaultLimit,
 			},
@@ -36,7 +36,7 @@ func TestQuerierParseSearchRequest(t *testing.T) {
 		{
 			name:     "limit set",
 			urlQuery: "limit=10",
-			expected: &deeppb.SearchRequest{
+			expected: &tempopb.SearchRequest{
 				Tags:  map[string]string{},
 				Limit: 10,
 			},
@@ -59,7 +59,7 @@ func TestQuerierParseSearchRequest(t *testing.T) {
 		{
 			name:     "minDuration and maxDuration",
 			urlQuery: "minDuration=10s&maxDuration=20s",
-			expected: &deeppb.SearchRequest{
+			expected: &tempopb.SearchRequest{
 				Tags:          map[string]string{},
 				MinDurationMs: 10000,
 				MaxDurationMs: 20000,
@@ -84,7 +84,7 @@ func TestQuerierParseSearchRequest(t *testing.T) {
 		{
 			name:     "traceql query",
 			urlQuery: "q=" + url.QueryEscape(`{ .foo="bar" }`),
-			expected: &deeppb.SearchRequest{
+			expected: &tempopb.SearchRequest{
 				Query: `{ .foo="bar" }`,
 				Tags:  map[string]string{},
 				Limit: defaultLimit,
@@ -103,7 +103,7 @@ func TestQuerierParseSearchRequest(t *testing.T) {
 		{
 			name:     "tags and limit",
 			urlQuery: "tags=" + url.QueryEscape("limit=five") + "&limit=5",
-			expected: &deeppb.SearchRequest{
+			expected: &tempopb.SearchRequest{
 				Tags: map[string]string{
 					"limit": "five",
 				},
@@ -118,7 +118,7 @@ func TestQuerierParseSearchRequest(t *testing.T) {
 		{
 			name:     "top-level tags with conflicting query parameter tags",
 			urlQuery: "service.name=bar&tags=" + url.QueryEscape("service.name=foo"),
-			expected: &deeppb.SearchRequest{
+			expected: &tempopb.SearchRequest{
 				Tags: map[string]string{
 					"service.name": "foo",
 				},
@@ -128,7 +128,7 @@ func TestQuerierParseSearchRequest(t *testing.T) {
 		{
 			name:     "start and end both set",
 			urlQuery: "tags=" + url.QueryEscape("service.name=foo") + "&start=10&end=20",
-			expected: &deeppb.SearchRequest{
+			expected: &tempopb.SearchRequest{
 				Tags: map[string]string{
 					"service.name": "foo",
 				},
@@ -145,7 +145,7 @@ func TestQuerierParseSearchRequest(t *testing.T) {
 		{
 			name:     "top-level tags",
 			urlQuery: "service.name=bar",
-			expected: &deeppb.SearchRequest{
+			expected: &tempopb.SearchRequest{
 				Tags: map[string]string{
 					"service.name": "bar",
 				},
@@ -155,7 +155,7 @@ func TestQuerierParseSearchRequest(t *testing.T) {
 		{
 			name:     "top-level tags with range specified are ignored",
 			urlQuery: "service.name=bar&start=10&end=20",
-			expected: &deeppb.SearchRequest{
+			expected: &tempopb.SearchRequest{
 				Tags:  map[string]string{},
 				Start: 10,
 				End:   20,
@@ -236,7 +236,7 @@ func TestQuerierParseSearchRequestTagsError(t *testing.T) {
 func TestParseSearchBlockRequest(t *testing.T) {
 	tests := []struct {
 		url           string
-		expected      *deeppb.SearchBlockRequest
+		expected      *tempopb.SearchBlockRequest
 		expectedError string
 	}{
 		{
@@ -289,8 +289,8 @@ func TestParseSearchBlockRequest(t *testing.T) {
 		},
 		{
 			url: "/?tags=foo%3Dbar&start=10&end=20&startPage=0&pagesToSearch=10&blockID=b92ec614-3fd7-4299-b6db-f657e7025a9b&encoding=s2&footerSize=2000&indexPageSize=10&totalRecords=11&dataEncoding=v1&version=v2&size=1000",
-			expected: &deeppb.SearchBlockRequest{
-				SearchReq: &deeppb.SearchRequest{
+			expected: &tempopb.SearchBlockRequest{
+				SearchReq: &tempopb.SearchRequest{
 					Tags: map[string]string{
 						"foo": "bar",
 					},
@@ -327,12 +327,12 @@ func TestParseSearchBlockRequest(t *testing.T) {
 
 func TestBuildSearchBlockRequest(t *testing.T) {
 	tests := []struct {
-		req     *deeppb.SearchBlockRequest
+		req     *tempopb.SearchBlockRequest
 		httpReq *http.Request
 		query   string
 	}{
 		{
-			req: &deeppb.SearchBlockRequest{
+			req: &tempopb.SearchBlockRequest{
 				StartPage:     0,
 				PagesToSearch: 10,
 				BlockID:       "b92ec614-3fd7-4299-b6db-f657e7025a9b",
@@ -347,7 +347,7 @@ func TestBuildSearchBlockRequest(t *testing.T) {
 			query: "?blockID=b92ec614-3fd7-4299-b6db-f657e7025a9b&dataEncoding=v1&encoding=s2&footerSize=2000&indexPageSize=10&pagesToSearch=10&size=1000&startPage=0&totalRecords=11&version=v2",
 		},
 		{
-			req: &deeppb.SearchBlockRequest{
+			req: &tempopb.SearchBlockRequest{
 				StartPage:     0,
 				PagesToSearch: 10,
 				BlockID:       "b92ec614-3fd7-4299-b6db-f657e7025a9b",
@@ -363,8 +363,8 @@ func TestBuildSearchBlockRequest(t *testing.T) {
 			query:   "/test/path?blockID=b92ec614-3fd7-4299-b6db-f657e7025a9b&dataEncoding=v1&encoding=s2&footerSize=2000&indexPageSize=10&pagesToSearch=10&size=1000&startPage=0&totalRecords=11&version=v2",
 		},
 		{
-			req: &deeppb.SearchBlockRequest{
-				SearchReq: &deeppb.SearchRequest{
+			req: &tempopb.SearchBlockRequest{
+				SearchReq: &tempopb.SearchRequest{
 					Tags: map[string]string{
 						"foo": "bar",
 					},
@@ -467,12 +467,12 @@ func TestValidateAndSanitizeRequest(t *testing.T) {
 
 func TestBuildSearchRequest(t *testing.T) {
 	tests := []struct {
-		req     *deeppb.SearchRequest
+		req     *tempopb.SearchRequest
 		httpReq *http.Request
 		query   string
 	}{
 		{
-			req: &deeppb.SearchRequest{
+			req: &tempopb.SearchRequest{
 				Tags: map[string]string{
 					"foo": "bar",
 				},
@@ -485,7 +485,7 @@ func TestBuildSearchRequest(t *testing.T) {
 			query: "?end=20&limit=50&maxDuration=40ms&minDuration=30ms&start=10&tags=foo%3Dbar",
 		},
 		{
-			req: &deeppb.SearchRequest{
+			req: &tempopb.SearchRequest{
 				Tags: map[string]string{
 					"foo": "bar",
 				},
@@ -497,7 +497,7 @@ func TestBuildSearchRequest(t *testing.T) {
 			query: "?end=20&limit=50&maxDuration=30ms&start=10&tags=foo%3Dbar",
 		},
 		{
-			req: &deeppb.SearchRequest{
+			req: &tempopb.SearchRequest{
 				Tags: map[string]string{
 					"foo": "bar",
 				},
@@ -509,7 +509,7 @@ func TestBuildSearchRequest(t *testing.T) {
 			query: "?end=20&limit=50&minDuration=30ms&start=10&tags=foo%3Dbar",
 		},
 		{
-			req: &deeppb.SearchRequest{
+			req: &tempopb.SearchRequest{
 				Tags: map[string]string{
 					"foo": "bar",
 				},
@@ -521,7 +521,7 @@ func TestBuildSearchRequest(t *testing.T) {
 			query: "?end=20&maxDuration=40ms&minDuration=30ms&start=10&tags=foo%3Dbar",
 		},
 		{
-			req: &deeppb.SearchRequest{
+			req: &tempopb.SearchRequest{
 				Tags:          map[string]string{},
 				Start:         10,
 				End:           20,

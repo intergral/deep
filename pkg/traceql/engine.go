@@ -8,8 +8,8 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 
-	"github.com/intergral/deep/pkg/deeppb"
-	common_v1 "github.com/intergral/deep/pkg/deeppb/common/v1"
+	"github.com/intergral/deep/pkg/tempopb"
+	common_v1 "github.com/intergral/deep/pkg/tempopb/common/v1"
 	"github.com/intergral/deep/pkg/util"
 )
 
@@ -23,7 +23,7 @@ func NewEngine() *Engine {
 	}
 }
 
-func (e *Engine) Execute(ctx context.Context, searchReq *deeppb.SearchRequest, spanSetFetcher SpansetFetcher) (*deeppb.SearchResponse, error) {
+func (e *Engine) Execute(ctx context.Context, searchReq *tempopb.SearchRequest, spanSetFetcher SpansetFetcher) (*tempopb.SearchResponse, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "traceql.Engine.Execute")
 	defer span.Finish()
 
@@ -72,10 +72,10 @@ func (e *Engine) Execute(ctx context.Context, searchReq *deeppb.SearchRequest, s
 	iterator := fetchSpansResponse.Results
 	defer iterator.Close()
 
-	res := &deeppb.SearchResponse{
+	res := &tempopb.SearchResponse{
 		Traces: nil,
 		// TODO capture and update metrics
-		Metrics: &deeppb.SearchMetrics{},
+		Metrics: &tempopb.SearchMetrics{},
 	}
 	for {
 		spanset, err := iterator.Next(ctx)
@@ -99,7 +99,7 @@ func (e *Engine) Execute(ctx context.Context, searchReq *deeppb.SearchRequest, s
 	return res, nil
 }
 
-func (e *Engine) parseQuery(searchReq *deeppb.SearchRequest) (*RootExpr, error) {
+func (e *Engine) parseQuery(searchReq *tempopb.SearchRequest) (*RootExpr, error) {
 	r, err := Parse(searchReq.Query)
 	if err != nil {
 		return nil, err
@@ -109,7 +109,7 @@ func (e *Engine) parseQuery(searchReq *deeppb.SearchRequest) (*RootExpr, error) 
 
 // createFetchSpansRequest will flatten the SpansetFilter in simple conditions the storage layer
 // can work with.
-func (e *Engine) createFetchSpansRequest(searchReq *deeppb.SearchRequest, pipeline Pipeline) FetchSpansRequest {
+func (e *Engine) createFetchSpansRequest(searchReq *tempopb.SearchRequest, pipeline Pipeline) FetchSpansRequest {
 	// TODO handle SearchRequest.MinDurationMs and MaxDurationMs, this refers to the trace level duration which is not the same as the intrinsic duration
 
 	req := FetchSpansRequest{
@@ -123,20 +123,20 @@ func (e *Engine) createFetchSpansRequest(searchReq *deeppb.SearchRequest, pipeli
 	return req
 }
 
-func (e *Engine) asTraceSearchMetadata(spanset *Spanset) *deeppb.TraceSearchMetadata {
-	metadata := &deeppb.TraceSearchMetadata{
+func (e *Engine) asTraceSearchMetadata(spanset *Spanset) *tempopb.TraceSearchMetadata {
+	metadata := &tempopb.TraceSearchMetadata{
 		TraceID:           util.TraceIDToHexString(spanset.TraceID),
 		RootServiceName:   spanset.RootServiceName,
 		RootTraceName:     spanset.RootSpanName,
 		StartTimeUnixNano: spanset.StartTimeUnixNanos,
 		DurationMs:        uint32(spanset.DurationNanos / 1_000_000),
-		SpanSet: &deeppb.SpanSet{
+		SpanSet: &tempopb.SpanSet{
 			Matched: uint32(len(spanset.Spans)),
 		},
 	}
 
 	for _, span := range spanset.Spans {
-		deeppbSpan := &deeppb.Span{
+		tempopbSpan := &tempopb.Span{
 			SpanID:            util.SpanIDToHexString(span.ID()),
 			StartTimeUnixNano: span.StartTimeUnixNanos(),
 			DurationNanos:     span.EndtimeUnixNanos() - span.StartTimeUnixNanos(),
@@ -146,7 +146,7 @@ func (e *Engine) asTraceSearchMetadata(spanset *Spanset) *deeppb.TraceSearchMeta
 		atts := span.Attributes()
 
 		if name, ok := atts[NewIntrinsic(IntrinsicName)]; ok {
-			deeppbSpan.Name = name.S
+			tempopbSpan.Name = name.S
 		}
 
 		for attribute, static := range atts {
@@ -161,10 +161,10 @@ func (e *Engine) asTraceSearchMetadata(spanset *Spanset) *deeppb.TraceSearchMeta
 				Value: staticAnyValue,
 			}
 
-			deeppbSpan.Attributes = append(deeppbSpan.Attributes, keyValue)
+			tempopbSpan.Attributes = append(tempopbSpan.Attributes, keyValue)
 		}
 
-		metadata.SpanSet.Spans = append(metadata.SpanSet.Spans, deeppbSpan)
+		metadata.SpanSet.Spans = append(metadata.SpanSet.Spans, tempopbSpan)
 	}
 
 	return metadata

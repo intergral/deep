@@ -287,7 +287,7 @@ func (r *rowPool) Put(row parquet.Row) {
 }
 
 // estimateProtoSizeFromParquetRow estimates the byte-length of the corresponding
-// trace in deeppb.Trace format. This method is unreasonably effective.
+// trace in tempopb.Trace format. This method is unreasonably effective.
 // Testing on real blocks shows 90-98% accuracy.
 func estimateProtoSizeFromParquetRow(row parquet.Row) (size int) {
 	for _, v := range row {

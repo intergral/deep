@@ -17,9 +17,9 @@ import (
 
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/model/decoder"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/traceql"
 	"github.com/intergral/deep/pkg/warnings"
 )
@@ -222,7 +222,7 @@ func (a *walBlock) Clear() error {
 }
 
 // Find implements common.Finder
-func (a *walBlock) FindTraceByID(ctx context.Context, id common.ID, opts common.SearchOptions) (*deeppb.Trace, error) {
+func (a *walBlock) FindTraceByID(ctx context.Context, id common.ID, opts common.SearchOptions) (*tempopb.Trace, error) {
 	span, _ := opentracing.StartSpanFromContext(ctx, "v2WalBlock.FindTraceByID")
 	defer span.Finish()
 
@@ -262,7 +262,7 @@ func (a *walBlock) FindTraceByID(ctx context.Context, id common.ID, opts common.
 }
 
 // Search implements common.Searcher
-func (a *walBlock) Search(ctx context.Context, req *deeppb.SearchRequest, opts common.SearchOptions) (*deeppb.SearchResponse, error) {
+func (a *walBlock) Search(ctx context.Context, req *tempopb.SearchRequest, opts common.SearchOptions) (*tempopb.SearchResponse, error) {
 	return nil, common.ErrUnsupported
 }
 

@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/tempopb"
 	"go.uber.org/atomic"
 )
 
@@ -13,7 +13,7 @@ import (
 // channel that is easy to consume, signaling workers to quit early as needed, and collecting
 // metrics.
 type Results struct {
-	resultsCh chan *deeppb.TraceSearchMetadata
+	resultsCh chan *tempopb.TraceSearchMetadata
 	doneCh    chan struct{}
 	quit      atomic.Bool
 	error     atomic.Error
@@ -28,7 +28,7 @@ type Results struct {
 
 func NewResults() *Results {
 	return &Results{
-		resultsCh: make(chan *deeppb.TraceSearchMetadata),
+		resultsCh: make(chan *tempopb.TraceSearchMetadata),
 		doneCh:    make(chan struct{}),
 	}
 }
@@ -37,7 +37,7 @@ func NewResults() *Results {
 // search results, i.e. the initiator of the search.  This function blocks until there
 // is buffer space in the results channel or if the task should stop searching because the
 // receiver went away or the given context is done. In this case true is returned.
-func (sr *Results) AddResult(ctx context.Context, r *deeppb.TraceSearchMetadata) (quit bool) {
+func (sr *Results) AddResult(ctx context.Context, r *tempopb.TraceSearchMetadata) (quit bool) {
 	if sr.quit.Load() {
 		return true
 	}
@@ -77,7 +77,7 @@ func (sr *Results) Quit() bool {
 // Results returns the results channel. Channel is closed when the search is complete.
 // Can be iterated by range like:
 // for res := range sr.Results()
-func (sr *Results) Results() <-chan *deeppb.TraceSearchMetadata {
+func (sr *Results) Results() <-chan *tempopb.TraceSearchMetadata {
 	return sr.resultsCh
 }
 

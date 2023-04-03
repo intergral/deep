@@ -2,7 +2,6 @@ package util
 
 import (
 	v1_common "github.com/intergral/deep/pkg/deeppb/common/v1"
-	v1 "github.com/intergral/deep/pkg/deeppb/trace/v1"
 	semconv "go.opentelemetry.io/collector/semconv/v1.9.0"
 	"strconv"
 )
@@ -22,10 +21,10 @@ func FindAttributeValue(key string, attributes ...[]*v1_common.KeyValue) (string
 	return "", false
 }
 
-func GetSpanMultiplier(ratioKey string, span *v1.Span) float64 {
+func GetSpanMultiplier(ratioKey string, attributes []*v1_common.KeyValue) float64 {
 	spanMultiplier := 1.0
 	if ratioKey != "" {
-		for _, kv := range span.Attributes {
+		for _, kv := range attributes {
 			if kv.Key == ratioKey {
 				v := kv.Value.GetDoubleValue()
 				if v > 0 {

@@ -2,7 +2,7 @@ package distributor
 
 import (
 	"context"
-	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
+	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"sync"
 	"time"
 
@@ -35,12 +35,12 @@ var (
 	}, []string{"tenant"})
 )
 
-type forwardFunc func(ctx context.Context, tenantID string, keys []uint32, traces []*rebatchedTrace) error
+type forwardFunc func(ctx context.Context, tenantID string, keys []uint32, snapshot *tp.Snapshot) error
 
 type request struct {
 	tenantID string
 	keys     []uint32
-	traces   []*rebatchedTrace
+	snapshot *tp.Snapshot
 }
 
 // generatorForwarder queues up traces to be sent to the metrics-generators
@@ -74,24 +74,6 @@ func newGeneratorForwarder(logger log.Logger, fn forwardFunc, o *overrides.Overr
 	rf.Service = services.NewIdleService(rf.start, rf.stop)
 
 	return rf
-}
-
-// SendTraces queues up traces to be sent to the metrics-generators
-func (f *generatorForwarder) SendTraces(ctx context.Context, tenantID string, keys []uint32, traces []*rebatchedTrace) {
-	select {
-	case <-f.shutdown:
-		return
-	default:
-	}
-
-	q := f.getOrCreateQueue(tenantID)
-	err := q.Push(ctx, &request{tenantID: tenantID, keys: keys, traces: traces})
-	if err != nil {
-		_ = level.Error(f.logger).Log("msg", "failed to push traces to queue", "tenant", tenantID, "err", err)
-		metricForwarderPushesFailures.WithLabelValues(tenantID).Inc()
-	}
-
-	metricForwarderPushes.WithLabelValues(tenantID).Inc()
 }
 
 // getQueueConfig returns queueSize and workerCount for the given tenant
@@ -218,7 +200,7 @@ func (f *generatorForwarder) stop(_ error) error {
 }
 
 func (f *generatorForwarder) processFunc(ctx context.Context, data *request) {
-	if err := f.forwardFunc(ctx, data.tenantID, data.keys, data.traces); err != nil {
+	if err := f.forwardFunc(ctx, data.tenantID, data.keys, data.snapshot); err != nil {
 		_ = level.Warn(f.logger).Log("msg", "failed to forward request to metrics generator", "err", err)
 	}
 }
@@ -239,6 +221,20 @@ func (f *generatorForwarder) createQueueAndStartWorkers(tenantID string, size, w
 	return q
 }
 
-func (f *generatorForwarder) SendSnapshot(ctx context.Context, id string, keys []uint32, snapshot *tp.Snapshot) {
+// SendSnapshot queues up snapshots to be sent to the metrics-generators
+func (f *generatorForwarder) SendSnapshot(ctx context.Context, tenantID string, keys []uint32, snapshot *tp.Snapshot) {
+	select {
+	case <-f.shutdown:
+		return
+	default:
+	}
 
+	q := f.getOrCreateQueue(tenantID)
+	err := q.Push(ctx, &request{tenantID: tenantID, keys: keys, snapshot: snapshot})
+	if err != nil {
+		_ = level.Error(f.logger).Log("msg", "failed to push snapshot to queue", "tenant", tenantID, "err", err)
+		metricForwarderPushesFailures.WithLabelValues(tenantID).Inc()
+	}
+
+	metricForwarderPushes.WithLabelValues(tenantID).Inc()
 }

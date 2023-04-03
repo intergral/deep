@@ -25,7 +25,7 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/blocklist"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/traceql"
 )
 
@@ -39,7 +39,7 @@ type mockReader struct {
 	metas []*backend.BlockMeta
 }
 
-func (m *mockReader) Find(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) ([]*deeppb.Trace, []error, error) {
+func (m *mockReader) Find(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) ([]*tempopb.Trace, []error, error) {
 	return nil, nil, nil
 }
 
@@ -47,7 +47,7 @@ func (m *mockReader) BlockMetas(tenantID string) []*backend.BlockMeta {
 	return m.metas
 }
 
-func (m *mockReader) Search(ctx context.Context, meta *backend.BlockMeta, req *deeppb.SearchRequest, opts common.SearchOptions) (*deeppb.SearchResponse, error) {
+func (m *mockReader) Search(ctx context.Context, meta *backend.BlockMeta, req *tempopb.SearchRequest, opts common.SearchOptions) (*tempopb.SearchResponse, error) {
 	return nil, nil
 }
 
@@ -363,12 +363,12 @@ func TestSearchSharderRoundTrip(t *testing.T) {
 		name             string
 		status1          int
 		status2          int
-		response1        *deeppb.SearchResponse
-		response2        *deeppb.SearchResponse
+		response1        *tempopb.SearchResponse
+		response2        *tempopb.SearchResponse
 		err1             error
 		err2             error
 		expectedStatus   int
-		expectedResponse *deeppb.SearchResponse
+		expectedResponse *tempopb.SearchResponse
 		expectedError    error
 	}{
 		{
@@ -376,9 +376,9 @@ func TestSearchSharderRoundTrip(t *testing.T) {
 			status1:        200,
 			status2:        200,
 			expectedStatus: 200,
-			response1:      &deeppb.SearchResponse{Metrics: &deeppb.SearchMetrics{}},
-			response2:      &deeppb.SearchResponse{Metrics: &deeppb.SearchMetrics{}},
-			expectedResponse: &deeppb.SearchResponse{Metrics: &deeppb.SearchMetrics{
+			response1:      &tempopb.SearchResponse{Metrics: &tempopb.SearchMetrics{}},
+			response2:      &tempopb.SearchResponse{Metrics: &tempopb.SearchMetrics{}},
+			expectedResponse: &tempopb.SearchResponse{Metrics: &tempopb.SearchMetrics{
 				InspectedBlocks: 1,
 				TotalBlockBytes: defaultTargetBytesPerRequest * 2,
 			}},
@@ -387,13 +387,13 @@ func TestSearchSharderRoundTrip(t *testing.T) {
 			name:           "404+200",
 			status1:        404,
 			status2:        200,
-			response2:      &deeppb.SearchResponse{Metrics: &deeppb.SearchMetrics{}},
+			response2:      &tempopb.SearchResponse{Metrics: &tempopb.SearchMetrics{}},
 			expectedStatus: 500,
 		},
 		{
 			name:           "200+400",
 			status1:        200,
-			response1:      &deeppb.SearchResponse{Metrics: &deeppb.SearchMetrics{}},
+			response1:      &tempopb.SearchResponse{Metrics: &tempopb.SearchMetrics{}},
 			status2:        400,
 			expectedStatus: 500,
 		},
@@ -413,27 +413,27 @@ func TestSearchSharderRoundTrip(t *testing.T) {
 			name:           "500+200",
 			status1:        500,
 			status2:        200,
-			response2:      &deeppb.SearchResponse{Metrics: &deeppb.SearchMetrics{}},
+			response2:      &tempopb.SearchResponse{Metrics: &tempopb.SearchMetrics{}},
 			expectedStatus: 500,
 		},
 		{
 			name:           "200+500",
 			status1:        200,
-			response1:      &deeppb.SearchResponse{Metrics: &deeppb.SearchMetrics{}},
+			response1:      &tempopb.SearchResponse{Metrics: &tempopb.SearchMetrics{}},
 			status2:        500,
 			expectedStatus: 500,
 		},
 		{
 			name:    "200+200",
 			status1: 200,
-			response1: &deeppb.SearchResponse{
-				Traces: []*deeppb.TraceSearchMetadata{
+			response1: &tempopb.SearchResponse{
+				Traces: []*tempopb.TraceSearchMetadata{
 					{
 						TraceID:           "1234",
 						StartTimeUnixNano: 1,
 					},
 				},
-				Metrics: &deeppb.SearchMetrics{
+				Metrics: &tempopb.SearchMetrics{
 					InspectedTraces: 1,
 					InspectedBlocks: 2,
 					InspectedBytes:  3,
@@ -441,14 +441,14 @@ func TestSearchSharderRoundTrip(t *testing.T) {
 					SkippedTraces:   9,
 				}},
 			status2: 200,
-			response2: &deeppb.SearchResponse{
-				Traces: []*deeppb.TraceSearchMetadata{
+			response2: &tempopb.SearchResponse{
+				Traces: []*tempopb.TraceSearchMetadata{
 					{
 						TraceID:           "5678",
 						StartTimeUnixNano: 0,
 					},
 				},
-				Metrics: &deeppb.SearchMetrics{
+				Metrics: &tempopb.SearchMetrics{
 					InspectedTraces: 5,
 					InspectedBlocks: 6,
 					InspectedBytes:  7,
@@ -456,8 +456,8 @@ func TestSearchSharderRoundTrip(t *testing.T) {
 					SkippedTraces:   10,
 				}},
 			expectedStatus: 200,
-			expectedResponse: &deeppb.SearchResponse{
-				Traces: []*deeppb.TraceSearchMetadata{
+			expectedResponse: &tempopb.SearchResponse{
+				Traces: []*tempopb.TraceSearchMetadata{
 					{
 						TraceID:           "1234",
 						StartTimeUnixNano: 1,
@@ -467,7 +467,7 @@ func TestSearchSharderRoundTrip(t *testing.T) {
 						StartTimeUnixNano: 0,
 					},
 				},
-				Metrics: &deeppb.SearchMetrics{
+				Metrics: &tempopb.SearchMetrics{
 					InspectedTraces: 6,
 					InspectedBlocks: 1,
 					InspectedBytes:  10,
@@ -479,7 +479,7 @@ func TestSearchSharderRoundTrip(t *testing.T) {
 		{
 			name:          "200+err",
 			status1:       200,
-			response1:     &deeppb.SearchResponse{Metrics: &deeppb.SearchMetrics{}},
+			response1:     &tempopb.SearchResponse{Metrics: &tempopb.SearchMetrics{}},
 			err2:          errors.New("booo"),
 			expectedError: errors.New("booo"),
 		},
@@ -487,13 +487,13 @@ func TestSearchSharderRoundTrip(t *testing.T) {
 			name:          "err+200",
 			err1:          errors.New("booo"),
 			status2:       200,
-			response2:     &deeppb.SearchResponse{Metrics: &deeppb.SearchMetrics{}},
+			response2:     &tempopb.SearchResponse{Metrics: &tempopb.SearchMetrics{}},
 			expectedError: errors.New("booo"),
 		},
 		{
 			name:           "500+err",
 			status1:        500,
-			response1:      &deeppb.SearchResponse{Metrics: &deeppb.SearchMetrics{}},
+			response1:      &tempopb.SearchResponse{Metrics: &tempopb.SearchMetrics{}},
 			err2:           errors.New("booo"),
 			expectedStatus: 500,
 			expectedError:  errors.New("booo"),
@@ -502,7 +502,7 @@ func TestSearchSharderRoundTrip(t *testing.T) {
 			name:          "err+500",
 			err1:          errors.New("booo"),
 			status2:       500,
-			response2:     &deeppb.SearchResponse{Metrics: &deeppb.SearchMetrics{}},
+			response2:     &tempopb.SearchResponse{Metrics: &tempopb.SearchMetrics{}},
 			expectedError: errors.New("booo"),
 		},
 	}
@@ -510,7 +510,7 @@ func TestSearchSharderRoundTrip(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			next := RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
-				var response *deeppb.SearchResponse
+				var response *tempopb.SearchResponse
 				var statusCode int
 				var err error
 
@@ -575,7 +575,7 @@ func TestSearchSharderRoundTrip(t *testing.T) {
 				assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
 			}
 			if tc.expectedResponse != nil {
-				actualResp := &deeppb.SearchResponse{}
+				actualResp := &tempopb.SearchResponse{}
 				bytesResp, err := io.ReadAll(resp.Body)
 				require.NoError(t, err)
 				err = jsonpb.Unmarshal(bytes.NewReader(bytesResp), actualResp)

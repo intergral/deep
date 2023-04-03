@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto" //nolint:all //ProtoReflect
-	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/util/test"
 	"github.com/stretchr/testify/assert"
 )
@@ -27,7 +27,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, bytes.Equal(id, outID))
 
-	outReq := &deeppb.Trace{}
+	outReq := &tempopb.Trace{}
 	err = proto.Unmarshal(outObject, outReq)
 	assert.NoError(t, err)
 
@@ -41,7 +41,7 @@ func TestMarshalUnmarshalFromBuffer(t *testing.T) {
 	assert.NoError(t, err)
 
 	o := object{}
-	var reqs []*deeppb.Trace
+	var reqs []*tempopb.Trace
 	for i := 0; i < 10; i++ {
 		req := test.MakeTrace(10, id)
 		reqs = append(reqs, req)
@@ -61,7 +61,7 @@ func TestMarshalUnmarshalFromBuffer(t *testing.T) {
 		actualBuffer, outID, outObject, err = o.UnmarshalAndAdvanceBuffer(actualBuffer)
 		assert.NoError(t, err)
 
-		outReq := &deeppb.Trace{}
+		outReq := &tempopb.Trace{}
 		err = proto.Unmarshal(outObject, outReq)
 		assert.NoError(t, err)
 

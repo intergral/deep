@@ -6,8 +6,8 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/search"
+	"github.com/intergral/deep/pkg/tempopb"
 )
 
 // searchResponse is a thread safe struct used to aggregate the responses from all downstream
@@ -18,8 +18,8 @@ type searchResponse struct {
 	statusMsg  string
 	ctx        context.Context
 
-	resultsMap       map[string]*deeppb.TraceSearchMetadata
-	resultsMetrics   *deeppb.SearchMetrics
+	resultsMap       map[string]*tempopb.TraceSearchMetadata
+	resultsMetrics   *tempopb.SearchMetrics
 	cancelFunc       context.CancelFunc
 	finishedRequests int
 
@@ -33,9 +33,9 @@ func newSearchResponse(ctx context.Context, limit int, cancelFunc context.Cancel
 		statusCode:       http.StatusOK,
 		limit:            limit,
 		cancelFunc:       cancelFunc,
-		resultsMetrics:   &deeppb.SearchMetrics{},
+		resultsMetrics:   &tempopb.SearchMetrics{},
 		finishedRequests: 0,
-		resultsMap:       map[string]*deeppb.TraceSearchMetadata{},
+		resultsMap:       map[string]*tempopb.TraceSearchMetadata{},
 	}
 }
 
@@ -64,7 +64,7 @@ func (r *searchResponse) setError(err error) {
 	}
 }
 
-func (r *searchResponse) addResponse(res *deeppb.SearchResponse) {
+func (r *searchResponse) addResponse(res *tempopb.SearchResponse) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
@@ -124,11 +124,11 @@ func (r *searchResponse) internalShouldQuit() bool {
 	return false
 }
 
-func (r *searchResponse) result() *deeppb.SearchResponse {
+func (r *searchResponse) result() *tempopb.SearchResponse {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	res := &deeppb.SearchResponse{
+	res := &tempopb.SearchResponse{
 		Metrics: r.resultsMetrics,
 	}
 

@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	"github.com/intergral/deep/pkg/deeppb"
-	v1 "github.com/intergral/deep/pkg/deeppb/trace/v1"
 	deep_io "github.com/intergral/deep/pkg/io"
 	pq "github.com/intergral/deep/pkg/parquetquery"
+	"github.com/intergral/deep/pkg/tempopb"
+	v1 "github.com/intergral/deep/pkg/tempopb/trace/v1"
 	"github.com/intergral/deep/pkg/traceql"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/opentracing/opentracing-go"
@@ -100,7 +100,7 @@ func (b *backendBlock) openForSearch(ctx context.Context, opts common.SearchOpti
 	return pf, backendReaderAt, err
 }
 
-func (b *backendBlock) Search(ctx context.Context, req *deeppb.SearchRequest, opts common.SearchOptions) (_ *deeppb.SearchResponse, err error) {
+func (b *backendBlock) Search(ctx context.Context, req *tempopb.SearchRequest, opts common.SearchOptions) (_ *tempopb.SearchResponse, err error) {
 	span, derivedCtx := opentracing.StartSpanFromContext(ctx, "parquet.backendBlock.Search",
 		opentracing.Tags{
 			"blockID":   b.meta.BlockID,
@@ -130,7 +130,7 @@ func (b *backendBlock) Search(ctx context.Context, req *deeppb.SearchRequest, op
 	return results, nil
 }
 
-func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, pf *parquet.File, rgs []parquet.RowGroup) pq.Iterator {
+func makePipelineWithRowGroups(ctx context.Context, req *tempopb.SearchRequest, pf *parquet.File, rgs []parquet.RowGroup) pq.Iterator {
 	makeIter := makeIterFunc(ctx, rgs, pf)
 
 	// Wire up iterators
@@ -263,7 +263,7 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 	}
 }
 
-func searchParquetFile(ctx context.Context, pf *parquet.File, req *deeppb.SearchRequest, rgs []parquet.RowGroup) (*deeppb.SearchResponse, error) {
+func searchParquetFile(ctx context.Context, pf *parquet.File, req *tempopb.SearchRequest, rgs []parquet.RowGroup) (*tempopb.SearchResponse, error) {
 
 	// Search happens in 2 phases for an optimization.
 	// Phase 1 is iterate all columns involved in the request.
@@ -276,7 +276,7 @@ func searchParquetFile(ctx context.Context, pf *parquet.File, req *deeppb.Search
 		return nil, err
 	}
 	if len(matchingRows) == 0 {
-		return &deeppb.SearchResponse{Metrics: &deeppb.SearchMetrics{}}, nil
+		return &tempopb.SearchResponse{Metrics: &tempopb.SearchMetrics{}}, nil
 	}
 
 	// We have some results, now load the display columns
@@ -285,13 +285,13 @@ func searchParquetFile(ctx context.Context, pf *parquet.File, req *deeppb.Search
 		return nil, err
 	}
 
-	return &deeppb.SearchResponse{
+	return &tempopb.SearchResponse{
 		Traces:  results,
-		Metrics: &deeppb.SearchMetrics{},
+		Metrics: &tempopb.SearchMetrics{},
 	}, nil
 }
 
-func searchRaw(ctx context.Context, pf *parquet.File, req *deeppb.SearchRequest, rgs []parquet.RowGroup) ([]pq.RowNumber, error) {
+func searchRaw(ctx context.Context, pf *parquet.File, req *tempopb.SearchRequest, rgs []parquet.RowGroup) ([]pq.RowNumber, error) {
 	iter := makePipelineWithRowGroups(ctx, req, pf, rgs)
 	if iter == nil {
 		return nil, errors.New("make pipeline returned a nil iterator")
@@ -317,10 +317,10 @@ func searchRaw(ctx context.Context, pf *parquet.File, req *deeppb.SearchRequest,
 	return matchingRows, nil
 }
 
-func rawToResults(ctx context.Context, pf *parquet.File, rgs []parquet.RowGroup, rowNumbers []pq.RowNumber) ([]*deeppb.TraceSearchMetadata, error) {
+func rawToResults(ctx context.Context, pf *parquet.File, rgs []parquet.RowGroup, rowNumbers []pq.RowNumber) ([]*tempopb.TraceSearchMetadata, error) {
 	makeIter := makeIterFunc(ctx, rgs, pf)
 
-	results := []*deeppb.TraceSearchMetadata{}
+	results := []*tempopb.TraceSearchMetadata{}
 	iter2 := pq.NewJoinIterator(DefinitionLevelTrace, []pq.Iterator{
 		&rowNumberIterator{rowNumbers: rowNumbers},
 		makeIter("TraceID", nil, "TraceID"),
@@ -341,7 +341,7 @@ func rawToResults(ctx context.Context, pf *parquet.File, rgs []parquet.RowGroup,
 		}
 
 		matchMap := match.ToMap()
-		result := &deeppb.TraceSearchMetadata{
+		result := &tempopb.TraceSearchMetadata{
 			TraceID:           util.TraceIDToHexString(matchMap["TraceID"][0].Bytes()),
 			RootServiceName:   matchMap["RootServiceName"][0].String(),
 			RootTraceName:     matchMap["RootSpanName"][0].String(),

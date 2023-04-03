@@ -10,8 +10,8 @@ import (
 
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/model"
+	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/traceql"
 )
 
@@ -121,7 +121,7 @@ func (b *BackendBlock) BlockMeta() *backend.BlockMeta {
 	return b.meta
 }
 
-func (b *BackendBlock) FindTraceByID(ctx context.Context, id common.ID, _ common.SearchOptions) (*deeppb.Trace, error) {
+func (b *BackendBlock) FindTraceByID(ctx context.Context, id common.ID, _ common.SearchOptions) (*tempopb.Trace, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "BackendBlock.FindTraceByID")
 	defer span.Finish()
 
@@ -141,7 +141,7 @@ func (b *BackendBlock) FindTraceByID(ctx context.Context, id common.ID, _ common
 	return dec.PrepareForRead(obj)
 }
 
-func (b *BackendBlock) Search(ctx context.Context, req *deeppb.SearchRequest, opt common.SearchOptions) (resp *deeppb.SearchResponse, err error) {
+func (b *BackendBlock) Search(ctx context.Context, req *tempopb.SearchRequest, opt common.SearchOptions) (resp *tempopb.SearchResponse, err error) {
 	return nil, common.ErrUnsupported
 }
 

@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"sort"
 
-	"github.com/intergral/deep/pkg/deeppb"
-	v1 "github.com/intergral/deep/pkg/deeppb/trace/v1"
+	"github.com/intergral/deep/pkg/tempopb"
+	v1 "github.com/intergral/deep/pkg/tempopb/trace/v1"
 )
 
-// SortTrace sorts a *deeppb.Trace
-func SortTrace(t *deeppb.Trace) {
+// SortTrace sorts a *tempopb.Trace
+func SortTrace(t *tempopb.Trace) {
 	// Sort bottom up by span start times
 	for _, b := range t.Batches {
 		for _, ils := range b.ScopeSpans {

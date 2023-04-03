@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/intergral/deep/pkg/model/decoder"
 	"github.com/intergral/deep/pkg/util/test"
 	"github.com/stretchr/testify/require"
