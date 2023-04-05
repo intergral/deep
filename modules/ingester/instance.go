@@ -362,17 +362,17 @@ func (i *instance) ClearFlushedBlocks(completeBlockTimeout time.Duration) error 
 	return err
 }
 
-func (i *instance) FindTraceByID(ctx context.Context, id []byte) (*deep_tp.Snapshot, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "instance.FindTraceByID")
+func (i *instance) FindSnapshotByID(ctx context.Context, id []byte) (*deep_tp.Snapshot, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "instance.FindSnapshotByID")
 	defer span.Finish()
 
 	var err error
-	var completeTrace *deep_tp.Snapshot
+	var foundSnapshot *deep_tp.Snapshot
 
 	// live traces
 	i.snapshotMtx.Lock()
-	if liveTrace, ok := i.liveSnapshots[i.tokenForSnapshotID(id)]; ok {
-		completeTrace, err = model.MustNewSegmentDecoder(model.CurrentEncoding).PrepareForRead(liveTrace.bytes)
+	if liveSnapshot, ok := i.liveSnapshots[i.tokenForSnapshotID(id)]; ok {
+		foundSnapshot, err = model.MustNewSegmentDecoder(model.CurrentEncoding).PrepareForRead(liveSnapshot.bytes)
 		if err != nil {
 			i.snapshotMtx.Unlock()
 			return nil, fmt.Errorf("unable to unmarshal liveSnapshot: %w", err)
@@ -380,39 +380,47 @@ func (i *instance) FindTraceByID(ctx context.Context, id []byte) (*deep_tp.Snaps
 	}
 	i.snapshotMtx.Unlock()
 
+	if foundSnapshot != nil {
+		return foundSnapshot, nil
+	}
+
 	i.blocksMtx.RLock()
 	defer i.blocksMtx.RUnlock()
 
 	combiner := trace.NewCombiner()
-	combiner.Consume(completeTrace)
+	combiner.Consume(foundSnapshot)
 
 	// headBlock
-	tr, err := i.headBlock.FindTraceByID(ctx, id, common.DefaultSearchOptions())
+	tr, err := i.headBlock.FindSnapshotByID(ctx, id, common.DefaultSearchOptions())
 	if err != nil {
 		return nil, fmt.Errorf("headBlock.FindTraceByID failed: %w", err)
 	}
-	combiner.Consume(tr)
+	if tr != nil {
+		return tr, nil
+	}
 
 	// completingBlock
 	for _, c := range i.completingBlocks {
-		tr, err = c.FindTraceByID(ctx, id, common.DefaultSearchOptions())
+		tr, err = c.FindSnapshotByID(ctx, id, common.DefaultSearchOptions())
 		if err != nil {
 			return nil, fmt.Errorf("completingBlock.FindTraceByID failed: %w", err)
 		}
-		combiner.Consume(tr)
+		if tr != nil {
+			return tr, nil
+		}
 	}
 
 	// completeBlock
 	for _, c := range i.completeBlocks {
-		found, err := c.FindTraceByID(ctx, id, common.DefaultSearchOptions())
+		found, err := c.FindSnapshotByID(ctx, id, common.DefaultSearchOptions())
 		if err != nil {
 			return nil, fmt.Errorf("completeBlock.FindTraceByID failed: %w", err)
 		}
-		combiner.Consume(found)
+		if found != nil {
+			return found, nil
+		}
 	}
-
-	result, _ := combiner.Result()
-	return result, nil
+	return nil, nil
 }
 
 // AddCompletingBlock adds an AppendBlock directly to the slice of completing blocks.

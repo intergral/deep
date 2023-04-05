@@ -318,7 +318,7 @@ func estimateMarshalledSizeFromParquetRow(row parquet.Row) (size int) {
 // parquet row format and returns traceId.
 // It simply counts the number of values for span ID, which is always present.
 func countSpans(schema *parquet.Schema, row parquet.Row) (traceID string, spans int) {
-	traceIDColumn, found := schema.Lookup(TraceIDColumnName)
+	traceIDColumn, found := schema.Lookup(SnapshotIDColumnName)
 	if !found {
 		return "", 0
 	}

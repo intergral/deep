@@ -14,7 +14,7 @@ import (
 )
 
 type Finder interface {
-	FindTraceByID(ctx context.Context, id ID, opts SearchOptions) (*deep_tp.Snapshot, error)
+	FindSnapshotByID(ctx context.Context, id ID, opts SearchOptions) (*deep_tp.Snapshot, error)
 }
 
 type TagCallback func(t string)

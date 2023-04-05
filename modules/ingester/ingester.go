@@ -16,7 +16,6 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/backend/local"
 	"github.com/intergral/deep/pkg/flushqueues"
 	"github.com/intergral/deep/pkg/model"
-	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/util/log"
 	"github.com/intergral/deep/pkg/validation"
 	"github.com/opentracing/opentracing-go"
@@ -45,6 +44,7 @@ const (
 type Ingester struct {
 	services.Service
 	deeppb.UnimplementedIngesterServiceServer
+	deeppb.UnimplementedQuerierServiceServer
 
 	cfg Config
 
@@ -194,14 +194,13 @@ func (i *Ingester) PushBytes(ctx context.Context, req *deeppb.PushBytesRequest) 
 	return &deeppb.PushBytesResponse{}, nil
 }
 
-// FindTraceByID implements tempopb.Querier.f
-func (i *Ingester) FindTraceByID(ctx context.Context, req *tempopb.TraceByIDRequest) (*tempopb.TraceByIDResponse, error) {
-	if !validation.ValidSnapshotID(req.TraceID) {
-		return nil, fmt.Errorf("invalid trace id")
+func (i *Ingester) FindSnapshotByID(ctx context.Context, req *deeppb.SnapshotByIDRequest) (*deeppb.SnapshotByIDResponse, error) {
+	if !validation.ValidSnapshotID(req.Id) {
+		return nil, fmt.Errorf("invalid snapshot id")
 	}
 
 	// tracing instrumentation
-	span, ctx := opentracing.StartSpanFromContext(ctx, "Ingester.FindTraceByID")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Ingester.FindSnapshotByID")
 	defer span.Finish()
 
 	instanceID, err := user.ExtractOrgID(ctx)
@@ -210,18 +209,18 @@ func (i *Ingester) FindTraceByID(ctx context.Context, req *tempopb.TraceByIDRequ
 	}
 	inst, ok := i.getInstanceByID(instanceID)
 	if !ok || inst == nil {
-		return &tempopb.TraceByIDResponse{}, nil
+		return &deeppb.SnapshotByIDResponse{}, nil
 	}
 
-	trace, err := inst.FindTraceByID(ctx, req.TraceID)
+	snapshot, err := inst.FindSnapshotByID(ctx, req.Id)
 	if err != nil {
 		return nil, err
 	}
 
-	span.LogFields(ot_log.Bool("trace found", trace != nil))
+	span.LogFields(ot_log.Bool("snapshot found", snapshot != nil))
 
-	return &tempopb.TraceByIDResponse{
-		Trace: nil,
+	return &deeppb.SnapshotByIDResponse{
+		Snapshot: snapshot,
 	}, nil
 }
 

@@ -237,7 +237,7 @@ func (w *walBlockFlush) rowIterator() (*rowIterator, error) {
 
 	pf := file.parquetFile
 
-	idx, _ := parquetquery.GetColumnIndexByPath(pf, TraceIDColumnName)
+	idx, _ := parquetquery.GetColumnIndexByPath(pf, SnapshotIDColumnName)
 	r := parquet.NewReader(pf)
 	return newRowIterator(r, file, w.ids.EntriesSortedByID(), idx), nil
 }
@@ -465,7 +465,7 @@ func (b *walBlock) Clear() error {
 	return errs.Err()
 }
 
-func (b *walBlock) FindTraceByID(ctx context.Context, id common.ID, _ common.SearchOptions) (*deep_tp.Snapshot, error) {
+func (b *walBlock) FindSnapshotByID(ctx context.Context, id common.ID, _ common.SearchOptions) (*deep_tp.Snapshot, error) {
 	for _, page := range b.flushed {
 		if rowNumber, ok := page.ids.Get(id); ok {
 			file, err := page.file()

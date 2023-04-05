@@ -14,8 +14,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
-
-	"github.com/intergral/deep/pkg/tempopb"
 )
 
 // Config for an ingester client.
@@ -27,7 +25,7 @@ type Config struct {
 
 type Client struct {
 	deeppb.IngesterServiceClient
-	tempopb.QuerierClient
+	deeppb.QuerierServiceClient
 	grpc_health_v1.HealthClient
 	io.Closer
 }
@@ -60,7 +58,7 @@ func New(addr string, cfg Config) (*Client, error) {
 	}
 	return &Client{
 		IngesterServiceClient: deeppb.NewIngesterServiceClient(conn),
-		QuerierClient:         tempopb.NewQuerierClient(conn),
+		QuerierServiceClient:  deeppb.NewQuerierServiceClient(conn),
 		HealthClient:          grpc_health_v1.NewHealthClient(conn),
 		Closer:                conn,
 	}, nil

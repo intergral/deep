@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	URLParamTraceID = "traceID"
+	URLParamSnapshotID = "snapshotID"
+	URLParamTraceID    = "traceID"
 	// search
 	urlParamQuery       = "q"
 	urlParamTags        = "tags"
@@ -53,7 +54,7 @@ const (
 
 	PathPrefixQuerier = "/querier"
 
-	PathTraces          = "/api/traces/{traceID}"
+	PathTraces          = "/api/snapshots/{snapshotID}"
 	PathSearch          = "/api/search"
 	PathSearchTags      = "/api/search/tags"
 	PathSearchTagValues = "/api/search/tag/{tagName}/values"
@@ -71,6 +72,21 @@ const (
 
 	defaultLimit = 20
 )
+
+func ParseSnapshotID(r *http.Request) ([]byte, error) {
+	vars := mux.Vars(r)
+	traceID, ok := vars[URLParamSnapshotID]
+	if !ok {
+		return nil, fmt.Errorf("please provide a snapshotID")
+	}
+
+	byteID, err := util.HexStringToTraceID(traceID)
+	if err != nil {
+		return nil, err
+	}
+
+	return byteID, nil
+}
 
 func ParseTraceID(r *http.Request) ([]byte, error) {
 	vars := mux.Vars(r)

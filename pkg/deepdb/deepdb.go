@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"time"
 
 	gkLog "github.com/go-kit/log"
@@ -75,7 +76,8 @@ type Writer interface {
 type IterateObjectCallback func(id common.ID, obj []byte) bool
 
 type Reader interface {
-	Find(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) ([]*tempopb.Trace, []error, error)
+	FindSnapshot(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) (*deep_tp.Snapshot, []error, error)
+
 	Search(ctx context.Context, meta *backend.BlockMeta, req *tempopb.SearchRequest, opts common.SearchOptions) (*tempopb.SearchResponse, error)
 	Fetch(ctx context.Context, meta *backend.BlockMeta, req traceql.FetchSpansRequest, opts common.SearchOptions) (traceql.FetchSpansResponse, error)
 	BlockMetas(tenantID string) []*backend.BlockMeta
@@ -264,10 +266,10 @@ func (rw *readerWriter) BlockMetas(tenantID string) []*backend.BlockMeta {
 	return rw.blocklist.Metas(tenantID)
 }
 
-func (rw *readerWriter) Find(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) ([]*tempopb.Trace, []error, error) {
+func (rw *readerWriter) FindSnapshot(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) (*deep_tp.Snapshot, []error, error) {
 	// tracing instrumentation
 	logger := log.WithContext(ctx, log.Logger)
-	span, ctx := opentracing.StartSpanFromContext(ctx, "store.Find")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "store.FindSnapshot")
 	defer span.Finish()
 
 	blockStartUUID, err := uuid.Parse(blockStart)
@@ -316,7 +318,7 @@ func (rw *readerWriter) Find(ctx context.Context, tenantID string, id common.ID,
 	}
 
 	curTime := time.Now()
-	partialTraces, funcErrs, err := rw.pool.RunJobs(ctx, copiedBlocklist, func(ctx context.Context, payload interface{}) (interface{}, error) {
+	jobsResults, funcErrs, err := rw.pool.RunJobs(ctx, copiedBlocklist, func(ctx context.Context, payload interface{}) (interface{}, error) {
 		meta := payload.(*backend.BlockMeta)
 		r := rw.getReaderForBlock(meta, curTime)
 		block, err := encoding.OpenBlock(meta, r)
@@ -324,7 +326,7 @@ func (rw *readerWriter) Find(ctx context.Context, tenantID string, id common.ID,
 			return nil, errors.Wrap(err, fmt.Sprintf("error opening block for reading, blockID: %s", meta.BlockID.String()))
 		}
 
-		foundObject, err := block.FindTraceByID(ctx, id, opts)
+		foundObject, err := block.FindSnapshotByID(ctx, id, opts)
 		if err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("error finding trace by id, blockID: %s", meta.BlockID.String()))
 		}
@@ -333,9 +335,11 @@ func (rw *readerWriter) Find(ctx context.Context, tenantID string, id common.ID,
 		return foundObject, nil
 	})
 
-	partialTraceObjs := make([]*tempopb.Trace, len(partialTraces))
-	for i := range partialTraces {
-		partialTraceObjs[i] = partialTraces[i].(*tempopb.Trace)
+	snapshotObjects := make([]*deep_tp.Snapshot, len(jobsResults))
+	for i := range jobsResults {
+		if snapshotObjects[i] != nil {
+			snapshotObjects[i] = jobsResults[i].(*deep_tp.Snapshot)
+		}
 	}
 
 	span.SetTag("blockErrs", len(funcErrs))
@@ -344,7 +348,7 @@ func (rw *readerWriter) Find(ctx context.Context, tenantID string, id common.ID,
 	span.SetTag("compactedBlocks", len(compactedBlocklist))
 	span.SetTag("compactedBlocksSearched", compactedBlocksSearched)
 
-	return partialTraceObjs, funcErrs, err
+	return snapshotObjects[0], funcErrs, err
 }
 
 // Search the given block.  This method takes the pre-loaded block meta instead of a block ID, which

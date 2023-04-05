@@ -50,10 +50,10 @@ func newLocalBlock(ctx context.Context, existingBlock common.BackendBlock, l *lo
 	return c
 }
 
-func (c *localBlock) FindTraceByID(ctx context.Context, id common.ID, opts common.SearchOptions) (*deep_tp.Snapshot, error) {
+func (c *localBlock) FindSnapshotByID(ctx context.Context, id common.ID, opts common.SearchOptions) (*deep_tp.Snapshot, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "localBlock.FindTraceByID")
 	defer span.Finish()
-	return c.BackendBlock.FindTraceByID(ctx, id, opts)
+	return c.BackendBlock.FindSnapshotByID(ctx, id, opts)
 }
 
 // FlushedTime returns the time the block was flushed.  Will return 0

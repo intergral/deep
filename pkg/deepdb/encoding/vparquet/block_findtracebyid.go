@@ -24,7 +24,7 @@ const (
 	SearchNext     = -2
 	NotFound       = -3
 
-	TraceIDColumnName = "TraceID"
+	SnapshotIDColumnName = "Id"
 )
 
 func (b *backendBlock) checkBloom(ctx context.Context, id common.ID) (found bool, err error) {
@@ -53,8 +53,8 @@ func (b *backendBlock) checkBloom(ctx context.Context, id common.ID) (found bool
 	return filter.Test(id), nil
 }
 
-func (b *backendBlock) FindTraceByID(ctx context.Context, traceID common.ID, opts common.SearchOptions) (_ *deep_tp.Snapshot, err error) {
-	span, derivedCtx := opentracing.StartSpanFromContext(ctx, "parquet.backendBlock.FindTraceByID",
+func (b *backendBlock) FindSnapshotByID(ctx context.Context, traceID common.ID, opts common.SearchOptions) (_ *deep_tp.Snapshot, err error) {
+	span, derivedCtx := opentracing.StartSpanFromContext(ctx, "parquet.backendBlock.FindSnapshotByID",
 		opentracing.Tags{
 			"blockID":   b.meta.BlockID,
 			"tenantID":  b.meta.TenantID,
@@ -78,14 +78,14 @@ func (b *backendBlock) FindTraceByID(ctx context.Context, traceID common.ID, opt
 		span.SetTag("inspectedBytes", rr.TotalBytesRead.Load())
 	}()
 
-	return findTraceByID(derivedCtx, traceID, b.meta, pf)
+	return findSnapshotByID(derivedCtx, traceID, b.meta, pf)
 }
 
-func findTraceByID(ctx context.Context, traceID common.ID, meta *backend.BlockMeta, pf *parquet.File) (*deep_tp.Snapshot, error) {
-	// traceID column index
-	colIndex, _ := pq.GetColumnIndexByPath(pf, TraceIDColumnName)
+func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.BlockMeta, pf *parquet.File) (*deep_tp.Snapshot, error) {
+	// snapshotID column index
+	colIndex, _ := pq.GetColumnIndexByPath(pf, SnapshotIDColumnName)
 	if colIndex == -1 {
-		return nil, fmt.Errorf("unable to get index for column: %s", TraceIDColumnName)
+		return nil, fmt.Errorf("unable to get index for column: %s", SnapshotIDColumnName)
 	}
 
 	numRowGroups := len(pf.RowGroups())
@@ -120,7 +120,7 @@ func findTraceByID(ctx context.Context, traceID common.ID, meta *backend.BlockMe
 			return nil, err
 		}
 		if c < 1 {
-			return nil, fmt.Errorf("failed to read value from page: traceID: %s blockID:%v rowGroupIdx:%d", util.TraceIDToHexString(traceID), meta.BlockID, rgIdx)
+			return nil, fmt.Errorf("failed to read value from page: snapshotID: %s blockID:%v rowGroupIdx:%d", util.TraceIDToHexString(snapshotID), meta.BlockID, rgIdx)
 		}
 
 		min = buf[0].ByteArray()
@@ -134,7 +134,7 @@ func findTraceByID(ctx context.Context, traceID common.ID, meta *backend.BlockMe
 			return 0, err
 		}
 
-		if check := bytes.Compare(traceID, min); check <= 0 {
+		if check := bytes.Compare(snapshotID, min); check <= 0 {
 			// Trace is before or in this group
 			return check, nil
 		}
@@ -146,7 +146,7 @@ func findTraceByID(ctx context.Context, traceID common.ID, meta *backend.BlockMe
 
 		// This is actually the min of the next group, so check is exclusive not inclusive like min
 		// Except for the last group, it is inclusive
-		check := bytes.Compare(traceID, max)
+		check := bytes.Compare(snapshotID, max)
 		if check > 0 || (check == 0 && rgIdx < (numRowGroups-1)) {
 			// Trace is after this group
 			return 1, nil
@@ -166,7 +166,7 @@ func findTraceByID(ctx context.Context, traceID common.ID, meta *backend.BlockMe
 	}
 
 	// Now iterate the matching row group
-	iter := parquetquery.NewColumnIterator(ctx, pf.RowGroups()[rowGroup:rowGroup+1], colIndex, "", 1000, parquetquery.NewStringInPredicate([]string{string(traceID)}), "")
+	iter := parquetquery.NewColumnIterator(ctx, pf.RowGroups()[rowGroup:rowGroup+1], colIndex, "", 1000, parquetquery.NewStringInPredicate([]string{string(snapshotID)}), "")
 	defer iter.Close()
 
 	res, err := iter.Next()

@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/intergral/deep/pkg/deeppb"
+	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"io"
 	"math/rand"
 	"net/http"
@@ -35,7 +37,6 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	"github.com/intergral/deep/pkg/hedgedmetrics"
-	"github.com/intergral/deep/pkg/model/trace"
 	"github.com/intergral/deep/pkg/search"
 	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/traceql"
@@ -182,29 +183,26 @@ func (q *Querier) stopping(_ error) error {
 	return nil
 }
 
-// FindTraceByID implements tempopb.Querier.
-func (q *Querier) FindTraceByID(ctx context.Context, req *tempopb.TraceByIDRequest, timeStart int64, timeEnd int64) (*tempopb.TraceByIDResponse, error) {
-	if !validation.ValidSnapshotID(req.TraceID) {
-		return nil, fmt.Errorf("invalid trace id")
+func (q *Querier) FindSnapshotByID(ctx context.Context, req *deeppb.SnapshotByIDRequest, timeStart int64, timeEnd int64) (*deeppb.SnapshotByIDResponse, error) {
+	if !validation.ValidSnapshotID(req.Id) {
+		return nil, fmt.Errorf("invalid snapshot id")
 	}
 
 	userID, err := user.ExtractOrgID(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Querier.FindTraceByID")
+		return nil, errors.Wrap(err, "error extracting org id in Querier.FindSnapshotByID")
 	}
 
-	span, ctx := opentracing.StartSpanFromContext(ctx, "Querier.FindTraceByID")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Querier.FindSnapshotByID")
 	defer span.Finish()
 
 	span.SetTag("queryMode", req.QueryMode)
-
-	combiner := trace.NewCombiner()
-	var spanCount, spanCountTotal, traceCountTotal int
+	var foundSnap *deep_tp.Snapshot = nil
 	if req.QueryMode == QueryModeIngesters || req.QueryMode == QueryModeAll {
 		var replicationSet ring.ReplicationSet
 		var err error
 		if q.cfg.QueryRelevantIngesters {
-			traceKey := util.TokenFor(userID, req.TraceID)
+			traceKey := util.TokenFor(userID, req.Id)
 			replicationSet, err = q.ring.Get(traceKey, ring.Read, nil, nil, nil)
 		} else {
 			replicationSet, err = q.ring.GetReplicationSetForOperation(ring.Read)
@@ -215,39 +213,41 @@ func (q *Querier) FindTraceByID(ctx context.Context, req *tempopb.TraceByIDReque
 
 		span.LogFields(ot_log.String("msg", "searching ingesters"))
 
-		forEachFunc := func(funcCtx context.Context, client tempopb.QuerierClient) (interface{}, error) {
-			return client.FindTraceByID(funcCtx, req)
+		forEachFunc := func(funcCtx context.Context, client deeppb.QuerierServiceClient) (interface{}, error) {
+			return client.FindSnapshotByID(funcCtx, req)
 		}
 
 		// get responses from all ingesters in parallel
 		responses, err := q.forGivenIngesters(ctx, replicationSet, forEachFunc)
 		if err != nil {
-			return nil, errors.Wrap(err, "error querying ingesters in Querier.FindTraceByID")
+			return nil, errors.Wrap(err, "error querying ingesters in Querier.FindSnapshotByID")
 		}
 
 		found := false
 		for _, r := range responses {
-			t := r.response.(*tempopb.TraceByIDResponse).Trace
+			t := r.response.(*deeppb.SnapshotByIDResponse).Snapshot
 			if t != nil {
-				//spanCount = combiner.Consume(t)
-				spanCount = combiner.Consume(nil)
-				spanCountTotal += spanCount
-				traceCountTotal++
 				found = true
+				foundSnap = t
 			}
 		}
-		span.LogFields(ot_log.String("msg", "done searching ingesters"),
-			ot_log.Bool("found", found),
-			ot_log.Int("combinedSpans", spanCountTotal),
-			ot_log.Int("combinedTraces", traceCountTotal))
+		span.LogFields(ot_log.String("msg", "done searching ingesters"), ot_log.Bool("found", found))
 	}
 
+	if foundSnap != nil {
+		return &deeppb.SnapshotByIDResponse{
+			Snapshot: foundSnap,
+			Metrics: &deeppb.SnapshotByIDMetrics{
+				FailedBlocks: 0,
+			},
+		}, nil
+	}
 	var failedBlocks int
 	if req.QueryMode == QueryModeBlocks || req.QueryMode == QueryModeAll {
 		span.LogFields(ot_log.String("msg", "searching store"))
 		span.LogFields(ot_log.String("timeStart", fmt.Sprint(timeStart)))
 		span.LogFields(ot_log.String("timeEnd", fmt.Sprint(timeEnd)))
-		partialTraces, blockErrs, err := q.store.Find(ctx, userID, req.TraceID, req.BlockStart, req.BlockEnd, timeStart, timeEnd)
+		findResults, blockErrs, err := q.store.FindSnapshot(ctx, userID, req.Id, req.BlockStart, req.BlockEnd, timeStart, timeEnd)
 		if err != nil {
 			retErr := errors.Wrap(err, "error querying store in Querier.FindTraceByID")
 			ot_log.Error(retErr)
@@ -265,26 +265,18 @@ func (q *Querier) FindTraceByID(ctx context.Context, req *tempopb.TraceByIDReque
 
 		span.LogFields(
 			ot_log.String("msg", "done searching store"),
-			ot_log.Int("foundPartialTraces", len(partialTraces)))
+			ot_log.Bool("foundSnapshots", findResults != nil))
 
-		//for _, partialTrace := range partialTraces {
-		//	//combiner.Consume(partialTrace)
-		//	combiner.Consume(nil)
-		//}
+		if findResults != nil {
+			return &deeppb.SnapshotByIDResponse{Snapshot: findResults, Metrics: &deeppb.SnapshotByIDMetrics{FailedBlocks: uint32(failedBlocks)}}, nil
+		}
 	}
 
-	//completeTrace, _ := combiner.Result()
-
-	return &tempopb.TraceByIDResponse{
-		Trace: nil,
-		Metrics: &tempopb.TraceByIDMetrics{
-			FailedBlocks: uint32(failedBlocks),
-		},
-	}, nil
+	return nil, nil
 }
 
 // forGivenIngesters runs f, in parallel, for given ingesters
-func (q *Querier) forGivenIngesters(ctx context.Context, replicationSet ring.ReplicationSet, f func(ctx context.Context, client tempopb.QuerierClient) (interface{}, error)) ([]responseFromIngesters, error) {
+func (q *Querier) forGivenIngesters(ctx context.Context, replicationSet ring.ReplicationSet, f func(ctx context.Context, client deeppb.QuerierServiceClient) (interface{}, error)) ([]responseFromIngesters, error) {
 	if ctx.Err() != nil {
 		_ = level.Debug(log.Logger).Log("foreGivenIngesters context error", "ctx.Err()", ctx.Err().Error())
 		return nil, ctx.Err()
@@ -304,7 +296,7 @@ func (q *Querier) forGivenIngesters(ctx context.Context, replicationSet ring.Rep
 			return nil, errors.Wrap(err, fmt.Sprintf("failed to get client for %s", ingester.Addr))
 		}
 
-		resp, err := f(funcCtx, client.(tempopb.QuerierClient))
+		resp, err := f(funcCtx, client.(deeppb.QuerierServiceClient))
 		if err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("failed to execute f() for %s", ingester.Addr))
 		}
@@ -325,149 +317,150 @@ func (q *Querier) forGivenIngesters(ctx context.Context, replicationSet ring.Rep
 	return responses, nil
 }
 
-func (q *Querier) SearchRecent(ctx context.Context, req *tempopb.SearchRequest) (*tempopb.SearchResponse, error) {
-	_, err := user.ExtractOrgID(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Querier.Search")
-	}
-
-	replicationSet, err := q.ring.GetReplicationSetForOperation(ring.Read)
-	if err != nil {
-		return nil, errors.Wrap(err, "error finding ingesters in Querier.Search")
-	}
-
-	responses, err := q.forGivenIngesters(ctx, replicationSet, func(ctx context.Context, client tempopb.QuerierClient) (interface{}, error) {
-		return client.SearchRecent(ctx, req)
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "error querying ingesters in Querier.Search")
-	}
-
-	return q.postProcessIngesterSearchResults(req, responses), nil
-}
-
-func (q *Querier) SearchTags(ctx context.Context, req *tempopb.SearchTagsRequest) (*tempopb.SearchTagsResponse, error) {
-	userID, err := user.ExtractOrgID(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Querier.SearchTags")
-	}
-
-	limit := q.limits.MaxBytesPerTagValuesQuery(userID)
-	distinctValues := util.NewDistinctStringCollector(limit)
-
-	// Get results from all ingesters
-	replicationSet, err := q.ring.GetReplicationSetForOperation(ring.Read)
-	if err != nil {
-		return nil, errors.Wrap(err, "error finding ingesters in Querier.SearchTags")
-	}
-	lookupResults, err := q.forGivenIngesters(ctx, replicationSet, func(ctx context.Context, client tempopb.QuerierClient) (interface{}, error) {
-		return client.SearchTags(ctx, req)
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "error querying ingesters in Querier.SearchTags")
-	}
-	for _, resp := range lookupResults {
-		for _, res := range resp.response.(*tempopb.SearchTagsResponse).TagNames {
-			distinctValues.Collect(res)
-		}
-	}
-
-	if distinctValues.Exceeded() {
-		level.Warn(log.Logger).Log("msg", "size of tags in instance exceeded limit, reduce cardinality or size of tags", "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
-	}
-
-	resp := &tempopb.SearchTagsResponse{
-		TagNames: distinctValues.Strings(),
-	}
-
-	return resp, nil
-}
-
-func (q *Querier) SearchTagValues(ctx context.Context, req *tempopb.SearchTagValuesRequest) (*tempopb.SearchTagValuesResponse, error) {
-	userID, err := user.ExtractOrgID(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Querier.SearchTagValues")
-	}
-
-	limit := q.limits.MaxBytesPerTagValuesQuery(userID)
-	distinctValues := util.NewDistinctStringCollector(limit)
-
-	// Virtual tags values. Get these first.
-	for _, v := range search.GetVirtualTagValues(req.TagName) {
-		distinctValues.Collect(v)
-	}
-
-	// Get results from all ingesters
-	replicationSet, err := q.ring.GetReplicationSetForOperation(ring.Read)
-	if err != nil {
-		return nil, errors.Wrap(err, "error finding ingesters in Querier.SearchTagValues")
-	}
-	lookupResults, err := q.forGivenIngesters(ctx, replicationSet, func(ctx context.Context, client tempopb.QuerierClient) (interface{}, error) {
-		return client.SearchTagValues(ctx, req)
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "error querying ingesters in Querier.SearchTagValues")
-	}
-	for _, resp := range lookupResults {
-		for _, res := range resp.response.(*tempopb.SearchTagValuesResponse).TagValues {
-			distinctValues.Collect(res)
-		}
-	}
-
-	if distinctValues.Exceeded() {
-		level.Warn(log.Logger).Log("msg", "size of tag values in instance exceeded limit, reduce cardinality or size of tags", "tag", req.TagName, "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
-	}
-
-	resp := &tempopb.SearchTagValuesResponse{
-		TagValues: distinctValues.Strings(),
-	}
-
-	return resp, nil
-}
-
-func (q *Querier) SearchTagValuesV2(ctx context.Context, req *tempopb.SearchTagValuesRequest) (*tempopb.SearchTagValuesV2Response, error) {
-	userID, err := user.ExtractOrgID(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Querier.SearchTagValues")
-	}
-
-	limit := q.limits.MaxBytesPerTagValuesQuery(userID)
-	distinctValues := util.NewDistinctValueCollector(limit, func(v tempopb.TagValue) int { return len(v.Type) + len(v.Value) })
-
-	// Virtual tags values. Get these first.
-	for _, v := range search.GetVirtualTagValuesV2(req.TagName) {
-		distinctValues.Collect(v)
-	}
-
-	// with v2 search we can confidently bail if GetVirtualTagValuesV2 gives us any hits. this doesn't work
-	// in v1 search b/c intrinsic tags like "status" are conflated with attributes named "status"
-	if distinctValues.TotalDataSize() > 0 {
-		return valuesToV2Response(distinctValues), nil
-	}
-
-	// Get results from all ingesters
-	replicationSet, err := q.ring.GetReplicationSetForOperation(ring.Read)
-	if err != nil {
-		return nil, errors.Wrap(err, "error finding ingesters in Querier.SearchTagValues")
-	}
-	lookupResults, err := q.forGivenIngesters(ctx, replicationSet, func(ctx context.Context, client tempopb.QuerierClient) (interface{}, error) {
-		return client.SearchTagValuesV2(ctx, req)
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "error querying ingesters in Querier.SearchTagValues")
-	}
-	for _, resp := range lookupResults {
-		for _, res := range resp.response.(*tempopb.SearchTagValuesV2Response).TagValues {
-			distinctValues.Collect(*res)
-		}
-	}
-
-	if distinctValues.Exceeded() {
-		level.Warn(log.Logger).Log("msg", "size of tag values in instance exceeded limit, reduce cardinality or size of tags", "tag", req.TagName, "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
-	}
-
-	return valuesToV2Response(distinctValues), nil
-}
+//
+//func (q *Querier) SearchRecent(ctx context.Context, req *tempopb.SearchRequest) (*tempopb.SearchResponse, error) {
+//	_, err := user.ExtractOrgID(ctx)
+//	if err != nil {
+//		return nil, errors.Wrap(err, "error extracting org id in Querier.Search")
+//	}
+//
+//	replicationSet, err := q.ring.GetReplicationSetForOperation(ring.Read)
+//	if err != nil {
+//		return nil, errors.Wrap(err, "error finding ingesters in Querier.Search")
+//	}
+//
+//	responses, err := q.forGivenIngesters(ctx, replicationSet, func(ctx context.Context, client tempopb.QuerierClient) (interface{}, error) {
+//		return client.SearchRecent(ctx, req)
+//	})
+//	if err != nil {
+//		return nil, errors.Wrap(err, "error querying ingesters in Querier.Search")
+//	}
+//
+//	return q.postProcessIngesterSearchResults(req, responses), nil
+//}
+//
+//func (q *Querier) SearchTags(ctx context.Context, req *tempopb.SearchTagsRequest) (*tempopb.SearchTagsResponse, error) {
+//	userID, err := user.ExtractOrgID(ctx)
+//	if err != nil {
+//		return nil, errors.Wrap(err, "error extracting org id in Querier.SearchTags")
+//	}
+//
+//	limit := q.limits.MaxBytesPerTagValuesQuery(userID)
+//	distinctValues := util.NewDistinctStringCollector(limit)
+//
+//	// Get results from all ingesters
+//	replicationSet, err := q.ring.GetReplicationSetForOperation(ring.Read)
+//	if err != nil {
+//		return nil, errors.Wrap(err, "error finding ingesters in Querier.SearchTags")
+//	}
+//	lookupResults, err := q.forGivenIngesters(ctx, replicationSet, func(ctx context.Context, client tempopb.QuerierClient) (interface{}, error) {
+//		return client.SearchTags(ctx, req)
+//	})
+//	if err != nil {
+//		return nil, errors.Wrap(err, "error querying ingesters in Querier.SearchTags")
+//	}
+//	for _, resp := range lookupResults {
+//		for _, res := range resp.response.(*tempopb.SearchTagsResponse).TagNames {
+//			distinctValues.Collect(res)
+//		}
+//	}
+//
+//	if distinctValues.Exceeded() {
+//		level.Warn(log.Logger).Log("msg", "size of tags in instance exceeded limit, reduce cardinality or size of tags", "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
+//	}
+//
+//	resp := &tempopb.SearchTagsResponse{
+//		TagNames: distinctValues.Strings(),
+//	}
+//
+//	return resp, nil
+//}
+//
+//func (q *Querier) SearchTagValues(ctx context.Context, req *tempopb.SearchTagValuesRequest) (*tempopb.SearchTagValuesResponse, error) {
+//	userID, err := user.ExtractOrgID(ctx)
+//	if err != nil {
+//		return nil, errors.Wrap(err, "error extracting org id in Querier.SearchTagValues")
+//	}
+//
+//	limit := q.limits.MaxBytesPerTagValuesQuery(userID)
+//	distinctValues := util.NewDistinctStringCollector(limit)
+//
+//	// Virtual tags values. Get these first.
+//	for _, v := range search.GetVirtualTagValues(req.TagName) {
+//		distinctValues.Collect(v)
+//	}
+//
+//	// Get results from all ingesters
+//	replicationSet, err := q.ring.GetReplicationSetForOperation(ring.Read)
+//	if err != nil {
+//		return nil, errors.Wrap(err, "error finding ingesters in Querier.SearchTagValues")
+//	}
+//	lookupResults, err := q.forGivenIngesters(ctx, replicationSet, func(ctx context.Context, client tempopb.QuerierClient) (interface{}, error) {
+//		return client.SearchTagValues(ctx, req)
+//	})
+//	if err != nil {
+//		return nil, errors.Wrap(err, "error querying ingesters in Querier.SearchTagValues")
+//	}
+//	for _, resp := range lookupResults {
+//		for _, res := range resp.response.(*tempopb.SearchTagValuesResponse).TagValues {
+//			distinctValues.Collect(res)
+//		}
+//	}
+//
+//	if distinctValues.Exceeded() {
+//		level.Warn(log.Logger).Log("msg", "size of tag values in instance exceeded limit, reduce cardinality or size of tags", "tag", req.TagName, "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
+//	}
+//
+//	resp := &tempopb.SearchTagValuesResponse{
+//		TagValues: distinctValues.Strings(),
+//	}
+//
+//	return resp, nil
+//}
+//
+//func (q *Querier) SearchTagValuesV2(ctx context.Context, req *tempopb.SearchTagValuesRequest) (*tempopb.SearchTagValuesV2Response, error) {
+//	userID, err := user.ExtractOrgID(ctx)
+//	if err != nil {
+//		return nil, errors.Wrap(err, "error extracting org id in Querier.SearchTagValues")
+//	}
+//
+//	limit := q.limits.MaxBytesPerTagValuesQuery(userID)
+//	distinctValues := util.NewDistinctValueCollector(limit, func(v tempopb.TagValue) int { return len(v.Type) + len(v.Value) })
+//
+//	// Virtual tags values. Get these first.
+//	for _, v := range search.GetVirtualTagValuesV2(req.TagName) {
+//		distinctValues.Collect(v)
+//	}
+//
+//	// with v2 search we can confidently bail if GetVirtualTagValuesV2 gives us any hits. this doesn't work
+//	// in v1 search b/c intrinsic tags like "status" are conflated with attributes named "status"
+//	if distinctValues.TotalDataSize() > 0 {
+//		return valuesToV2Response(distinctValues), nil
+//	}
+//
+//	// Get results from all ingesters
+//	replicationSet, err := q.ring.GetReplicationSetForOperation(ring.Read)
+//	if err != nil {
+//		return nil, errors.Wrap(err, "error finding ingesters in Querier.SearchTagValues")
+//	}
+//	lookupResults, err := q.forGivenIngesters(ctx, replicationSet, func(ctx context.Context, client tempopb.QuerierClient) (interface{}, error) {
+//		return client.SearchTagValuesV2(ctx, req)
+//	})
+//	if err != nil {
+//		return nil, errors.Wrap(err, "error querying ingesters in Querier.SearchTagValues")
+//	}
+//	for _, resp := range lookupResults {
+//		for _, res := range resp.response.(*tempopb.SearchTagValuesV2Response).TagValues {
+//			distinctValues.Collect(*res)
+//		}
+//	}
+//
+//	if distinctValues.Exceeded() {
+//		level.Warn(log.Logger).Log("msg", "size of tag values in instance exceeded limit, reduce cardinality or size of tags", "tag", req.TagName, "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
+//	}
+//
+//	return valuesToV2Response(distinctValues), nil
+//}
 
 func valuesToV2Response(distinctValues *util.DistinctValueCollector[tempopb.TagValue]) *tempopb.SearchTagValuesV2Response {
 	resp := &tempopb.SearchTagValuesV2Response{}

@@ -6,6 +6,26 @@ package deeppb;
 option go_package = "github.com/intergral/deep/pkg/deeppb";
 
 
+service QuerierService {
+  rpc FindSnapshotByID(SnapshotByIDRequest) returns (SnapshotByIDResponse) {};
+}
+
+message SnapshotByIDRequest {
+  bytes id = 1;
+  string blockStart = 2;
+  string blockEnd = 3;
+  string queryMode = 5;
+}
+
+message SnapshotByIDResponse {
+  deeppb.tracepoint.v1.Snapshot snapshot = 1;
+  SnapshotByIDMetrics metrics = 2;
+}
+
+message SnapshotByIDMetrics {
+  uint32 failedBlocks = 1;
+}
+
 service MetricsGenerator {
   rpc PushSnapshot(PushSnapshotRequest) returns (PushSnapshotResponse) {};
 }
