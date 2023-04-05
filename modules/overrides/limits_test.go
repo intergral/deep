@@ -41,7 +41,7 @@ ingestion_burst_size_bytes: 100_000
 
 max_traces_per_user: 1000
 max_global_traces_per_user: 1000
-max_bytes_per_trace: 100_000
+max_bytes_per_snapshot: 100_000
 
 block_retention: 24h
 
@@ -61,7 +61,7 @@ max_search_duration: 5m
 
 	"max_traces_per_user": 1000,
 	"max_global_traces_per_user": 1000,
-	"max_bytes_per_trace": 100000,
+	"max_bytes_per_snapshot": 100000,
 
 	"block_retention": "24h",
 

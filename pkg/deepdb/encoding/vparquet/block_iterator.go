@@ -23,7 +23,7 @@ func (b *backendBlock) open(ctx context.Context) (*parquet.File, *parquet.Reader
 		return nil, nil, err
 	}
 
-	r := parquet.NewReader(pf, parquet.SchemaOf(&Trace{}))
+	r := parquet.NewReader(pf, parquet.SchemaOf(&Snapshot{}))
 	return pf, r, nil
 }
 

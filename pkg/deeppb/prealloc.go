@@ -36,8 +36,6 @@ func (r *PreallocBytes) Size() (n int) {
 }
 
 // ReuseByteSlices puts the byte slice back into bytePool for reuse.
-func ReuseByteSlices(buffs [][]byte) {
-	for _, b := range buffs {
-		bytePool.Put(b[:0])
-	}
+func ReuseByteSlices(buffs []byte) {
+	bytePool.Put(buffs[:0])
 }

@@ -8,7 +8,7 @@ import (
 )
 
 type TraceIterator interface {
-	NextTrace(context.Context) (common.ID, *Trace, error)
+	NextTrace(context.Context) (common.ID, *Snapshot, error)
 	Close()
 }
 

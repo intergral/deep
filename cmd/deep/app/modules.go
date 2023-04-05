@@ -195,24 +195,25 @@ func (t *App) initDistributor() (services.Service, error) {
 	t.distributor = newDistributor
 
 	if newDistributor.DistributorRing != nil {
-		t.Server.HTTP.Handle("/distributor/ring", newDistributor.DistributorRing)
+		t.Server.HTTP.Handle("/distributor/ring", t.distributor.DistributorRing)
 	}
 
-	pb.RegisterPollConfigServer(t.Server.GRPC, newDistributor)
-	tp.RegisterSnapshotServiceServer(t.Server.GRPC, newDistributor.SnapshotReceiver)
+	pb.RegisterPollConfigServer(t.Server.GRPC, t.distributor)
+	tp.RegisterSnapshotServiceServer(t.Server.GRPC, t.distributor.SnapshotReceiver)
 
 	return t.distributor, nil
 }
 
 func (t *App) initIngester() (services.Service, error) {
 	t.cfg.Ingester.LifecyclerConfig.ListenPort = t.cfg.Server.GRPCListenPort
-	ingester, err := ingester.New(t.cfg.Ingester, t.store, t.overrides, prometheus.DefaultRegisterer)
+	newIngester, err := ingester.New(t.cfg.Ingester, t.store, t.overrides, prometheus.DefaultRegisterer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ingester: %w", err)
 	}
-	t.ingester = ingester
+	t.ingester = newIngester
 
 	// todo fix this
+	deeppb.RegisterIngesterServiceServer(t.Server.GRPC, t.ingester)
 	//deeppb.RegisterPusherServer(t.Server.GRPC, t.ingester)
 	//deeppb.RegisterQuerierServer(t.Server.GRPC, t.ingester)
 	t.Server.HTTP.Path("/flush").Handler(http.HandlerFunc(t.ingester.FlushHandler))

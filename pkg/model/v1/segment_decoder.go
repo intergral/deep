@@ -1,15 +1,42 @@
 package v1
 
 import (
+	"errors"
 	"fmt"
-
 	"github.com/golang/protobuf/proto"
-	"github.com/intergral/deep/pkg/model/decoder"
-	"github.com/intergral/deep/pkg/model/trace"
-	"github.com/intergral/deep/pkg/tempopb"
+	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 )
 
 type SegmentDecoder struct {
+}
+
+func (s *SegmentDecoder) PrepareForWrite(trace *deeptp.Snapshot, start uint32) ([]byte, error) {
+	return marshalWithStart(trace, start)
+}
+
+func (s *SegmentDecoder) PrepareForRead(segment []byte) (*deeptp.Snapshot, error) {
+	obj, _, err := stripStart(segment)
+	if err != nil {
+		return nil, fmt.Errorf("error stripping start: %w", err)
+	}
+
+	snapshot := &deeptp.Snapshot{}
+	err = proto.Unmarshal(obj, snapshot)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling snapshot: %w", err)
+	}
+
+	return snapshot, nil
+}
+
+func (s *SegmentDecoder) ToObject(segment []byte) ([]byte, error) {
+	return segment, nil
+}
+
+func (s *SegmentDecoder) FastRange(segment []byte) (uint32, error) {
+	_, start, err := stripStart(segment)
+
+	return start, err
 }
 
 var segmentDecoder = &SegmentDecoder{}
@@ -19,37 +46,35 @@ func NewSegmentDecoder() *SegmentDecoder {
 	return segmentDecoder
 }
 
-func (d *SegmentDecoder) PrepareForWrite(trace *tempopb.Trace, start uint32, end uint32) ([]byte, error) {
-	// v1 encoding doesn't support start/end
-	return proto.Marshal(trace)
-}
+func marshalWithStart(pb proto.Message, start uint32) ([]byte, error) {
+	const uint32Size = 4
 
-func (d *SegmentDecoder) PrepareForRead(segments [][]byte) (*tempopb.Trace, error) {
-	// each slice is a marshalled tempopb.Trace, unmarshal and combine
-	combiner := trace.NewCombiner()
-	for i, s := range segments {
-		t := &tempopb.Trace{}
-		err := proto.Unmarshal(s, t)
-		if err != nil {
-			return nil, fmt.Errorf("error unmarshaling trace: %w", err)
-		}
+	sz := proto.Size(pb)
+	buff := make([]byte, 0, sz+uint32Size) // proto buff size + start/end uint32s
 
-		combiner.ConsumeWithFinal(t, i == len(segments)-1)
+	buffer := proto.NewBuffer(buff)
+
+	_ = buffer.EncodeFixed32(uint64(start)) // EncodeFixed32 can't return an error
+	err := buffer.Marshal(pb)
+	if err != nil {
+		return nil, err
 	}
 
-	combinedTrace, _ := combiner.Result()
+	buff = buffer.Bytes()
 
-	return combinedTrace, nil
+	return buff, nil
 }
 
-func (d *SegmentDecoder) ToObject(segments [][]byte) ([]byte, error) {
-	// wrap byte slices in a tempopb.TraceBytes and marshal
-	wrapper := &tempopb.TraceBytes{
-		Traces: append([][]byte(nil), segments...),
+func stripStart(buff []byte) ([]byte, uint32, error) {
+	if len(buff) < 8 {
+		return nil, 0, errors.New("buffer too short to have start/end")
 	}
-	return proto.Marshal(wrapper)
-}
 
-func (d *SegmentDecoder) FastRange([]byte) (uint32, uint32, error) {
-	return 0, 0, decoder.ErrUnsupported
+	buffer := proto.NewBuffer(buff)
+	start, err := buffer.DecodeFixed32()
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to read start from buffer %w", err)
+	}
+
+	return buff[4:], uint32(start), nil
 }

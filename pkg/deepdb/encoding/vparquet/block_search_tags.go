@@ -14,9 +14,6 @@ import (
 )
 
 var translateTagToAttribute = map[string]traceql.Attribute{
-	LabelName:       traceql.NewIntrinsic(traceql.IntrinsicName),
-	LabelStatusCode: traceql.NewIntrinsic(traceql.IntrinsicStatus),
-
 	// Preserve behavior of v1 tag lookups which directed some attributes
 	// to dedicated columns.
 	LabelServiceName:      traceql.NewScopedAttribute(traceql.AttributeScopeResource, false, LabelServiceName),
@@ -28,9 +25,6 @@ var translateTagToAttribute = map[string]traceql.Attribute{
 	LabelK8sClusterName:   traceql.NewScopedAttribute(traceql.AttributeScopeResource, false, LabelK8sClusterName),
 	LabelK8sPodName:       traceql.NewScopedAttribute(traceql.AttributeScopeResource, false, LabelK8sPodName),
 	LabelK8sContainerName: traceql.NewScopedAttribute(traceql.AttributeScopeResource, false, LabelK8sContainerName),
-	LabelHTTPMethod:       traceql.NewScopedAttribute(traceql.AttributeScopeSpan, false, LabelHTTPMethod),
-	LabelHTTPUrl:          traceql.NewScopedAttribute(traceql.AttributeScopeSpan, false, LabelHTTPUrl),
-	LabelHTTPStatusCode:   traceql.NewScopedAttribute(traceql.AttributeScopeSpan, false, LabelHTTPStatusCode),
 }
 
 var nonTraceQLAttributes = map[string]string{
@@ -59,7 +53,7 @@ func (b *backendBlock) SearchTags(ctx context.Context, cb common.TagCallback, op
 func searchTags(_ context.Context, cb common.TagCallback, pf *parquet.File) error {
 	// find indexes of generic attribute columns
 	resourceKeyIdx, _ := pq.GetColumnIndexByPath(pf, FieldResourceAttrKey)
-	spanKeyIdx, _ := pq.GetColumnIndexByPath(pf, FieldSpanAttrKey)
+	spanKeyIdx, _ := pq.GetColumnIndexByPath(pf, FieldAttrKey)
 	if resourceKeyIdx == -1 || spanKeyIdx == -1 {
 		return fmt.Errorf("resource or span attributes col not found (%d, %d)", resourceKeyIdx, spanKeyIdx)
 	}
@@ -71,10 +65,6 @@ func searchTags(_ context.Context, cb common.TagCallback, pf *parquet.File) erro
 	// find indexes of all special columns
 	specialAttrIdxs := map[int]string{}
 	for lbl, col := range labelMappings {
-		if lbl == LabelStatusCode {
-			// Don't include this in the list of tags (but it can still be used in SearchTagValues)
-			continue
-		}
 
 		idx, _ := pq.GetColumnIndexByPath(pf, col)
 		if idx == -1 {
@@ -265,11 +255,11 @@ func searchStandardTagValues(ctx context.Context, tag traceql.Attribute, pf *par
 
 	if tag.Scope == traceql.AttributeScopeNone || tag.Scope == traceql.AttributeScopeSpan {
 		err := searchKeyValues(DefinitionLevelResourceSpansILSSpanAttrs,
-			FieldSpanAttrKey,
-			FieldSpanAttrVal,
-			FieldSpanAttrValInt,
-			FieldSpanAttrValDouble,
-			FieldSpanAttrValBool,
+			FieldAttrKey,
+			FieldAttrVal,
+			FieldAttrValInt,
+			FieldAttrValDouble,
+			FieldAttrValBool,
 			makeIter, keyPred, cb)
 		if err != nil {
 			return errors.Wrap(err, "search span key values")

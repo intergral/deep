@@ -78,7 +78,7 @@ func (i *Ingester) Flush() {
 	instances := i.getInstances()
 
 	for _, instance := range instances {
-		err := instance.CutCompleteTraces(0, true)
+		err := instance.CutSnapshots(0, true)
 		if err != nil {
 			level.Error(log.WithUserID(instance.instanceID, log.Logger)).Log("msg", "failed to cut complete traces on shutdown", "err", err)
 		}
@@ -151,7 +151,7 @@ func (i *Ingester) sweepAllInstances(immediate bool) {
 
 func (i *Ingester) sweepInstance(instance *instance, immediate bool) {
 	// cut traces internally
-	err := instance.CutCompleteTraces(i.cfg.MaxTraceIdle, immediate)
+	err := instance.CutSnapshots(i.cfg.MaxTraceIdle, immediate)
 	if err != nil {
 		level.Error(log.WithUserID(instance.instanceID, log.Logger)).Log("msg", "failed to cut traces", "err", err)
 		return
@@ -280,7 +280,7 @@ func (i *Ingester) handleComplete(op *flushOp) (retry bool, err error) {
 	return false, nil
 }
 
-// withSpan adds traceID to a logger, if span is sampled
+// withSpan adds snapshotId to a logger, if span is sampled
 // TODO: move into some central trace/log package
 func withSpan(logger gklog.Logger, sp ot.Span) gklog.Logger {
 	if sp == nil {
@@ -291,7 +291,7 @@ func withSpan(logger gklog.Logger, sp ot.Span) gklog.Logger {
 		return logger
 	}
 
-	return gklog.With(logger, "traceID", sctx.TraceID().String())
+	return gklog.With(logger, "snapshotId", sctx.TraceID().String())
 }
 
 func (i *Ingester) handleFlush(ctx context.Context, userID string, blockID uuid.UUID) (retry bool, err error) {

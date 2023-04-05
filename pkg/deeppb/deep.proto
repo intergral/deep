@@ -1,4 +1,4 @@
-syntax="proto3";
+syntax = "proto3";
 import "tracepoint/v1/tracepoint.proto";
 
 package deeppb;
@@ -7,7 +7,7 @@ option go_package = "github.com/intergral/deep/pkg/deeppb";
 
 
 service MetricsGenerator {
-  rpc PushSnapshot(PushSnapshotRequest) returns (PushResponse) {};
+  rpc PushSnapshot(PushSnapshotRequest) returns (PushSnapshotResponse) {};
 }
 
 message PushSnapshotRequest {
@@ -15,5 +15,17 @@ message PushSnapshotRequest {
 }
 
 // Write
-message PushResponse {
+message PushSnapshotResponse {
 }
+
+
+service IngesterService {
+  rpc PushBytes(PushBytesRequest) returns (PushBytesResponse) {};
+}
+
+message PushBytesRequest {
+  bytes snapshot = 1;
+  bytes id = 2;
+}
+
+message PushBytesResponse {}

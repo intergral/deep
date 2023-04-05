@@ -2,6 +2,7 @@ package client
 
 import (
 	"flag"
+	"github.com/intergral/deep/pkg/deeppb"
 	"io"
 	"time"
 
@@ -25,7 +26,7 @@ type Config struct {
 }
 
 type Client struct {
-	tempopb.PusherClient
+	deeppb.IngesterServiceClient
 	tempopb.QuerierClient
 	grpc_health_v1.HealthClient
 	io.Closer
@@ -58,10 +59,10 @@ func New(addr string, cfg Config) (*Client, error) {
 		return nil, err
 	}
 	return &Client{
-		PusherClient:  tempopb.NewPusherClient(conn),
-		QuerierClient: tempopb.NewQuerierClient(conn),
-		HealthClient:  grpc_health_v1.NewHealthClient(conn),
-		Closer:        conn,
+		IngesterServiceClient: deeppb.NewIngesterServiceClient(conn),
+		QuerierClient:         tempopb.NewQuerierClient(conn),
+		HealthClient:          grpc_health_v1.NewHealthClient(conn),
+		Closer:                conn,
 	}, nil
 }
 

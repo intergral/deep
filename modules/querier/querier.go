@@ -184,7 +184,7 @@ func (q *Querier) stopping(_ error) error {
 
 // FindTraceByID implements tempopb.Querier.
 func (q *Querier) FindTraceByID(ctx context.Context, req *tempopb.TraceByIDRequest, timeStart int64, timeEnd int64) (*tempopb.TraceByIDResponse, error) {
-	if !validation.ValidTraceID(req.TraceID) {
+	if !validation.ValidSnapshotID(req.TraceID) {
 		return nil, fmt.Errorf("invalid trace id")
 	}
 
@@ -229,7 +229,8 @@ func (q *Querier) FindTraceByID(ctx context.Context, req *tempopb.TraceByIDReque
 		for _, r := range responses {
 			t := r.response.(*tempopb.TraceByIDResponse).Trace
 			if t != nil {
-				spanCount = combiner.Consume(t)
+				//spanCount = combiner.Consume(t)
+				spanCount = combiner.Consume(nil)
 				spanCountTotal += spanCount
 				traceCountTotal++
 				found = true
@@ -266,15 +267,16 @@ func (q *Querier) FindTraceByID(ctx context.Context, req *tempopb.TraceByIDReque
 			ot_log.String("msg", "done searching store"),
 			ot_log.Int("foundPartialTraces", len(partialTraces)))
 
-		for _, partialTrace := range partialTraces {
-			combiner.Consume(partialTrace)
-		}
+		//for _, partialTrace := range partialTraces {
+		//	//combiner.Consume(partialTrace)
+		//	combiner.Consume(nil)
+		//}
 	}
 
-	completeTrace, _ := combiner.Result()
+	//completeTrace, _ := combiner.Result()
 
 	return &tempopb.TraceByIDResponse{
-		Trace: completeTrace,
+		Trace: nil,
 		Metrics: &tempopb.TraceByIDMetrics{
 			FailedBlocks: uint32(failedBlocks),
 		},
@@ -495,7 +497,7 @@ func (q *Querier) SearchBlock(ctx context.Context, req *tempopb.SearchBlockReque
 	if err != nil {
 		return nil, errors.Wrap(err, "error extracting org id for externalEndpoint")
 	}
-	maxBytes := q.limits.MaxBytesPerTrace(tenantID)
+	maxBytes := q.limits.MaxBytesPerSnapshot(tenantID)
 
 	endpoint := q.cfg.Search.ExternalEndpoints[rand.Intn(len(q.cfg.Search.ExternalEndpoints))]
 	return q.searchExternalEndpoint(ctx, endpoint, maxBytes, req)
@@ -532,7 +534,7 @@ func (q *Querier) internalSearchBlock(ctx context.Context, req *tempopb.SearchBl
 	opts := common.DefaultSearchOptions()
 	opts.StartPage = int(req.StartPage)
 	opts.TotalPages = int(req.PagesToSearch)
-	opts.MaxBytes = q.limits.MaxBytesPerTrace(tenantID)
+	opts.MaxBytes = q.limits.MaxBytesPerSnapshot(tenantID)
 
 	if api.IsTraceQLQuery(req.SearchReq) {
 		fetcher := traceql.NewSpansetFetcherWrapper(func(ctx context.Context, req traceql.FetchSpansRequest) (traceql.FetchSpansResponse, error) {

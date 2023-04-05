@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/golang/protobuf/proto"
 	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	deep_util "github.com/intergral/deep/pkg/util"
 	"time"
 
 	"github.com/opentracing/opentracing-go"
@@ -105,7 +106,7 @@ func (p *Processor) aggregateMetricsForSpan(svcName string, snapshot *tp.Snapsho
 
 	p.spanMetricsCallsTotal.Inc(registryLabelValues, 1*spanMultiplier)
 	p.spanMetricsSizeTotal.Inc(registryLabelValues, float64(proto.Size(snapshot))*spanMultiplier)
-	p.spanMetricsDurationSeconds.ObserveWithExemplar(registryLabelValues, latencySeconds, snapshot.Id, spanMultiplier)
+	p.spanMetricsDurationSeconds.ObserveWithExemplar(registryLabelValues, latencySeconds, deep_util.TraceIDToHexString(snapshot.Id), spanMultiplier)
 }
 
 func sanitizeLabelNameWithCollisions(name string) string {

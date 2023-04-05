@@ -11,7 +11,7 @@ import (
 )
 
 type iteratable interface {
-	parquet.Row | *Trace | *uint8
+	parquet.Row | *Snapshot | *uint8
 }
 
 type combineFn[T iteratable] func([]T) (T, error)

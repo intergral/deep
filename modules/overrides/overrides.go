@@ -247,9 +247,9 @@ func (o *Overrides) MaxGlobalTracesPerUser(userID string) int {
 	return o.getOverridesForUser(userID).MaxGlobalTracesPerUser
 }
 
-// MaxBytesPerTrace returns the maximum size of a single trace in bytes allowed for a user.
-func (o *Overrides) MaxBytesPerTrace(userID string) int {
-	return o.getOverridesForUser(userID).MaxBytesPerTrace
+// MaxBytesPerSnapshot returns the maximum size of a single trace in bytes allowed for a user.
+func (o *Overrides) MaxBytesPerSnapshot(userID string) int {
+	return o.getOverridesForUser(userID).MaxBytesPerSnapshot
 }
 
 // Forwarders returns the list of forwarder IDs for a user.
@@ -380,7 +380,7 @@ func (o *Overrides) Collect(ch chan<- prometheus.Metric) {
 	for tenant, limits := range overrides.TenantLimits {
 		ch <- prometheus.MustNewConstMetric(metricOverridesLimitsDesc, prometheus.GaugeValue, float64(limits.MaxLocalTracesPerUser), MetricMaxLocalTracesPerUser, tenant)
 		ch <- prometheus.MustNewConstMetric(metricOverridesLimitsDesc, prometheus.GaugeValue, float64(limits.MaxGlobalTracesPerUser), MetricMaxGlobalTracesPerUser, tenant)
-		ch <- prometheus.MustNewConstMetric(metricOverridesLimitsDesc, prometheus.GaugeValue, float64(limits.MaxBytesPerTrace), MetricMaxBytesPerTrace, tenant)
+		ch <- prometheus.MustNewConstMetric(metricOverridesLimitsDesc, prometheus.GaugeValue, float64(limits.MaxBytesPerSnapshot), MetricMaxBytesPerTrace, tenant)
 		ch <- prometheus.MustNewConstMetric(metricOverridesLimitsDesc, prometheus.GaugeValue, float64(limits.IngestionRateLimitBytes), MetricIngestionRateLimitBytes, tenant)
 		ch <- prometheus.MustNewConstMetric(metricOverridesLimitsDesc, prometheus.GaugeValue, float64(limits.IngestionBurstSizeBytes), MetricIngestionBurstSizeBytes, tenant)
 		ch <- prometheus.MustNewConstMetric(metricOverridesLimitsDesc, prometheus.GaugeValue, float64(limits.BlockRetention), MetricBlockRetention, tenant)

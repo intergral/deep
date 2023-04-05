@@ -10,7 +10,6 @@ import (
 	"github.com/grafana/dskit/kv"
 	"github.com/grafana/dskit/ring"
 	"github.com/grafana/dskit/services"
-	deepUtil "github.com/intergral/deep/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -223,7 +222,7 @@ func (c *Compactor) Combine(dataEncoding string, tenantID string, objs ...[]byte
 		return nil, false, err
 	}
 
-	maxBytes := c.overrides.MaxBytesPerTrace(tenantID)
+	maxBytes := c.overrides.MaxBytesPerSnapshot(tenantID)
 	if maxBytes == 0 || len(combinedObj) < maxBytes {
 		return combinedObj, wasCombined, nil
 	}
@@ -254,7 +253,7 @@ func (c *Compactor) BlockRetentionForTenant(tenantID string) time.Duration {
 }
 
 func (c *Compactor) MaxBytesPerTraceForTenant(tenantID string) int {
-	return c.overrides.MaxBytesPerTrace(tenantID)
+	return c.overrides.MaxBytesPerSnapshot(tenantID)
 }
 
 func (c *Compactor) isSharded() bool {
@@ -294,32 +293,4 @@ func (c *Compactor) OnRingInstanceStopping(lifecycler *ring.BasicLifecycler) {}
 // OnRingInstanceHeartbeat is called while the instance is updating its heartbeat
 // in the ring.
 func (c *Compactor) OnRingInstanceHeartbeat(lifecycler *ring.BasicLifecycler, ringDesc *ring.Desc, instanceDesc *ring.InstanceDesc) {
-}
-
-func countSpans(dataEncoding string, objs ...[]byte) (total int) {
-	var traceID string
-	decoder, err := model.NewObjectDecoder(dataEncoding)
-	if err != nil {
-		return 0
-	}
-
-	for _, o := range objs {
-		t, err := decoder.PrepareForRead(o)
-		if err != nil {
-			continue
-		}
-
-		for _, b := range t.Batches {
-			for _, ilm := range b.ScopeSpans {
-				if len(ilm.Spans) > 0 && traceID == "" {
-					traceID = deepUtil.TraceIDToHexString(ilm.Spans[0].TraceId)
-				}
-				total += len(ilm.Spans)
-			}
-		}
-	}
-
-	level.Debug(log.Logger).Log("msg", "max size of trace exceeded", "traceId", traceID, "discarded_span_count", total)
-
-	return
 }

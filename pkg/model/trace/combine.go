@@ -2,7 +2,7 @@ package trace
 
 import (
 	"encoding/binary"
-	"github.com/intergral/deep/pkg/tempopb"
+	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"hash"
 	"hash/fnv"
 )
@@ -37,7 +37,7 @@ func tokenForID(h hash.Hash64, buffer []byte, kind int32, b []byte) token {
 // * Only sort the final result once and if needed.
 // * Don't scan/hash the spans for the last input (final=true).
 type Combiner struct {
-	result   *tempopb.Trace
+	result   *deep_tp.Snapshot
 	spans    map[token]struct{}
 	combined bool
 }
@@ -47,92 +47,21 @@ func NewCombiner() *Combiner {
 }
 
 // Consume the given trace and destructively combines its contents.
-func (c *Combiner) Consume(tr *tempopb.Trace) (spanCount int) {
+func (c *Combiner) Consume(tr *deep_tp.Snapshot) (spanCount int) {
 	return c.ConsumeWithFinal(tr, false)
 }
 
 // ConsumeWithFinal consumes the trace, but allows for performance savings when
 // it is known that this is the last expected input trace.
-func (c *Combiner) ConsumeWithFinal(tr *tempopb.Trace, final bool) (spanCount int) {
-	if tr == nil {
-		return
-	}
-
-	h := newHash()
-	buffer := make([]byte, 4)
-
-	// First call?
-	if c.result == nil {
-		c.result = tr
-
-		// Pre-alloc map with input size. This saves having to grow the
-		// map from the small starting size.
-		n := 0
-		for _, b := range c.result.Batches {
-			for _, ils := range b.ScopeSpans {
-				n += len(ils.Spans)
-			}
-		}
-		c.spans = make(map[token]struct{}, n)
-
-		for _, b := range c.result.Batches {
-			for _, ils := range b.ScopeSpans {
-				for _, s := range ils.Spans {
-					c.spans[tokenForID(h, buffer, int32(s.Kind), s.SpanId)] = struct{}{}
-				}
-			}
-		}
-		return
-	}
-
-	// loop through every span and copy spans in B that don't exist to A
-	for _, b := range tr.Batches {
-		notFoundILS := b.ScopeSpans[:0]
-
-		for _, ils := range b.ScopeSpans {
-			notFoundSpans := ils.Spans[:0]
-			for _, s := range ils.Spans {
-				// if not already encountered, then keep
-				token := tokenForID(h, buffer, int32(s.Kind), s.SpanId)
-				_, ok := c.spans[token]
-				if !ok {
-					notFoundSpans = append(notFoundSpans, s)
-
-					// If last expected input, then we don't need to record
-					// the visited spans. Optimization has significant savings.
-					if !final {
-						c.spans[token] = struct{}{}
-					}
-				}
-			}
-
-			if len(notFoundSpans) > 0 {
-				ils.Spans = notFoundSpans
-				spanCount += len(notFoundSpans)
-				notFoundILS = append(notFoundILS, ils)
-			}
-		}
-
-		// if there were some spans not found in A, add everything left in the batch
-		if len(notFoundILS) > 0 {
-			b.ScopeSpans = notFoundILS
-			c.result.Batches = append(c.result.Batches, b)
-		}
-	}
+func (c *Combiner) ConsumeWithFinal(tr *deep_tp.Snapshot, final bool) (spanCount int) {
+	c.result = tr
 
 	c.combined = true
 	return
 }
 
 // Result returns the final trace and span count.
-func (c *Combiner) Result() (*tempopb.Trace, int) {
-	spanCount := -1
+func (c *Combiner) Result() (*deep_tp.Snapshot, int) {
 
-	if c.result != nil && c.combined {
-		// Only if anything combined
-		SortTrace(c.result)
-		spanCount = len(c.spans)
-	}
-
-	return c.result, spanCount
+	return c.result, 1
 }

@@ -187,7 +187,7 @@ type Variable struct {
 	Value     string        `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`                // the value of the variable as a string. All values are converted to string for simplicity. This can also result in the value being truncated if it is a very large string. Collection types should not be to stringed, instead a summary should be given as the value 'HashSet of size: 10'.
 	Hash      string        `protobuf:"bytes,3,opt,name=hash,proto3" json:"hash,omitempty"`                  // This is the hash of the object, this is primarily of use in Java/Python, node does not really have global object ids, so this is less useful. However using the debugger apis we are exposed the object id at the time of collection. This can change depending on the script location as well (e.g. the stack frame). We send this object id hashed to obfuscate any data. For non object values (that do not have an object id) we hash the value.
 	Children  []*VariableId `protobuf:"bytes,4,rep,name=children,proto3" json:"children,omitempty"`          // This is a list of children of this variable, using the var ids, requiring them to be looked up in the var lookup
-	Truncated *bool         `protobuf:"varint,5,opt,name=truncated,proto3,oneof" json:"truncated,omitempty"` // true if the value has been truncatedf
+	Truncated *bool         `protobuf:"varint,5,opt,name=truncated,proto3,oneof" json:"truncated,omitempty"` // true if the value has been truncated
 }
 
 func (x *Variable) Reset() {
@@ -477,7 +477,7 @@ type Snapshot struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id            string               `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                                                                                                                        // the client generated id for this snapshot
+	Id            []byte               `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                                                                                                                        // the client generated id for this snapshot
 	Tracepoint    *TracePointConfig    `protobuf:"bytes,2,opt,name=tracepoint,proto3" json:"tracepoint,omitempty"`                                                                                                        // the config that was used to generate this snapshot (it could be deleted by the time we look at the data)
 	VarLookup     map[string]*Variable `protobuf:"bytes,3,rep,name=var_lookup,json=varLookup,proto3" json:"var_lookup,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"` // this is a flat list of all the collected variables for this snapshot, to reduce data size we dereference as much as we can
 	Ts            int64                `protobuf:"varint,4,opt,name=ts,proto3" json:"ts,omitempty"`                                                                                                                       // the time in ms when this snapshot was generated
@@ -520,11 +520,11 @@ func (*Snapshot) Descriptor() ([]byte, []int) {
 	return file_tracepoint_v1_tracepoint_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *Snapshot) GetId() string {
+func (x *Snapshot) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 func (x *Snapshot) GetTracepoint() *TracePointConfig {
@@ -711,7 +711,7 @@ var file_tracepoint_v1_tracepoint_proto_rawDesc = []byte{
 	0x73, 0x75, 0x6c, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x0b, 0x65, 0x72,
 	0x72, 0x6f, 0x72, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x42, 0x08, 0x0a, 0x06, 0x72, 0x65, 0x73,
 	0x75, 0x6c, 0x74, 0x22, 0xb0, 0x04, 0x0a, 0x08, 0x53, 0x6e, 0x61, 0x70, 0x73, 0x68, 0x6f, 0x74,
-	0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64,
+	0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x02, 0x69, 0x64,
 	0x12, 0x46, 0x0a, 0x0a, 0x74, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x18, 0x02,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x2e, 0x74, 0x72,
 	0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x72, 0x61, 0x63,

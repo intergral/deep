@@ -78,6 +78,7 @@ func getSpan() *span {
 type makeIterFn func(columnName string, predicate parquetquery.Predicate, selectAs string) parquetquery.Iterator
 
 const (
+	columnPathSnapshotID               = "Id"
 	columnPathTraceID                  = "TraceID"
 	columnPathStartTimeUnixNano        = "StartTimeUnixNano"
 	columnPathEndTimeUnixNano          = "EndTimeUnixNano"
@@ -145,11 +146,6 @@ var wellKnownColumnLookups = map[string]struct {
 	LabelK8sNamespaceName: {columnPathResourceK8sNamespaceName, traceql.AttributeScopeResource, traceql.TypeString},
 	LabelK8sPodName:       {columnPathResourceK8sPodName, traceql.AttributeScopeResource, traceql.TypeString},
 	LabelK8sContainerName: {columnPathResourceK8sContainerName, traceql.AttributeScopeResource, traceql.TypeString},
-
-	// Span-level columns
-	LabelHTTPStatusCode: {columnPathSpanHTTPStatusCode, traceql.AttributeScopeSpan, traceql.TypeInt},
-	LabelHTTPMethod:     {columnPathSpanHTTPMethod, traceql.AttributeScopeSpan, traceql.TypeString},
-	LabelHTTPUrl:        {columnPathSpanHTTPURL, traceql.AttributeScopeSpan, traceql.TypeString},
 }
 
 // Fetch spansets from the block for the given TraceQL FetchSpansRequest. The request is checked for

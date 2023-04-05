@@ -10,7 +10,6 @@ import (
 
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	v2 "github.com/intergral/deep/pkg/deepdb/encoding/v2"
 	"github.com/intergral/deep/pkg/deepdb/encoding/vparquet"
 )
 
@@ -56,8 +55,6 @@ type VersionedEncoding interface {
 // FromVersion returns a versioned encoding for the provided string
 func FromVersion(v string) (VersionedEncoding, error) {
 	switch v {
-	case v2.VersionString:
-		return v2.Encoding{}, nil
 	case vparquet.VersionString:
 		return vparquet.Encoding{}, nil
 	}
@@ -73,7 +70,6 @@ func DefaultEncoding() VersionedEncoding {
 // AllEncodings returns all encodings
 func AllEncodings() []VersionedEncoding {
 	return []VersionedEncoding{
-		v2.Encoding{},
 		vparquet.Encoding{},
 	}
 }

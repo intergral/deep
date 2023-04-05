@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"io"
 	"net/http"
 	"strings"
@@ -80,7 +81,7 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 	var overallError error
 	var totalFailedBlocks uint32
 	combiner := trace.NewCombiner()
-	combiner.Consume(&tempopb.Trace{}) // The query path returns a non-nil result even if no inputs (which is different than other paths which return nil for no inputs)
+	combiner.Consume(&deep_tp.Snapshot{}) // The query path returns a non-nil result even if no inputs (which is different than other paths which return nil for no inputs)
 	statusCode := http.StatusNotFound
 	statusMsg := "trace not found"
 
@@ -154,7 +155,7 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 
 			// happy path
 			statusCode = http.StatusOK
-			combiner.Consume(traceResp.Trace)
+			combiner.Consume(nil)
 		}(req)
 	}
 	wg.Wait()
@@ -186,7 +187,7 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 	}
 
 	buff, err := proto.Marshal(&tempopb.TraceByIDResponse{
-		Trace: overallTrace,
+		Trace: nil,
 		Metrics: &tempopb.TraceByIDMetrics{
 			FailedBlocks: totalFailedBlocks,
 		},

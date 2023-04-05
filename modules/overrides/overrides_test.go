@@ -33,7 +33,7 @@ func TestOverrides(t *testing.T) {
 			limits: Limits{
 				MaxGlobalTracesPerUser:  1,
 				MaxLocalTracesPerUser:   2,
-				MaxBytesPerTrace:        3,
+				MaxBytesPerSnapshot:     3,
 				IngestionBurstSizeBytes: 4,
 				IngestionRateLimitBytes: 5,
 			},
@@ -49,7 +49,7 @@ func TestOverrides(t *testing.T) {
 			limits: Limits{
 				MaxGlobalTracesPerUser:  1,
 				MaxLocalTracesPerUser:   2,
-				MaxBytesPerTrace:        3,
+				MaxBytesPerSnapshot:     3,
 				IngestionBurstSizeBytes: 4,
 				IngestionRateLimitBytes: 5,
 			},
@@ -58,7 +58,7 @@ func TestOverrides(t *testing.T) {
 					"user1": {
 						MaxGlobalTracesPerUser:  6,
 						MaxLocalTracesPerUser:   7,
-						MaxBytesPerTrace:        8,
+						MaxBytesPerSnapshot:     8,
 						IngestionBurstSizeBytes: 9,
 						IngestionRateLimitBytes: 10,
 						MaxSearchDuration:       model.Duration(11 * time.Second),
@@ -77,7 +77,7 @@ func TestOverrides(t *testing.T) {
 			limits: Limits{
 				MaxGlobalTracesPerUser:  1,
 				MaxLocalTracesPerUser:   2,
-				MaxBytesPerTrace:        3,
+				MaxBytesPerSnapshot:     3,
 				IngestionBurstSizeBytes: 4,
 				IngestionRateLimitBytes: 5,
 			},
@@ -86,14 +86,14 @@ func TestOverrides(t *testing.T) {
 					"user1": {
 						MaxGlobalTracesPerUser:  6,
 						MaxLocalTracesPerUser:   7,
-						MaxBytesPerTrace:        8,
+						MaxBytesPerSnapshot:     8,
 						IngestionBurstSizeBytes: 9,
 						IngestionRateLimitBytes: 10,
 					},
 					"*": {
 						MaxGlobalTracesPerUser:  11,
 						MaxLocalTracesPerUser:   12,
-						MaxBytesPerTrace:        13,
+						MaxBytesPerSnapshot:     13,
 						IngestionBurstSizeBytes: 14,
 						IngestionRateLimitBytes: 15,
 						MaxSearchDuration:       model.Duration(16 * time.Second),

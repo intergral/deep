@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/segmentio/parquet-go"
 	"io"
 	"io/fs"
@@ -18,11 +19,9 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	"github.com/intergral/deep/pkg/model"
-	"github.com/intergral/deep/pkg/model/trace"
 	"github.com/intergral/deep/pkg/parquetquery"
 	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/traceql"
-	"github.com/intergral/deep/pkg/warnings"
 	"github.com/pkg/errors"
 )
 
@@ -36,7 +35,7 @@ const defaultRowPoolSize = 100000
 var completeBlockRowPool = newRowPool(defaultRowPoolSize)
 
 // walSchema is a shared schema that all wals use. it comes with minor cpu and memory improvements
-var walSchema = parquet.SchemaOf(&Trace{})
+var walSchema = parquet.SchemaOf(&Snapshot{})
 
 // path + filename = folder to create
 //   path/folder/00001
@@ -122,7 +121,7 @@ func openWALBlock(filename string, path string, ingestionSlack time.Duration, _ 
 		pf := file.parquetFile
 
 		// iterate the parquet file and build the meta
-		iter := makeIterFunc(context.Background(), pf.RowGroups(), pf)(columnPathTraceID, nil, columnPathTraceID)
+		iter := makeIterFunc(context.Background(), pf.RowGroups(), pf)(columnPathSnapshotID, nil, columnPathSnapshotID)
 		defer iter.Close()
 
 		for {
@@ -136,9 +135,9 @@ func openWALBlock(filename string, path string, ingestionSlack time.Duration, _ 
 
 			for _, e := range match.Entries {
 				switch e.Key {
-				case columnPathTraceID:
+				case columnPathSnapshotID:
 					traceID := e.Value.ByteArray()
-					b.meta.ObjectAdded(traceID, 0, 0)
+					b.meta.ObjectAdded(traceID, 0)
 					page.ids.Set(traceID, match.RowNumber[0]) // Save rownumber for the trace ID
 				}
 			}
@@ -274,10 +273,10 @@ type walBlock struct {
 	ingestionSlack time.Duration
 
 	// Unflushed data
-	buffer        *Trace
+	buffer        *Snapshot
 	ids           *common.IDMap[int64]
 	file          *os.File
-	writer        *parquet.GenericWriter[*Trace]
+	writer        *parquet.GenericWriter[*Snapshot]
 	decoder       model.ObjectDecoder
 	unflushedSize int64
 
@@ -303,28 +302,26 @@ func (b *walBlock) BlockMeta() *backend.BlockMeta {
 	return b.meta
 }
 
-func (b *walBlock) Append(id common.ID, buff []byte, start, end uint32) error {
+func (b *walBlock) Append(id common.ID, buff []byte, start uint32) error {
 	// if decoder = nil we were created with OpenWALBlock and will not accept writes
 	if b.decoder == nil {
 		return nil
 	}
 
-	trace, err := b.decoder.PrepareForRead(buff)
+	snapshot, err := b.decoder.PrepareForRead(buff)
 	if err != nil {
 		return fmt.Errorf("error preparing trace for read: %w", err)
 	}
 
-	b.buffer = traceToParquet(id, trace, b.buffer)
-
-	start, end = b.adjustTimeRangeForSlack(start, end, 0)
+	b.buffer = snapshotToParquet(id, snapshot, b.buffer)
 
 	// add to current
-	_, err = b.writer.Write([]*Trace{b.buffer})
+	_, err = b.writer.Write([]*Snapshot{b.buffer})
 	if err != nil {
 		return fmt.Errorf("error writing row: %w", err)
 	}
 
-	b.meta.ObjectAdded(id, start, end)
+	b.meta.ObjectAdded(id, start)
 	b.ids.Set(id, int64(b.ids.Len())) // Next row number
 
 	// This is actually the protobuf size but close enough
@@ -332,28 +329,6 @@ func (b *walBlock) Append(id common.ID, buff []byte, start, end uint32) error {
 	b.unflushedSize += int64(len(buff))
 
 	return nil
-}
-
-func (b *walBlock) adjustTimeRangeForSlack(start uint32, end uint32, additionalStartSlack time.Duration) (uint32, uint32) {
-	now := time.Now()
-	startOfRange := uint32(now.Add(-b.ingestionSlack).Add(-additionalStartSlack).Unix())
-	endOfRange := uint32(now.Add(b.ingestionSlack).Unix())
-
-	warn := false
-	if start < startOfRange {
-		warn = true
-		start = uint32(now.Unix())
-	}
-	if end > endOfRange {
-		warn = true
-		end = uint32(now.Unix())
-	}
-
-	if warn {
-		warnings.Metric.WithLabelValues(b.meta.TenantID, warnings.ReasonOutsideIngestionSlack).Inc()
-	}
-
-	return start, end
 }
 
 func (b *walBlock) filepathOf(page int) string {
@@ -373,7 +348,7 @@ func (b *walBlock) openWriter() (err error) {
 	}
 
 	if b.writer == nil {
-		b.writer = parquet.NewGenericWriter[*Trace](b.file, &parquet.WriterConfig{
+		b.writer = parquet.NewGenericWriter[*Snapshot](b.file, &parquet.WriterConfig{
 			Schema: walSchema,
 			// setting this value low massively reduces the amount of static memory we hold onto in highly multi-tenant environments at the cost of
 			// cutting pages more aggressively when writing column chunks
@@ -450,15 +425,15 @@ func (b *walBlock) Iterator() (common.Iterator, error) {
 		bookmarks = append(bookmarks, newBookmark[parquet.Row](iter))
 	}
 
-	sch := parquet.SchemaOf(new(Trace))
+	sch := parquet.SchemaOf(new(Snapshot))
 	iter := newMultiblockIterator(bookmarks, func(rows []parquet.Row) (parquet.Row, error) {
 		if len(rows) == 1 {
 			return rows[0], nil
 		}
 
-		ts := make([]*Trace, 0, len(rows))
+		ts := make([]*Snapshot, 0, len(rows))
 		for _, row := range rows {
-			tr := &Trace{}
+			tr := &Snapshot{}
 			err := sch.Reconstruct(tr, row)
 			if err != nil {
 				return nil, err
@@ -490,9 +465,7 @@ func (b *walBlock) Clear() error {
 	return errs.Err()
 }
 
-func (b *walBlock) FindTraceByID(ctx context.Context, id common.ID, _ common.SearchOptions) (*tempopb.Trace, error) {
-	trs := make([]*tempopb.Trace, 0)
-
+func (b *walBlock) FindTraceByID(ctx context.Context, id common.ID, _ common.SearchOptions) (*deep_tp.Snapshot, error) {
 	for _, page := range b.flushed {
 		if rowNumber, ok := page.ids.Get(id); ok {
 			file, err := page.file()
@@ -511,25 +484,19 @@ func (b *walBlock) FindTraceByID(ctx context.Context, id common.ID, _ common.Sea
 				return nil, errors.Wrap(err, "seek to row")
 			}
 
-			tr := new(Trace)
-			err = r.Read(tr)
+			sp := new(Snapshot)
+			err = r.Read(sp)
 			if err != nil {
 				return nil, errors.Wrap(err, "error reading row from backend")
 			}
 
-			trp := parquetTraceToTempopbTrace(tr)
+			trp := parquetToDeepSnapshot(sp)
 
-			trs = append(trs, trp)
+			return trp, nil
 		}
 	}
 
-	combiner := trace.NewCombiner()
-	for i, tr := range trs {
-		combiner.ConsumeWithFinal(tr, i == len(trs)-1)
-	}
-
-	tr, _ := combiner.Result()
-	return tr, nil
+	return nil, nil
 }
 
 func (b *walBlock) Search(ctx context.Context, req *tempopb.SearchRequest, opts common.SearchOptions) (*tempopb.SearchResponse, error) {
@@ -764,7 +731,7 @@ func newCommonIterator(iter *MultiBlockIterator[parquet.Row], schema *parquet.Sc
 	}
 }
 
-func (i *commonIterator) Next(ctx context.Context) (common.ID, *tempopb.Trace, error) {
+func (i *commonIterator) Next(ctx context.Context) (common.ID, *deep_tp.Snapshot, error) {
 	id, row, err := i.iter.Next(ctx)
 	if err != nil && err != io.EOF {
 		return nil, nil, err
@@ -774,13 +741,13 @@ func (i *commonIterator) Next(ctx context.Context) (common.ID, *tempopb.Trace, e
 		return nil, nil, nil
 	}
 
-	t := &Trace{}
+	t := &Snapshot{}
 	err = i.schema.Reconstruct(t, row)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	tr := parquetTraceToTempopbTrace(t)
+	tr := parquetToDeepSnapshot(t)
 	return id, tr, nil
 }
 

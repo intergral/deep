@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetricsGeneratorClient interface {
-	PushSnapshot(ctx context.Context, in *PushSnapshotRequest, opts ...grpc.CallOption) (*PushResponse, error)
+	PushSnapshot(ctx context.Context, in *PushSnapshotRequest, opts ...grpc.CallOption) (*PushSnapshotResponse, error)
 }
 
 type metricsGeneratorClient struct {
@@ -33,8 +33,8 @@ func NewMetricsGeneratorClient(cc grpc.ClientConnInterface) MetricsGeneratorClie
 	return &metricsGeneratorClient{cc}
 }
 
-func (c *metricsGeneratorClient) PushSnapshot(ctx context.Context, in *PushSnapshotRequest, opts ...grpc.CallOption) (*PushResponse, error) {
-	out := new(PushResponse)
+func (c *metricsGeneratorClient) PushSnapshot(ctx context.Context, in *PushSnapshotRequest, opts ...grpc.CallOption) (*PushSnapshotResponse, error) {
+	out := new(PushSnapshotResponse)
 	err := c.cc.Invoke(ctx, "/deeppb.MetricsGenerator/PushSnapshot", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func (c *metricsGeneratorClient) PushSnapshot(ctx context.Context, in *PushSnaps
 // All implementations must embed UnimplementedMetricsGeneratorServer
 // for forward compatibility
 type MetricsGeneratorServer interface {
-	PushSnapshot(context.Context, *PushSnapshotRequest) (*PushResponse, error)
+	PushSnapshot(context.Context, *PushSnapshotRequest) (*PushSnapshotResponse, error)
 	mustEmbedUnimplementedMetricsGeneratorServer()
 }
 
@@ -54,7 +54,7 @@ type MetricsGeneratorServer interface {
 type UnimplementedMetricsGeneratorServer struct {
 }
 
-func (UnimplementedMetricsGeneratorServer) PushSnapshot(context.Context, *PushSnapshotRequest) (*PushResponse, error) {
+func (UnimplementedMetricsGeneratorServer) PushSnapshot(context.Context, *PushSnapshotRequest) (*PushSnapshotResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PushSnapshot not implemented")
 }
 func (UnimplementedMetricsGeneratorServer) mustEmbedUnimplementedMetricsGeneratorServer() {}
@@ -98,6 +98,92 @@ var MetricsGenerator_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PushSnapshot",
 			Handler:    _MetricsGenerator_PushSnapshot_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "deep.proto",
+}
+
+// IngesterServiceClient is the client API for IngesterService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type IngesterServiceClient interface {
+	PushBytes(ctx context.Context, in *PushBytesRequest, opts ...grpc.CallOption) (*PushBytesResponse, error)
+}
+
+type ingesterServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewIngesterServiceClient(cc grpc.ClientConnInterface) IngesterServiceClient {
+	return &ingesterServiceClient{cc}
+}
+
+func (c *ingesterServiceClient) PushBytes(ctx context.Context, in *PushBytesRequest, opts ...grpc.CallOption) (*PushBytesResponse, error) {
+	out := new(PushBytesResponse)
+	err := c.cc.Invoke(ctx, "/deeppb.IngesterService/PushBytes", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// IngesterServiceServer is the server API for IngesterService service.
+// All implementations must embed UnimplementedIngesterServiceServer
+// for forward compatibility
+type IngesterServiceServer interface {
+	PushBytes(context.Context, *PushBytesRequest) (*PushBytesResponse, error)
+	mustEmbedUnimplementedIngesterServiceServer()
+}
+
+// UnimplementedIngesterServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedIngesterServiceServer struct {
+}
+
+func (UnimplementedIngesterServiceServer) PushBytes(context.Context, *PushBytesRequest) (*PushBytesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PushBytes not implemented")
+}
+func (UnimplementedIngesterServiceServer) mustEmbedUnimplementedIngesterServiceServer() {}
+
+// UnsafeIngesterServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to IngesterServiceServer will
+// result in compilation errors.
+type UnsafeIngesterServiceServer interface {
+	mustEmbedUnimplementedIngesterServiceServer()
+}
+
+func RegisterIngesterServiceServer(s grpc.ServiceRegistrar, srv IngesterServiceServer) {
+	s.RegisterService(&IngesterService_ServiceDesc, srv)
+}
+
+func _IngesterService_PushBytes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PushBytesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IngesterServiceServer).PushBytes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/deeppb.IngesterService/PushBytes",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IngesterServiceServer).PushBytes(ctx, req.(*PushBytesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// IngesterService_ServiceDesc is the grpc.ServiceDesc for IngesterService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var IngesterService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "deeppb.IngesterService",
+	HandlerType: (*IngesterServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "PushBytes",
+			Handler:    _IngesterService_PushBytes_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

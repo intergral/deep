@@ -2,6 +2,7 @@ package ingester
 
 import (
 	"context"
+	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"time"
 
 	"go.uber.org/atomic"
@@ -10,7 +11,6 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/backend/local"
 	"github.com/intergral/deep/pkg/deepdb/encoding"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 )
@@ -50,7 +50,7 @@ func newLocalBlock(ctx context.Context, existingBlock common.BackendBlock, l *lo
 	return c
 }
 
-func (c *localBlock) FindTraceByID(ctx context.Context, id common.ID, opts common.SearchOptions) (*tempopb.Trace, error) {
+func (c *localBlock) FindTraceByID(ctx context.Context, id common.ID, opts common.SearchOptions) (*deep_tp.Snapshot, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "localBlock.FindTraceByID")
 	defer span.Finish()
 	return c.BackendBlock.FindTraceByID(ctx, id, opts)

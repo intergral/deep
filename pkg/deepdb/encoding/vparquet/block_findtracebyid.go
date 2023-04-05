@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/segmentio/parquet-go"
 	"io"
 
@@ -15,7 +16,6 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	"github.com/intergral/deep/pkg/parquetquery"
 	pq "github.com/intergral/deep/pkg/parquetquery"
-	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/util"
 )
 
@@ -53,7 +53,7 @@ func (b *backendBlock) checkBloom(ctx context.Context, id common.ID) (found bool
 	return filter.Test(id), nil
 }
 
-func (b *backendBlock) FindTraceByID(ctx context.Context, traceID common.ID, opts common.SearchOptions) (_ *tempopb.Trace, err error) {
+func (b *backendBlock) FindTraceByID(ctx context.Context, traceID common.ID, opts common.SearchOptions) (_ *deep_tp.Snapshot, err error) {
 	span, derivedCtx := opentracing.StartSpanFromContext(ctx, "parquet.backendBlock.FindTraceByID",
 		opentracing.Tags{
 			"blockID":   b.meta.BlockID,
@@ -81,7 +81,7 @@ func (b *backendBlock) FindTraceByID(ctx context.Context, traceID common.ID, opt
 	return findTraceByID(derivedCtx, traceID, b.meta, pf)
 }
 
-func findTraceByID(ctx context.Context, traceID common.ID, meta *backend.BlockMeta, pf *parquet.File) (*tempopb.Trace, error) {
+func findTraceByID(ctx context.Context, traceID common.ID, meta *backend.BlockMeta, pf *parquet.File) (*deep_tp.Snapshot, error) {
 	// traceID column index
 	colIndex, _ := pq.GetColumnIndexByPath(pf, TraceIDColumnName)
 	if colIndex == -1 {
@@ -193,14 +193,14 @@ func findTraceByID(ctx context.Context, traceID common.ID, meta *backend.BlockMe
 		return nil, errors.Wrap(err, "seek to row")
 	}
 
-	tr := new(Trace)
+	tr := new(Snapshot)
 	err = r.Read(tr)
 	if err != nil {
 		return nil, errors.Wrap(err, "error reading row from backend")
 	}
 
 	// convert to proto trace and return
-	return parquetTraceToTempopbTrace(tr), nil
+	return parquetToDeepSnapshot(tr), nil
 }
 
 // binarySearch that finds exact matching entry. Returns non-zero index when found, or -1 when not found

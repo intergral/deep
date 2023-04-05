@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"time"
 
 	"github.com/go-kit/log"
@@ -13,7 +14,7 @@ import (
 )
 
 type Finder interface {
-	FindTraceByID(ctx context.Context, id ID, opts SearchOptions) (*tempopb.Trace, error)
+	FindTraceByID(ctx context.Context, id ID, opts SearchOptions) (*deep_tp.Snapshot, error)
 }
 
 type TagCallback func(t string)
@@ -79,7 +80,7 @@ type CompactionOptions struct {
 }
 
 type Iterator interface {
-	Next(ctx context.Context) (ID, *tempopb.Trace, error)
+	Next(ctx context.Context) (ID, *deep_tp.Snapshot, error)
 	Close()
 }
 
@@ -94,7 +95,7 @@ type WALBlock interface {
 	BackendBlock
 
 	// Append the given trace to the block. Must be safe for concurrent use with read operations.
-	Append(id ID, b []byte, start, end uint32) error
+	Append(id ID, b []byte, start uint32) error
 
 	// Flush any unbuffered data to disk.  Must be safe for concurrent use with read operations.
 	Flush() error

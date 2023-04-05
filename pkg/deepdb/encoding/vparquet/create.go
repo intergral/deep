@@ -43,7 +43,7 @@ func CreateBlock(ctx context.Context, cfg *common.BlockConfig, meta *backend.Blo
 		next = ii.NextRow
 	} else {
 		// Need to convert from proto->parquet obj
-		trp := &Trace{}
+		trp := &Snapshot{}
 		sch := parquet.SchemaOf(trp)
 		next = func(context.Context) (common.ID, parquet.Row, error) {
 			id, tr, err := i.Next(ctx)
@@ -54,7 +54,7 @@ func CreateBlock(ctx context.Context, cfg *common.BlockConfig, meta *backend.Blo
 			// Copy ID to allow it to escape the iterator.
 			id = append([]byte(nil), id...)
 
-			trp = traceToParquet(id, tr, trp)
+			trp = snapshotToParquet(id, tr, trp)
 
 			row := sch.Deconstruct(completeBlockRowPool.Get(), trp)
 
@@ -68,7 +68,7 @@ func CreateBlock(ctx context.Context, cfg *common.BlockConfig, meta *backend.Blo
 			break
 		}
 
-		err = s.AddRaw(id, row, 0, 0) // start and end time of the wal meta are used.
+		err = s.AddRaw(id, row, 0) // start and end time of the wal meta are used.
 		if err != nil {
 			return nil, err
 		}
@@ -95,7 +95,7 @@ type streamingBlock struct {
 	bloom *common.ShardedBloomFilter
 	meta  *backend.BlockMeta
 	bw    deep_io.BufferedWriteFlusher
-	pw    *parquet.GenericWriter[*Trace]
+	pw    *parquet.GenericWriter[*Snapshot]
 	w     *backendWriter
 	r     backend.Reader
 	to    backend.Writer
@@ -115,7 +115,7 @@ func newStreamingBlock(ctx context.Context, cfg *common.BlockConfig, meta *backe
 
 	w := &backendWriter{ctx, to, DataFileName, meta.BlockID, meta.TenantID, nil}
 	bw := createBufferedWriter(w)
-	pw := parquet.NewGenericWriter[*Trace](bw)
+	pw := parquet.NewGenericWriter[*Snapshot](bw)
 
 	return &streamingBlock{
 		ctx:   ctx,
@@ -129,29 +129,29 @@ func newStreamingBlock(ctx context.Context, cfg *common.BlockConfig, meta *backe
 	}
 }
 
-func (b *streamingBlock) Add(tr *Trace, start, end uint32) error {
-	_, err := b.pw.Write([]*Trace{tr})
+func (b *streamingBlock) Add(tr *Snapshot, start uint32) error {
+	_, err := b.pw.Write([]*Snapshot{tr})
 	if err != nil {
 		return err
 	}
-	id := tr.TraceID
+	id := tr.Id
 
 	b.bloom.Add(id)
-	b.meta.ObjectAdded(id, start, end)
+	b.meta.ObjectAdded(id, start)
 	b.currentBufferedTraces++
-	b.currentBufferedBytes += estimateMarshalledSizeFromTrace(tr)
+	b.currentBufferedBytes += estimateMarshalledSizeFromSnapshot(tr)
 
 	return nil
 }
 
-func (b *streamingBlock) AddRaw(id []byte, row parquet.Row, start, end uint32) error {
+func (b *streamingBlock) AddRaw(id []byte, row parquet.Row, start uint32) error {
 	_, err := b.pw.WriteRows([]parquet.Row{row})
 	if err != nil {
 		return err
 	}
 
 	b.bloom.Add(id)
-	b.meta.ObjectAdded(id, start, end)
+	b.meta.ObjectAdded(id, start)
 	b.currentBufferedTraces++
 	b.currentBufferedBytes += estimateMarshalledSizeFromParquetRow(row)
 
@@ -231,39 +231,24 @@ func (b *streamingBlock) Complete() (int, error) {
 	return n, writeBlockMeta(b.ctx, b.to, b.meta, b.bloom)
 }
 
-// estimateMarshalledSizeFromTrace attempts to estimate the size of trace in bytes. This is used to make choose
+// estimateMarshalledSizeFromSnapshot attempts to estimate the size of trace in bytes. This is used to make choose
 // when to cut a row group during block creation.
 // TODO: This function regularly estimates lower values then estimateProtoSize() and the size
 // of the actual proto. It's also quite inefficient. Perhaps just using static values per span or attribute
 // would be a better choice?
-func estimateMarshalledSizeFromTrace(tr *Trace) (size int) {
-	size += 7 // 7 trace lvl fields
+func estimateMarshalledSizeFromSnapshot(tr *Snapshot) (size int) {
+	size += 10 // 10 snapshot lvl fields
 
-	for _, rs := range tr.ResourceSpans {
-		size += estimateAttrSize(rs.Resource.Attrs)
-		size += 10 // 10 resource span lvl fields
+	size += estimateAttrSize(tr.Resource.Attrs)
+	size += estimateAttrSize(tr.Attributes)
+	size += 5                     // 5 tracepoint lvl fields
+	size += 6 * len(tr.Watches)   // 6 watch result fields
+	size += 11 * len(tr.Frames)   // frame fields
+	size += 5 * len(tr.VarLookup) // var look up fields
 
-		for _, ils := range rs.ScopeSpans {
-			size += 2 // 2 scope span lvl fields
-
-			for _, s := range ils.Spans {
-				size += 14 // 14 span lvl fields
-				size += estimateAttrSize(s.Attrs)
-				size += estimateEventsSize(s.Events)
-			}
-		}
-	}
 	return
 }
 
 func estimateAttrSize(attrs []Attribute) (size int) {
 	return len(attrs) * 7 // 7 attribute lvl fields
-}
-
-func estimateEventsSize(events []Event) (size int) {
-	for _, e := range events {
-		size += 4                // 4 event lvl fields
-		size += 4 * len(e.Attrs) // 2 event attribute fields
-	}
-	return
 }

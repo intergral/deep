@@ -8,12 +8,11 @@ import (
 	"github.com/intergral/deep/pkg/model"
 )
 
-type liveTrace struct {
-	batches    [][]byte
+type liveSnapshot struct {
+	bytes      []byte
 	lastAppend time.Time
-	traceID    []byte
+	snapshotId []byte
 	start      uint32
-	end        uint32
 	decoder    model.SegmentDecoder
 
 	// byte limits
@@ -21,38 +20,33 @@ type liveTrace struct {
 	currentBytes int
 }
 
-func newTrace(traceID []byte, maxBytes int) *liveTrace {
-	return &liveTrace{
-		batches:    make([][]byte, 0, 10), // 10 for luck
+func newLiveSnapshot(id []byte, maxBytes int) *liveSnapshot {
+	return &liveSnapshot{
+		bytes:      make([]byte, 0, 10), // 10 for luck
 		lastAppend: time.Now(),
-		traceID:    traceID,
+		snapshotId: id,
 		maxBytes:   maxBytes,
 		decoder:    model.MustNewSegmentDecoder(model.CurrentEncoding),
 	}
 }
 
-func (t *liveTrace) Push(_ context.Context, instanceID string, trace []byte) error {
+func (t *liveSnapshot) Push(_ context.Context, instanceID string, trace []byte) error {
 	t.lastAppend = time.Now()
 	if t.maxBytes != 0 {
 		reqSize := len(trace)
 		if t.currentBytes+reqSize > t.maxBytes {
-			return newTraceTooLargeError(t.traceID, instanceID, t.maxBytes, reqSize)
+			return newSnapshotTooLargeError(t.snapshotId, instanceID, t.maxBytes, reqSize)
 		}
 
 		t.currentBytes += reqSize
 	}
 
-	start, end, err := t.decoder.FastRange(trace)
+	start, err := t.decoder.FastRange(trace)
 	if err != nil {
 		return fmt.Errorf("failed to get range while adding segment: %w", err)
 	}
-	t.batches = append(t.batches, trace)
-	if t.start == 0 || start < t.start {
-		t.start = start
-	}
-	if t.end == 0 || end > t.end {
-		t.end = end
-	}
+	t.bytes = trace
+	t.start = start
 
 	return nil
 }

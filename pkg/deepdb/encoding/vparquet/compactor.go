@@ -36,7 +36,7 @@ func (c *Compactor) Compact(ctx context.Context, l log.Logger, r backend.Reader,
 		minBlockStart   time.Time
 		maxBlockEnd     time.Time
 		bookmarks       = make([]*bookmark[parquet.Row], 0, len(inputs))
-		// MaxBytesPerTrace is the largest trace that can be expected, and assumes 1 byte per value on average (same as flushing).
+		// MaxBytesPerSnapshot is the largest trace that can be expected, and assumes 1 byte per value on average (same as flushing).
 		// Divide by 4 to presumably require 2 slice allocations if we ever see a trace this large
 		pool = newRowPool(c.opts.MaxBytesPerTrace / 4)
 	)
@@ -69,7 +69,7 @@ func (c *Compactor) Compact(ctx context.Context, l log.Logger, r backend.Reader,
 
 	var (
 		nextCompactionLevel = compactionLevel + 1
-		sch                 = parquet.SchemaOf(new(Trace))
+		sch                 = parquet.SchemaOf(new(Snapshot))
 	)
 
 	// Dedupe rows and also call the metrics callback.
@@ -112,7 +112,7 @@ func (c *Compactor) Compact(ctx context.Context, l log.Logger, r backend.Reader,
 		// Time to combine.
 		cmb := NewCombiner()
 		for i, row := range rows {
-			tr := new(Trace)
+			tr := new(Snapshot)
 			err := sch.Reconstruct(tr, row)
 			if err != nil {
 				return nil, err
@@ -171,7 +171,7 @@ func (c *Compactor) Compact(ctx context.Context, l log.Logger, r backend.Reader,
 		// Write trace.
 		// Note - not specifying trace start/end here, we set the overall block start/stop
 		// times from the input metas.
-		err = currentBlock.AddRaw(lowestID, lowestObject, 0, 0)
+		err = currentBlock.AddRaw(lowestID, lowestObject, 0)
 		if err != nil {
 			return nil, err
 		}

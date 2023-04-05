@@ -48,19 +48,15 @@ func NewBlockMeta(tenantID string, blockID uuid.UUID, version string, encoding E
 
 // ObjectAdded updates the block meta appropriately based on information about an added record
 // start/end are unix epoch seconds
-func (b *BlockMeta) ObjectAdded(id []byte, start uint32, end uint32) {
+func (b *BlockMeta) ObjectAdded(id []byte, start uint32) {
 
 	if start > 0 {
 		startTime := time.Unix(int64(start), 0)
 		if b.StartTime.IsZero() || startTime.Before(b.StartTime) {
 			b.StartTime = startTime
 		}
-	}
-
-	if end > 0 {
-		endTime := time.Unix(int64(end), 0)
-		if b.EndTime.IsZero() || endTime.After(b.EndTime) {
-			b.EndTime = endTime
+		if b.EndTime.IsZero() || startTime.After(b.EndTime) {
+			b.EndTime = startTime
 		}
 	}
 

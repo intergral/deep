@@ -183,7 +183,7 @@ func (g *Generator) stopIncomingRequests() {
 	g.readOnly.Store(true)
 }
 
-func (g *Generator) PushSnapshot(ctx context.Context, req *deeppb.PushSnapshotRequest) (*deeppb.PushResponse, error) {
+func (g *Generator) PushSnapshot(ctx context.Context, req *deeppb.PushSnapshotRequest) (*deeppb.PushSnapshotResponse, error) {
 	if g.readOnly.Load() {
 		return nil, ErrReadOnly
 	}
@@ -204,7 +204,7 @@ func (g *Generator) PushSnapshot(ctx context.Context, req *deeppb.PushSnapshotRe
 
 	instance.PushSnapshot(ctx, req)
 
-	return &deeppb.PushResponse{}, nil
+	return &deeppb.PushSnapshotResponse{}, nil
 }
 
 func (g *Generator) getOrCreateInstance(instanceID string) (*instance, error) {

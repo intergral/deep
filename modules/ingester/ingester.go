@@ -3,32 +3,28 @@ package ingester
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc/status"
+	"github.com/intergral/deep/pkg/deeppb"
 	"sync"
 	"time"
 
 	"github.com/go-kit/log/level"
 	"github.com/grafana/dskit/ring"
 	"github.com/grafana/dskit/services"
-	"github.com/opentracing/opentracing-go"
-	ot_log "github.com/opentracing/opentracing-go/log"
-	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/weaveworks/common/user"
-	"google.golang.org/grpc/codes"
-
 	"github.com/intergral/deep/modules/overrides"
 	"github.com/intergral/deep/modules/storage"
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/backend/local"
 	"github.com/intergral/deep/pkg/flushqueues"
 	"github.com/intergral/deep/pkg/model"
-	v1 "github.com/intergral/deep/pkg/model/v1"
-	v2 "github.com/intergral/deep/pkg/model/v2"
 	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/util/log"
 	"github.com/intergral/deep/pkg/validation"
+	"github.com/opentracing/opentracing-go"
+	ot_log "github.com/opentracing/opentracing-go/log"
+	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/weaveworks/common/user"
 )
 
 // ErrReadOnly is returned when the ingester is shutting down and a push was
@@ -48,6 +44,7 @@ const (
 // Ingester builds blocks out of incoming traces
 type Ingester struct {
 	services.Service
+	deeppb.UnimplementedIngesterServiceServer
 
 	cfg Config
 
@@ -66,6 +63,7 @@ type Ingester struct {
 	limiter *Limiter
 
 	subservicesWatcher *services.FailureWatcher
+	traceEncoder       model.SegmentDecoder
 }
 
 // New makes a new Ingester.
@@ -76,6 +74,7 @@ func New(cfg Config, store storage.Store, limits *overrides.Overrides, reg prome
 		store:        store,
 		flushQueues:  flushqueues.New(cfg.ConcurrentFlushes, metricFlushQueueLength),
 		replayJitter: true,
+		traceEncoder: model.MustNewSegmentDecoder(model.CurrentEncoding),
 	}
 
 	i.local = store.WAL().LocalBackend()
@@ -170,47 +169,11 @@ func (i *Ingester) markUnavailable() {
 	i.stopIncomingRequests()
 }
 
-// PushBytes implements tempopb.Pusher.PushBytes. Traces pushed to this endpoint are expected to be in the formats
+// PushBytes implements deeppb.Ingester.PushBytes. Snapshot pushed to this endpoint are expected to be in the formats
 // defined by ./pkg/model/v1
-// This push function is extremely inefficient and is only provided as a migration path from the v1->v2 encodings
-func (i *Ingester) PushBytes(ctx context.Context, req *tempopb.PushBytesRequest) (*tempopb.PushResponse, error) {
-	var err error
-	v1Decoder, err := model.NewSegmentDecoder(v1.Encoding)
-	if err != nil {
-		return nil, err
-	}
-	v2Decoder, err := model.NewSegmentDecoder(v2.Encoding)
-	if err != nil {
-		return nil, err
-	}
-
-	for i, t := range req.Traces {
-		trace, err := v1Decoder.PrepareForRead([][]byte{t.Slice})
-		if err != nil {
-			return nil, fmt.Errorf("error calling v1.PrepareForRead %w", err)
-		}
-
-		now := uint32(time.Now().Unix())
-		v2Slice, err := v2Decoder.PrepareForWrite(trace, now, now)
-		if err != nil {
-			return nil, fmt.Errorf("error calling v2.PrepareForWrite %w", err)
-		}
-
-		req.Traces[i].Slice = v2Slice
-	}
-
-	return i.PushBytesV2(ctx, req)
-}
-
-// PushBytes implements tempopb.Pusher.PushBytes. Traces pushed to this endpoint are expected to be in the formats
-// defined by ./pkg/model/v2
-func (i *Ingester) PushBytesV2(ctx context.Context, req *tempopb.PushBytesRequest) (*tempopb.PushResponse, error) {
+func (i *Ingester) PushBytes(ctx context.Context, req *deeppb.PushBytesRequest) (*deeppb.PushBytesResponse, error) {
 	if i.readonly {
 		return nil, ErrReadOnly
-	}
-
-	if len(req.Traces) != len(req.Ids) {
-		return nil, status.Errorf(codes.InvalidArgument, "mismatched traces/ids length: %d, %d", len(req.Traces), len(req.Ids))
 	}
 
 	instanceID, err := user.ExtractOrgID(ctx)
@@ -228,12 +191,12 @@ func (i *Ingester) PushBytesV2(ctx context.Context, req *tempopb.PushBytesReques
 		return nil, err
 	}
 
-	return &tempopb.PushResponse{}, nil
+	return &deeppb.PushBytesResponse{}, nil
 }
 
 // FindTraceByID implements tempopb.Querier.f
 func (i *Ingester) FindTraceByID(ctx context.Context, req *tempopb.TraceByIDRequest) (*tempopb.TraceByIDResponse, error) {
-	if !validation.ValidTraceID(req.TraceID) {
+	if !validation.ValidSnapshotID(req.TraceID) {
 		return nil, fmt.Errorf("invalid trace id")
 	}
 
@@ -258,7 +221,7 @@ func (i *Ingester) FindTraceByID(ctx context.Context, req *tempopb.TraceByIDRequ
 	span.LogFields(ot_log.Bool("trace found", trace != nil))
 
 	return &tempopb.TraceByIDResponse{
-		Trace: trace,
+		Trace: nil,
 	}, nil
 }
 

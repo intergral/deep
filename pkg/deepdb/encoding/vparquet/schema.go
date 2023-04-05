@@ -2,13 +2,11 @@ package vparquet
 
 import (
 	"bytes"
+	deep_common "github.com/intergral/deep/pkg/deeppb/common/v1"
+	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 
 	"github.com/golang/protobuf/jsonpb" //nolint:all //deprecated
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	"github.com/intergral/deep/pkg/tempopb"
-	v1 "github.com/intergral/deep/pkg/tempopb/common/v1"
-	v1_resource "github.com/intergral/deep/pkg/tempopb/resource/v1"
-	v1_trace "github.com/intergral/deep/pkg/tempopb/trace/v1"
 	"github.com/intergral/deep/pkg/util"
 )
 
@@ -27,14 +25,6 @@ const (
 	LabelK8sNamespaceName = "k8s.namespace.name"
 	LabelK8sPodName       = "k8s.pod.name"
 	LabelK8sContainerName = "k8s.container.name"
-
-	LabelName           = "name"
-	LabelHTTPMethod     = "http.method"
-	LabelHTTPUrl        = "http.url"
-	LabelHTTPStatusCode = "http.status_code"
-	LabelStatusCode     = "status.code"
-	LabelStatus         = "status"
-	LabelKind           = "kind"
 )
 
 // These definition levels match the schema below
@@ -51,19 +41,17 @@ const (
 	FieldResourceAttrValDouble = "rs.Resource.Attrs.ValueDouble"
 	FieldResourceAttrValBool   = "rs.Resource.Attrs.ValueBool"
 
-	FieldSpanAttrKey       = "rs.ils.Spans.Attrs.Key"
-	FieldSpanAttrVal       = "rs.ils.Spans.Attrs.Value"
-	FieldSpanAttrValInt    = "rs.ils.Spans.Attrs.ValueInt"
-	FieldSpanAttrValDouble = "rs.ils.Spans.Attrs.ValueDouble"
-	FieldSpanAttrValBool   = "rs.ils.Spans.Attrs.ValueBool"
+	FieldAttrKey       = "rs.Attributes.Key"
+	FieldAttrVal       = "rs.Attributes.Value"
+	FieldAttrValInt    = "rs.Attributes.ValueInt"
+	FieldAttrValDouble = "rs.Attributes.ValueDouble"
+	FieldAttrValBool   = "rs.Attributes.ValueBool"
 )
 
 var (
 	jsonMarshaler = new(jsonpb.Marshaler)
 
 	labelMappings = map[string]string{
-		LabelRootSpanName:     "RootSpanName",
-		LabelRootServiceName:  "RootServiceName",
 		LabelServiceName:      "rs.Resource.ServiceName",
 		LabelCluster:          "rs.Resource.Cluster",
 		LabelNamespace:        "rs.Resource.Namespace",
@@ -73,11 +61,6 @@ var (
 		LabelK8sNamespaceName: "rs.Resource.K8sNamespaceName",
 		LabelK8sPodName:       "rs.Resource.K8sPodName",
 		LabelK8sContainerName: "rs.Resource.K8sContainerName",
-		LabelName:             "rs.ils.Spans.Name",
-		LabelHTTPMethod:       "rs.ils.Spans.HttpMethod",
-		LabelHTTPUrl:          "rs.ils.Spans.HttpUrl",
-		LabelHTTPStatusCode:   "rs.ils.Spans.HttpStatusCode",
-		LabelStatusCode:       "rs.ils.Spans.StatusCode",
 	}
 )
 
@@ -91,56 +74,6 @@ type Attribute struct {
 	ValueBool   *bool    `parquet:",snappy,optional"`
 	ValueKVList string   `parquet:",snappy,optional"`
 	ValueArray  string   `parquet:",snappy,optional"`
-}
-
-type EventAttribute struct {
-	Key   string `parquet:",snappy,dict"`
-	Value []byte `parquet:",snappy"` // Was json-encoded data, is now proto encoded data
-}
-
-type Event struct {
-	TimeUnixNano           uint64           `parquet:",delta"`
-	Name                   string           `parquet:",snappy"`
-	Attrs                  []EventAttribute `parquet:""`
-	DroppedAttributesCount int32            `parquet:",snappy,delta"`
-	Test                   string           `parquet:",snappy,dict,optional"` // Always empty for testing
-}
-
-// nolint:revive
-// Ignore field naming warnings
-type Span struct {
-	// ID is []byte to save space. It doesn't need to be user
-	// friendly like trace ID, and []byte is half the size of string.
-	ID                     []byte      `parquet:","`
-	Name                   string      `parquet:",snappy,dict"`
-	Kind                   int         `parquet:",delta"`
-	ParentSpanID           []byte      `parquet:","`
-	TraceState             string      `parquet:",snappy"`
-	StartUnixNanos         uint64      `parquet:",delta"`
-	EndUnixNanos           uint64      `parquet:",delta"`
-	StatusCode             int         `parquet:",delta"`
-	StatusMessage          string      `parquet:",snappy"`
-	Attrs                  []Attribute `parquet:""`
-	DroppedAttributesCount int32       `parquet:",snappy"`
-	Events                 []Event     `parquet:""`
-	DroppedEventsCount     int32       `parquet:",snappy"`
-	Links                  []byte      `parquet:",snappy"` // proto encoded []*v1_trace.Span_Link
-	DroppedLinksCount      int32       `parquet:",snappy"`
-
-	// Known attributes
-	HttpMethod     *string `parquet:",snappy,optional,dict"`
-	HttpUrl        *string `parquet:",snappy,optional,dict"`
-	HttpStatusCode *int64  `parquet:",snappy,optional"`
-}
-
-type Scope struct {
-	Name    string `parquet:",snappy,dict"`
-	Version string `parquet:",snappy,dict"`
-}
-
-type ScopeSpan struct {
-	Scope Scope  `parquet:"il"`
-	Spans []Span `parquet:""`
 }
 
 type Resource struct {
@@ -160,29 +93,62 @@ type Resource struct {
 	Test string `parquet:",snappy,dict,optional"` // Always empty for testing
 }
 
-type ResourceSpans struct {
-	Resource   Resource    `parquet:""`
-	ScopeSpans []ScopeSpan `parquet:"ils"`
+type TracePointConfig struct {
+	Id      string            `parquet:",snappy,dict"`
+	Path    string            `parquet:",snappy,dict"`
+	LineNo  int32             `parquet:",delta"`
+	Args    map[string]string `parquet:""`
+	Watches []string          `parquet:""`
 }
 
-type Trace struct {
-	// TraceID is a byte slice as it helps maintain the sort order of traces within a parquet file
-	TraceID       []byte          `parquet:""`
-	ResourceSpans []ResourceSpans `parquet:"rs"`
-
-	// TraceIDText is for better useability on downstream systems i.e: something other than Tempo is reading these files.
-	// It will not be used as the primary traceID field within Tempo and is only helpful for debugging purposes.
-	TraceIDText string `parquet:",snappy"`
-
-	// Trace-level attributes for searching
-	StartTimeUnixNano uint64 `parquet:",delta"`
-	EndTimeUnixNano   uint64 `parquet:",delta"`
-	DurationNanos     uint64 `parquet:",delta"`
-	RootServiceName   string `parquet:",dict"`
-	RootSpanName      string `parquet:",dict"`
+type VariableId struct {
+	Id        string   `parquet:",snappy,dict"`
+	Name      string   `parquet:",snappy,dict"`
+	Modifiers []string `parquet:""`
 }
 
-func attrToParquet(a *v1.KeyValue, p *Attribute) {
+type Variable struct {
+	Type      string       `parquet:",snappy,dict"`
+	Value     string       `parquet:",snappy,dict"`
+	Hash      string       `parquet:",snappy,dict"`
+	Children  []VariableId `parquet:""`
+	Truncated bool         `parquet:""`
+}
+
+type StackFrame struct {
+	FileName               string       `parquet:",snappy,dict"`
+	MethodName             string       `parquet:",snappy,dict"`
+	LineNumber             int32        `parquet:",delta"`
+	ClassName              *string      `parquet:",snappy,optional,dict"`
+	IsAsync                bool         `parquet:""`
+	ColumnNumber           *int32       `parquet:",snappy,optional"`
+	TranspiledFileName     *string      `parquet:",snappy,optional,dict"`
+	TranspiledLineNumber   *int32       `parquet:",snappy,optional"`
+	TranspiledColumnNumber *int32       `parquet:",snappy,optional"`
+	Variables              []VariableId `parquet:""`
+	AppFrame               bool         `parquet:""`
+}
+
+type WatchResult struct {
+	Expression  string      `parquet:",snappy"`
+	GoodResult  *VariableId `parquet:""`
+	ErrorResult *string     `parquet:",snappy"`
+}
+
+type Snapshot struct {
+	Id            []byte              `parquet:""`
+	IdText        string              `parquet:",snappy"`
+	Tracepoint    TracePointConfig    `parquet:"tp"`
+	VarLookup     map[string]Variable `parquet:""`
+	Ts            int64               `parquet:",delta"`
+	Frames        []StackFrame        `parquet:""`
+	Watches       []WatchResult       `parquet:""`
+	Attributes    []Attribute         `parquet:"attr"`
+	NanosDuration int64               `parquet:",delta"`
+	Resource      Resource            `parquet:"rs"`
+}
+
+func attrToParquet(a *deep_common.KeyValue, p *Attribute) {
 	p.Key = a.Key
 	p.Value = nil
 	p.ValueArray = ""
@@ -192,433 +158,188 @@ func attrToParquet(a *v1.KeyValue, p *Attribute) {
 	p.ValueKVList = ""
 
 	switch v := a.GetValue().Value.(type) {
-	case *v1.AnyValue_StringValue:
+	case *deep_common.AnyValue_StringValue:
 		p.Value = &v.StringValue
-	case *v1.AnyValue_IntValue:
+	case *deep_common.AnyValue_IntValue:
 		p.ValueInt = &v.IntValue
-	case *v1.AnyValue_DoubleValue:
+	case *deep_common.AnyValue_DoubleValue:
 		p.ValueDouble = &v.DoubleValue
-	case *v1.AnyValue_BoolValue:
+	case *deep_common.AnyValue_BoolValue:
 		p.ValueBool = &v.BoolValue
-	case *v1.AnyValue_ArrayValue:
+	case *deep_common.AnyValue_ArrayValue:
 		jsonBytes := &bytes.Buffer{}
 		_ = jsonMarshaler.Marshal(jsonBytes, a.Value) // deliberately marshalling a.Value because of AnyValue logic
 		p.ValueArray = jsonBytes.String()
-	case *v1.AnyValue_KvlistValue:
+	case *deep_common.AnyValue_KvlistValue:
 		jsonBytes := &bytes.Buffer{}
 		_ = jsonMarshaler.Marshal(jsonBytes, a.Value) // deliberately marshalling a.Value because of AnyValue logic
 		p.ValueKVList = jsonBytes.String()
 	}
 }
 
-func traceToParquet(id common.ID, tr *tempopb.Trace, ot *Trace) *Trace {
-	if ot == nil {
-		ot = &Trace{}
+func snapshotToParquet(id common.ID, snapshot *deep_tp.Snapshot, sp *Snapshot) *Snapshot {
+	if sp == nil {
+		sp = &Snapshot{}
 	}
 
-	ot.TraceIDText = util.TraceIDToHexString(id)
-	ot.TraceID = util.PadTraceIDTo16Bytes(id)
+	sp.Id = util.PadTraceIDTo16Bytes(id)
+	sp.IdText = util.TraceIDToHexString(id)
 
-	// Trace-level items
-	traceStart := uint64(0)
-	traceEnd := uint64(0)
-	var rootSpan *v1_trace.Span
-	var rootBatch *v1_trace.ResourceSpans
+	sp.Tracepoint = convertTracepoint(snapshot.Tracepoint)
+	sp.VarLookup = convertLookup(snapshot.VarLookup)
+	sp.Ts = snapshot.Ts
 
-	ot.ResourceSpans = extendReuseSlice(len(tr.Batches), ot.ResourceSpans)
-	for ib, b := range tr.Batches {
-		ob := &ot.ResourceSpans[ib]
-		// clear out any existing fields in case they were set on the original
-		ob.Resource.ServiceName = ""
-		ob.Resource.Cluster = nil
-		ob.Resource.Namespace = nil
-		ob.Resource.Pod = nil
-		ob.Resource.Container = nil
-		ob.Resource.K8sClusterName = nil
-		ob.Resource.K8sNamespaceName = nil
-		ob.Resource.K8sPodName = nil
-		ob.Resource.K8sContainerName = nil
+	sp.Frames = convertFrames(snapshot.Frames)
+	sp.Watches = convertWatches(snapshot.Watches)
 
-		if b.Resource != nil {
-			ob.Resource.Attrs = extendReuseSlice(len(b.Resource.Attributes), ob.Resource.Attrs)
-			attrCount := 0
-			for _, a := range b.Resource.Attributes {
-				strVal, ok := a.Value.Value.(*v1.AnyValue_StringValue)
-				special := ok
-				if ok {
-					switch a.Key {
-					case LabelServiceName:
-						ob.Resource.ServiceName = strVal.StringValue
-					case LabelCluster:
-						ob.Resource.Cluster = &strVal.StringValue
-					case LabelNamespace:
-						ob.Resource.Namespace = &strVal.StringValue
-					case LabelPod:
-						ob.Resource.Pod = &strVal.StringValue
-					case LabelContainer:
-						ob.Resource.Container = &strVal.StringValue
+	sp.Attributes = convertAttributes(snapshot.Attributes)
 
-					case LabelK8sClusterName:
-						ob.Resource.K8sClusterName = &strVal.StringValue
-					case LabelK8sNamespaceName:
-						ob.Resource.K8sNamespaceName = &strVal.StringValue
-					case LabelK8sPodName:
-						ob.Resource.K8sPodName = &strVal.StringValue
-					case LabelK8sContainerName:
-						ob.Resource.K8sContainerName = &strVal.StringValue
-					default:
-						special = false
-					}
-				}
+	sp.Resource.ServiceName = ""
+	sp.Resource.Cluster = nil
+	sp.Resource.Namespace = nil
+	sp.Resource.Pod = nil
+	sp.Resource.Container = nil
+	sp.Resource.K8sClusterName = nil
+	sp.Resource.K8sNamespaceName = nil
+	sp.Resource.K8sPodName = nil
+	sp.Resource.K8sContainerName = nil
 
-				if !special {
-					// Other attributes put in generic columns
-					attrToParquet(a, &ob.Resource.Attrs[attrCount])
-					attrCount++
+	if snapshot.Resource != nil {
+		sp.Resource.Attrs = extendReuseSlice(len(snapshot.Resource), sp.Resource.Attrs)
+		attrCount := 0
+		for _, a := range snapshot.Resource {
+			strVal, ok := a.Value.Value.(*deep_common.AnyValue_StringValue)
+			special := ok
+			if ok {
+				switch a.Key {
+				case LabelServiceName:
+					sp.Resource.ServiceName = strVal.StringValue
+				case LabelCluster:
+					sp.Resource.Cluster = &strVal.StringValue
+				case LabelNamespace:
+					sp.Resource.Namespace = &strVal.StringValue
+				case LabelPod:
+					sp.Resource.Pod = &strVal.StringValue
+				case LabelContainer:
+					sp.Resource.Container = &strVal.StringValue
+
+				case LabelK8sClusterName:
+					sp.Resource.K8sClusterName = &strVal.StringValue
+				case LabelK8sNamespaceName:
+					sp.Resource.K8sNamespaceName = &strVal.StringValue
+				case LabelK8sPodName:
+					sp.Resource.K8sPodName = &strVal.StringValue
+				case LabelK8sContainerName:
+					sp.Resource.K8sContainerName = &strVal.StringValue
+				default:
+					special = false
 				}
 			}
-			ob.Resource.Attrs = ob.Resource.Attrs[:attrCount]
-		}
 
-		ob.ScopeSpans = extendReuseSlice(len(b.ScopeSpans), ob.ScopeSpans)
-		for iils, ils := range b.ScopeSpans {
-			oils := &ob.ScopeSpans[iils]
-			if ils.Scope != nil {
-				oils.Scope = Scope{
-					Name:    ils.Scope.Name,
-					Version: ils.Scope.Version,
-				}
-			} else {
-				oils.Scope.Name = ""
-				oils.Scope.Version = ""
-			}
-
-			oils.Spans = extendReuseSlice(len(ils.Spans), oils.Spans)
-			for is, s := range ils.Spans {
-				ss := &oils.Spans[is]
-
-				if traceStart == 0 || s.StartTimeUnixNano < traceStart {
-					traceStart = s.StartTimeUnixNano
-				}
-				if s.EndTimeUnixNano > traceEnd {
-					traceEnd = s.EndTimeUnixNano
-				}
-				if len(s.ParentSpanId) == 0 {
-					rootSpan = s
-					rootBatch = b
-				}
-
-				ss.Events = extendReuseSlice(len(s.Events), ss.Events)
-				for ie, e := range s.Events {
-					eventToParquet(e, &ss.Events[ie])
-				}
-
-				ss.ID = s.SpanId
-				ss.ParentSpanID = s.ParentSpanId
-				ss.Name = s.Name
-				ss.Kind = int(s.Kind)
-				ss.TraceState = s.TraceState
-				if s.Status != nil {
-					ss.StatusCode = int(s.Status.Code)
-					ss.StatusMessage = s.Status.Message
-				} else {
-					ss.StatusCode = 0
-					ss.StatusMessage = ""
-				}
-				ss.StartUnixNanos = s.StartTimeUnixNano
-				ss.EndUnixNanos = s.EndTimeUnixNano
-				ss.DroppedAttributesCount = int32(s.DroppedAttributesCount)
-				ss.DroppedEventsCount = int32(s.DroppedEventsCount)
-				ss.HttpMethod = nil
-				ss.HttpUrl = nil
-				ss.HttpStatusCode = nil
-				if len(s.Links) > 0 {
-					links := tempopb.LinkSlice{
-						Links: s.Links,
-					}
-					ss.Links = extendReuseSlice(links.Size(), ss.Links)
-					_, _ = links.MarshalToSizedBuffer(ss.Links)
-				} else {
-					ss.Links = ss.Links[:0] // you can 0 length slice a nil slice
-				}
-				ss.DroppedLinksCount = int32(s.DroppedLinksCount)
-
-				ss.Attrs = extendReuseSlice(len(s.Attributes), ss.Attrs)
-				attrCount := 0
-				for _, a := range s.Attributes {
-					special := false
-
-					switch a.Key {
-					case LabelHTTPMethod:
-						strVal, ok := a.Value.Value.(*v1.AnyValue_StringValue)
-						if ok {
-							ss.HttpMethod = &strVal.StringValue
-							special = true
-						}
-					case LabelHTTPUrl:
-						strVal, ok := a.Value.Value.(*v1.AnyValue_StringValue)
-						if ok {
-							ss.HttpUrl = &strVal.StringValue
-							special = true
-						}
-					case LabelHTTPStatusCode:
-						intVal, ok := a.Value.Value.(*v1.AnyValue_IntValue)
-						if ok {
-							ss.HttpStatusCode = &intVal.IntValue
-							special = true
-						}
-					}
-
-					if !special {
-						// Other attributes put in generic columns
-						attrToParquet(a, &ss.Attrs[attrCount])
-						attrCount++
-					}
-				}
-				ss.Attrs = ss.Attrs[:attrCount]
+			if !special {
+				// Other attributes put in generic columns
+				attrToParquet(a, &sp.Resource.Attrs[attrCount])
+				attrCount++
 			}
 		}
+		sp.Resource.Attrs = sp.Resource.Attrs[:attrCount]
 	}
 
-	ot.StartTimeUnixNano = traceStart
-	ot.EndTimeUnixNano = traceEnd
-	ot.DurationNanos = traceEnd - traceStart
-	ot.RootSpanName = ""
-	ot.RootServiceName = ""
-
-	if rootSpan != nil && rootBatch != nil && rootBatch.Resource != nil {
-		ot.RootSpanName = rootSpan.Name
-
-		for _, a := range rootBatch.Resource.Attributes {
-			if a.Key == LabelServiceName {
-				ot.RootServiceName = a.Value.GetStringValue()
-				break
-			}
-		}
-	}
-
-	return ot
+	return sp
 }
 
-func eventToParquet(e *v1_trace.Span_Event, ee *Event) {
-	ee.Name = e.Name
-	ee.TimeUnixNano = e.TimeUnixNano
-	ee.DroppedAttributesCount = int32(e.DroppedAttributesCount)
+func convertAttributes(attributes []*deep_common.KeyValue) []Attribute {
+	var parAttributes = make([]Attribute, len(attributes))
+	for i, attribute := range attributes {
+		attrToParquet(attribute, &parAttributes[i])
+	}
+	return parAttributes
+}
 
-	ee.Attrs = extendReuseSlice(len(e.Attributes), ee.Attrs)
-	for i, a := range e.Attributes {
-		ee.Attrs[i].Key = a.Key
-		ee.Attrs[i].Value = extendReuseSlice(a.Value.Size(), ee.Attrs[i].Value)
-		_, _ = a.Value.MarshalToSizedBuffer(ee.Attrs[i].Value)
+func convertWatches(watches []*deep_tp.WatchResult) []WatchResult {
+	var parWatches = make([]WatchResult, len(watches))
+	for i, watch := range watches {
+		parWatches[i] = convertWatch(watch)
+	}
+	return parWatches
+}
+
+func convertWatch(watch *deep_tp.WatchResult) WatchResult {
+	variableId := convertVariableId(watch.GetGoodResult())
+	result := watch.GetErrorResult()
+	return WatchResult{
+		Expression:  watch.Expression,
+		GoodResult:  &variableId,
+		ErrorResult: &result,
 	}
 }
 
-func parquetToProtoAttrs(parquetAttrs []Attribute) []*v1.KeyValue {
-	var protoAttrs []*v1.KeyValue
-
-	for _, attr := range parquetAttrs {
-		protoVal := &v1.AnyValue{}
-
-		if attr.Value != nil {
-			protoVal.Value = &v1.AnyValue_StringValue{
-				StringValue: *attr.Value,
-			}
-		} else if attr.ValueInt != nil {
-			protoVal.Value = &v1.AnyValue_IntValue{
-				IntValue: *attr.ValueInt,
-			}
-		} else if attr.ValueDouble != nil {
-			protoVal.Value = &v1.AnyValue_DoubleValue{
-				DoubleValue: *attr.ValueDouble,
-			}
-		} else if attr.ValueBool != nil {
-			protoVal.Value = &v1.AnyValue_BoolValue{
-				BoolValue: *attr.ValueBool,
-			}
-		} else if attr.ValueArray != "" {
-			_ = jsonpb.Unmarshal(bytes.NewBufferString(attr.ValueArray), protoVal)
-		} else if attr.ValueKVList != "" {
-			_ = jsonpb.Unmarshal(bytes.NewBufferString(attr.ValueKVList), protoVal)
-		}
-
-		protoAttrs = append(protoAttrs, &v1.KeyValue{
-			Key:   attr.Key,
-			Value: protoVal,
-		})
+func convertFrames(frames []*deep_tp.StackFrame) []StackFrame {
+	var parFrames = make([]StackFrame, len(frames))
+	for i, frame := range frames {
+		parFrames[i] = convertFrame(frame)
 	}
-
-	return protoAttrs
+	return parFrames
 }
 
-func parquetToProtoEvents(parquetEvents []Event) []*v1_trace.Span_Event {
-	var protoEvents []*v1_trace.Span_Event
-
-	if len(parquetEvents) > 0 {
-		protoEvents = make([]*v1_trace.Span_Event, 0, len(parquetEvents))
-
-		for _, e := range parquetEvents {
-
-			protoEvent := &v1_trace.Span_Event{
-				TimeUnixNano:           e.TimeUnixNano,
-				Name:                   e.Name,
-				Attributes:             nil,
-				DroppedAttributesCount: uint32(e.DroppedAttributesCount),
-			}
-
-			if len(e.Attrs) > 0 {
-				protoEvent.Attributes = make([]*v1.KeyValue, 0, len(e.Attrs))
-
-				for _, a := range e.Attrs {
-					protoAttr := &v1.KeyValue{
-						Key:   a.Key,
-						Value: &v1.AnyValue{},
-					}
-
-					// event attributes are currently encoded as proto, but were previously json.
-					//  this code attempts proto first and, if there was an error, falls back to json
-					err := protoAttr.Value.Unmarshal(a.Value)
-					if err != nil {
-						_ = jsonpb.Unmarshal(bytes.NewBuffer(a.Value), protoAttr.Value)
-					}
-
-					protoEvent.Attributes = append(protoEvent.Attributes, protoAttr)
-				}
-			}
-
-			protoEvents = append(protoEvents, protoEvent)
-		}
+func convertFrame(frame *deep_tp.StackFrame) StackFrame {
+	return StackFrame{
+		FileName:               frame.FileName,
+		MethodName:             frame.MethodName,
+		LineNumber:             frame.LineNumber,
+		ClassName:              frame.ClassName,
+		IsAsync:                *frame.IsAsync,
+		ColumnNumber:           frame.ColumnNumber,
+		TranspiledFileName:     frame.TranspiledFileName,
+		TranspiledLineNumber:   frame.TranspiledLineNumber,
+		TranspiledColumnNumber: frame.TranspiledColumnNumber,
+		Variables:              convertChildren(frame.Variables),
+		AppFrame:               *frame.AppFrame,
 	}
-
-	return protoEvents
 }
 
-func parquetTraceToTempopbTrace(parquetTrace *Trace) *tempopb.Trace {
-	protoTrace := &tempopb.Trace{}
-	protoTrace.Batches = make([]*v1_trace.ResourceSpans, 0, len(parquetTrace.ResourceSpans))
-
-	for _, rs := range parquetTrace.ResourceSpans {
-		protoBatch := &v1_trace.ResourceSpans{}
-		protoBatch.Resource = &v1_resource.Resource{
-			Attributes: parquetToProtoAttrs(rs.Resource.Attrs),
-		}
-
-		// known resource attributes
-		if rs.Resource.ServiceName != "" {
-			protoBatch.Resource.Attributes = append(protoBatch.Resource.Attributes, &v1.KeyValue{
-				Key: LabelServiceName,
-				Value: &v1.AnyValue{
-					Value: &v1.AnyValue_StringValue{
-						StringValue: rs.Resource.ServiceName,
-					},
-				},
-			})
-		}
-		for _, attr := range []struct {
-			Key   string
-			Value *string
-		}{
-			{Key: LabelCluster, Value: rs.Resource.Cluster},
-			{Key: LabelNamespace, Value: rs.Resource.Namespace},
-			{Key: LabelPod, Value: rs.Resource.Pod},
-			{Key: LabelContainer, Value: rs.Resource.Container},
-			{Key: LabelK8sClusterName, Value: rs.Resource.K8sClusterName},
-			{Key: LabelK8sNamespaceName, Value: rs.Resource.K8sNamespaceName},
-			{Key: LabelK8sPodName, Value: rs.Resource.K8sPodName},
-			{Key: LabelK8sContainerName, Value: rs.Resource.K8sContainerName},
-		} {
-			if attr.Value != nil {
-				protoBatch.Resource.Attributes = append(protoBatch.Resource.Attributes, &v1.KeyValue{
-					Key: attr.Key,
-					Value: &v1.AnyValue{
-						Value: &v1.AnyValue_StringValue{
-							StringValue: *attr.Value,
-						},
-					},
-				})
-			}
-		}
-
-		protoBatch.ScopeSpans = make([]*v1_trace.ScopeSpans, 0, len(rs.ScopeSpans))
-
-		for _, span := range rs.ScopeSpans {
-			protoSS := &v1_trace.ScopeSpans{
-				Scope: &v1.InstrumentationScope{
-					Name:    span.Scope.Name,
-					Version: span.Scope.Version,
-				},
-			}
-
-			protoSS.Spans = make([]*v1_trace.Span, 0, len(span.Spans))
-			for _, span := range span.Spans {
-
-				protoSpan := &v1_trace.Span{
-					TraceId:           parquetTrace.TraceID,
-					SpanId:            span.ID,
-					TraceState:        span.TraceState,
-					Name:              span.Name,
-					Kind:              v1_trace.Span_SpanKind(span.Kind),
-					ParentSpanId:      span.ParentSpanID,
-					StartTimeUnixNano: span.StartUnixNanos,
-					EndTimeUnixNano:   span.EndUnixNanos,
-					Status: &v1_trace.Status{
-						Message: span.StatusMessage,
-						Code:    v1_trace.Status_StatusCode(span.StatusCode),
-					},
-					DroppedAttributesCount: uint32(span.DroppedAttributesCount),
-					DroppedEventsCount:     uint32(span.DroppedEventsCount),
-					DroppedLinksCount:      uint32(span.DroppedLinksCount),
-					Attributes:             parquetToProtoAttrs(span.Attrs),
-					Events:                 parquetToProtoEvents(span.Events),
-				}
-
-				// unmarshal links
-				if len(span.Links) > 0 {
-					links := tempopb.LinkSlice{}
-					_ = links.Unmarshal(span.Links) // todo: bubble these errors up
-					protoSpan.Links = links.Links
-				}
-
-				// known span attributes
-				if span.HttpMethod != nil {
-					protoSpan.Attributes = append(protoSpan.Attributes, &v1.KeyValue{
-						Key: LabelHTTPMethod,
-						Value: &v1.AnyValue{
-							Value: &v1.AnyValue_StringValue{
-								StringValue: *span.HttpMethod,
-							},
-						},
-					})
-				}
-				if span.HttpUrl != nil {
-					protoSpan.Attributes = append(protoSpan.Attributes, &v1.KeyValue{
-						Key: LabelHTTPUrl,
-						Value: &v1.AnyValue{
-							Value: &v1.AnyValue_StringValue{
-								StringValue: *span.HttpUrl,
-							},
-						},
-					})
-				}
-				if span.HttpStatusCode != nil {
-					protoSpan.Attributes = append(protoSpan.Attributes, &v1.KeyValue{
-						Key: LabelHTTPStatusCode,
-						Value: &v1.AnyValue{
-							Value: &v1.AnyValue_IntValue{
-								IntValue: *span.HttpStatusCode,
-							},
-						},
-					})
-				}
-
-				protoSS.Spans = append(protoSS.Spans, protoSpan)
-			}
-
-			protoBatch.ScopeSpans = append(protoBatch.ScopeSpans, protoSS)
-		}
-		protoTrace.Batches = append(protoTrace.Batches, protoBatch)
+func convertLookup(lookup map[string]*deep_tp.Variable) map[string]Variable {
+	var parLookup = make(map[string]Variable, len(lookup))
+	for varId, variable := range lookup {
+		parLookup[varId] = convertVariable(variable)
 	}
+	return parLookup
+}
 
-	return protoTrace
+func convertVariable(variable *deep_tp.Variable) Variable {
+	return Variable{
+		Type:      variable.Type,
+		Value:     variable.Value,
+		Hash:      variable.Hash,
+		Children:  convertChildren(variable.Children),
+		Truncated: *variable.Truncated,
+	}
+}
+
+func convertChildren(children []*deep_tp.VariableId) []VariableId {
+	var parChildren = make([]VariableId, len(children))
+	for i, child := range children {
+		parChildren[i] = convertVariableId(child)
+	}
+	return parChildren
+}
+
+func convertVariableId(child *deep_tp.VariableId) VariableId {
+	return VariableId{
+		Id:        child.Id,
+		Name:      child.Name,
+		Modifiers: child.Modifiers,
+	}
+}
+
+func convertTracepoint(tracepoint *deep_tp.TracePointConfig) TracePointConfig {
+	return TracePointConfig{
+		Id:      tracepoint.Id,
+		Path:    tracepoint.Path,
+		LineNo:  tracepoint.LineNo,
+		Args:    tracepoint.Args,
+		Watches: tracepoint.Watches,
+	}
 }
 
 func extendReuseSlice[T any](sz int, in []T) []T {
@@ -630,4 +351,173 @@ func extendReuseSlice[T any](sz int, in []T) []T {
 	// append until we're large enough
 	in = in[:cap(in)]
 	return append(in, make([]T, sz-len(in))...)
+}
+
+func parquetToDeepSnapshot(snap *Snapshot) *deep_tp.Snapshot {
+	return &deep_tp.Snapshot{
+		Id: snap.Id,
+		Tracepoint: &deep_tp.TracePointConfig{
+			Id:      snap.Tracepoint.Id,
+			Path:    snap.Tracepoint.Path,
+			LineNo:  snap.Tracepoint.LineNo,
+			Args:    snap.Tracepoint.Args,
+			Watches: snap.Tracepoint.Watches,
+		},
+		VarLookup:     parquetConvertVariables(snap.VarLookup),
+		Ts:            snap.Ts,
+		Frames:        parquetConvertFrames(snap.Frames),
+		Watches:       parquetConvertWatches(snap.Watches),
+		Attributes:    parquetConvertAttributes(snap.Attributes),
+		NanosDuration: snap.NanosDuration,
+		Resource:      parquetConvertResource(snap.Resource),
+	}
+}
+
+func parquetConvertResource(resource Resource) []*deep_common.KeyValue {
+	protoAttrs := parquetConvertAttributes(resource.Attrs)
+
+	for _, attr := range []struct {
+		Key   string
+		Value *string
+	}{
+		{Key: LabelServiceName, Value: &resource.ServiceName},
+		{Key: LabelCluster, Value: resource.Cluster},
+		{Key: LabelNamespace, Value: resource.Namespace},
+		{Key: LabelPod, Value: resource.Pod},
+		{Key: LabelContainer, Value: resource.Container},
+		{Key: LabelK8sClusterName, Value: resource.K8sClusterName},
+		{Key: LabelK8sNamespaceName, Value: resource.K8sNamespaceName},
+		{Key: LabelK8sPodName, Value: resource.K8sPodName},
+		{Key: LabelK8sContainerName, Value: resource.K8sContainerName},
+	} {
+		if attr.Value != nil {
+			protoAttrs = append(protoAttrs, &deep_common.KeyValue{
+				Key: attr.Key,
+				Value: &deep_common.AnyValue{
+					Value: &deep_common.AnyValue_StringValue{
+						StringValue: *attr.Value,
+					},
+				},
+			})
+		}
+	}
+
+	return protoAttrs
+}
+
+func parquetConvertAttributes(parquetAttrs []Attribute) []*deep_common.KeyValue {
+	var protoAttrs []*deep_common.KeyValue
+
+	for _, attr := range parquetAttrs {
+		protoVal := &deep_common.AnyValue{}
+
+		if attr.Value != nil {
+			protoVal.Value = &deep_common.AnyValue_StringValue{
+				StringValue: *attr.Value,
+			}
+		} else if attr.ValueInt != nil {
+			protoVal.Value = &deep_common.AnyValue_IntValue{
+				IntValue: *attr.ValueInt,
+			}
+		} else if attr.ValueDouble != nil {
+			protoVal.Value = &deep_common.AnyValue_DoubleValue{
+				DoubleValue: *attr.ValueDouble,
+			}
+		} else if attr.ValueBool != nil {
+			protoVal.Value = &deep_common.AnyValue_BoolValue{
+				BoolValue: *attr.ValueBool,
+			}
+		} else if attr.ValueArray != "" {
+			_ = jsonpb.Unmarshal(bytes.NewBufferString(attr.ValueArray), protoVal)
+		} else if attr.ValueKVList != "" {
+			_ = jsonpb.Unmarshal(bytes.NewBufferString(attr.ValueKVList), protoVal)
+		}
+
+		protoAttrs = append(protoAttrs, &deep_common.KeyValue{
+			Key:   attr.Key,
+			Value: protoVal,
+		})
+	}
+
+	return protoAttrs
+}
+
+func parquetConvertWatches(watches []WatchResult) []*deep_tp.WatchResult {
+	var varWatches = make([]*deep_tp.WatchResult, len(watches))
+	for i, watch := range watches {
+		varWatches[i] = parquetConvertWatchResult(watch)
+	}
+	return varWatches
+}
+
+func parquetConvertWatchResult(watch WatchResult) *deep_tp.WatchResult {
+	if watch.GoodResult != nil {
+		return &deep_tp.WatchResult{
+			Expression: watch.Expression,
+			Result:     &deep_tp.WatchResult_GoodResult{GoodResult: parquetConvertVariableId(*watch.GoodResult)},
+		}
+	} else {
+		return &deep_tp.WatchResult{
+			Expression: watch.Expression,
+			Result:     &deep_tp.WatchResult_ErrorResult{ErrorResult: *watch.ErrorResult},
+		}
+	}
+}
+
+func parquetConvertFrames(frames []StackFrame) []*deep_tp.StackFrame {
+	var varFrames = make([]*deep_tp.StackFrame, len(frames))
+	for i, frame := range frames {
+		varFrames[i] = parquetConvertFrame(frame)
+	}
+	return varFrames
+}
+
+func parquetConvertFrame(frame StackFrame) *deep_tp.StackFrame {
+	return &deep_tp.StackFrame{
+		FileName:               frame.FileName,
+		MethodName:             frame.MethodName,
+		LineNumber:             frame.LineNumber,
+		ClassName:              frame.ClassName,
+		IsAsync:                &frame.IsAsync,
+		ColumnNumber:           frame.ColumnNumber,
+		TranspiledFileName:     frame.TranspiledFileName,
+		TranspiledLineNumber:   frame.TranspiledLineNumber,
+		TranspiledColumnNumber: frame.TranspiledColumnNumber,
+		Variables:              parquetConvertChildren(frame.Variables),
+		AppFrame:               &frame.AppFrame,
+	}
+}
+
+func parquetConvertVariables(lookup map[string]Variable) map[string]*deep_tp.Variable {
+	var varLookup = make(map[string]*deep_tp.Variable, len(lookup))
+	for varId, variable := range lookup {
+		varLookup[varId] = parquetConvertVariable(variable)
+	}
+	return varLookup
+}
+
+func parquetConvertVariable(variable Variable) *deep_tp.Variable {
+	return &deep_tp.Variable{
+		Type:      variable.Type,
+		Value:     variable.Value,
+		Hash:      variable.Hash,
+		Children:  parquetConvertChildren(variable.Children),
+		Truncated: &variable.Truncated,
+	}
+}
+
+func parquetConvertChildren(children []VariableId) []*deep_tp.VariableId {
+	var varChildren = make([]*deep_tp.VariableId, len(children))
+	for i, child := range children {
+		varChildren[i] = parquetConvertVariableId(child)
+	}
+	return varChildren
+}
+
+func parquetConvertVariableId(child VariableId) *deep_tp.VariableId {
+	return &deep_tp.VariableId{
+		Id:        child.Id,
+		Name:      child.Name,
+		Modifiers: child.Modifiers,
+	}
 }

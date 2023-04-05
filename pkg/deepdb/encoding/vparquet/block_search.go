@@ -6,7 +6,6 @@ import (
 	"github.com/segmentio/parquet-go"
 	"io"
 	"math"
-	"strconv"
 	"time"
 
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
@@ -148,23 +147,6 @@ func makePipelineWithRowGroups(ctx context.Context, req *tempopb.SearchRequest, 
 			continue
 		}
 
-		// most columns are just a substring predicate over the column, but we have
-		// special handling for http status code and span status
-		if k == LabelHTTPStatusCode {
-			if i, err := strconv.Atoi(v); err == nil {
-				resourceIters = append(resourceIters, makeIter(column, pq.NewIntBetweenPredicate(int64(i), int64(i)), ""))
-				continue
-			}
-			// Non-numeric string field
-			otherAttrConditions[k] = v
-			continue
-		}
-		if k == LabelStatusCode {
-			code := StatusCodeMapping[v]
-			resourceIters = append(resourceIters, makeIter(column, pq.NewIntBetweenPredicate(int64(code), int64(code)), ""))
-			continue
-		}
-
 		if k == LabelRootServiceName || k == LabelRootSpanName {
 			traceIters = append(traceIters, makeIter(column, pq.NewSubstringPredicate(v), ""))
 		} else {
@@ -200,8 +182,8 @@ func makePipelineWithRowGroups(ctx context.Context, req *tempopb.SearchRequest, 
 			}, nil),
 			// This iterator finds all keys/values at the span level
 			pq.NewJoinIterator(DefinitionLevelResourceSpansILSSpanAttrs, []pq.Iterator{
-				makeIter(FieldSpanAttrKey, keyPred, "keys"),
-				makeIter(FieldSpanAttrVal, valPred, "values"),
+				makeIter(FieldAttrKey, keyPred, "keys"),
+				makeIter(FieldAttrVal, valPred, "values"),
 			}, nil),
 		}, pq.NewKeyValueGroupPredicate(keys, vals))
 

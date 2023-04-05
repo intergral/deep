@@ -53,6 +53,16 @@ const (
 )
 
 var (
+	metricIngesterAppends = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "deep",
+		Name:      "distributor_ingester_appends_total",
+		Help:      "The total number of batch appends sent to ingesters.",
+	}, []string{"ingester"})
+	metricIngesterAppendFailures = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "deep",
+		Name:      "distributor_ingester_append_failures_total",
+		Help:      "The total number of failed batch appends sent to ingesters.",
+	}, []string{"ingester"})
 	metricDiscardedSnapshots = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
 		Name:      "discarded_snapshots_total",
@@ -102,7 +112,7 @@ type Distributor struct {
 	pool            *ring_client.Pool
 	DistributorRing *ring.Ring
 	overrides       *overrides.Overrides
-	traceEncoder    model.SegmentDecoder
+	snapshotEncoder model.SegmentDecoder
 
 	// metrics-generator
 	generatorClientCfg generator_client.Config
@@ -137,7 +147,7 @@ func (d *Distributor) Poll(ctx context.Context, pollRequest *pb.PollRequest) (*p
 		CurrentHash: "123",
 		Response: []*tp.TracePointConfig{{
 			Id: "17", Path: "/simple-app/simple_test.py", LineNo: 31,
-			Args:    map[string]string{"some": "thing", "fire_count": "5"},
+			Args:    map[string]string{"some": "thing", "fire_count": "-1", "fire_period": "10000"},
 			Watches: []string{"len(uuid)", "uuid", "self.char_counter"},
 		}},
 		ResponseType: responseType,
@@ -197,7 +207,7 @@ func New(cfg Config, clientCfg ingester_client.Config, ingestersRing ring.ReadRi
 		generatorClientCfg:   generatorClientCfg,
 		generatorsRing:       generatorsRing,
 		overrides:            o,
-		traceEncoder:         model.MustNewSegmentDecoder(model.CurrentEncoding),
+		snapshotEncoder:      model.MustNewSegmentDecoder(model.CurrentEncoding),
 		logger:               logger,
 	}
 
@@ -419,8 +429,42 @@ func (*Distributor) Check(_ context.Context, _ *grpc_health_v1.HealthCheckReques
 	return &grpc_health_v1.HealthCheckResponse{Status: grpc_health_v1.HealthCheckResponse_SERVING}, nil
 }
 
-func (d *Distributor) sendToIngester(ctx context.Context, id string, keys []uint32, snapshot *deeppb_tp.Snapshot) error {
-	return nil
+func (d *Distributor) sendToIngester(ctx context.Context, userID string, keys []uint32, snapshot *deeppb_tp.Snapshot) error {
+	// Marshal to bytes once
+	bytes, err := d.snapshotEncoder.PrepareForWrite(snapshot, uint32(snapshot.Ts))
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal PushRequest")
+	}
+
+	op := ring.WriteNoExtend
+	if d.cfg.ExtendWrites {
+		op = ring.Write
+	}
+
+	err = ring.DoBatch(ctx, op, d.ingestersRing, keys, func(ingester ring.InstanceDesc, indexes []int) error {
+		localCtx, cancel := context.WithTimeout(ctx, d.clientCfg.RemoteTimeout)
+		defer cancel()
+		localCtx = user.InjectOrgID(localCtx, userID)
+
+		req := deeppb.PushBytesRequest{
+			Snapshot: bytes,
+			Id:       snapshot.Id,
+		}
+
+		c, err := d.pool.GetClientFor(ingester.Addr)
+		if err != nil {
+			return err
+		}
+
+		_, err = c.(deeppb.IngesterServiceClient).PushBytes(localCtx, &req)
+		metricIngesterAppends.WithLabelValues(ingester.Addr).Inc()
+		if err != nil {
+			metricIngesterAppendFailures.WithLabelValues(ingester.Addr).Inc()
+		}
+		return err
+	}, func() {})
+
+	return err
 }
 
 func recordDiscardedSnapshots(err error, userID string, spanCount int) {

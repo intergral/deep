@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/intergral/deep/pkg/deeppb"
+	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"google.golang.org/grpc/status"
 	"hash"
 	"hash/fnv"
@@ -29,19 +31,18 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/model/trace"
-	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/intergral/deep/pkg/util/log"
 	"github.com/intergral/deep/pkg/validation"
 )
 
-type traceTooLargeError struct {
+type snapshotTooLargeError struct {
 	traceID           common.ID
 	instanceID        string
 	maxBytes, reqSize int
 }
 
-func newTraceTooLargeError(traceID common.ID, instanceID string, maxBytes, reqSize int) *traceTooLargeError {
-	return &traceTooLargeError{
+func newSnapshotTooLargeError(traceID common.ID, instanceID string, maxBytes, reqSize int) *snapshotTooLargeError {
+	return &snapshotTooLargeError{
 		traceID:    traceID,
 		instanceID: instanceID,
 		maxBytes:   maxBytes,
@@ -49,7 +50,7 @@ func newTraceTooLargeError(traceID common.ID, instanceID string, maxBytes, reqSi
 	}
 }
 
-func (e traceTooLargeError) Error() string {
+func (e snapshotTooLargeError) Error() string {
 	return fmt.Sprintf(
 		"%s max size of trace (%d) exceeded while adding %d bytes to trace %s for tenant %s",
 		overrides.ErrorPrefixTraceTooLarge, e.maxBytes, e.reqSize, hex.EncodeToString(e.traceID), e.instanceID)
@@ -67,13 +68,13 @@ const (
 var (
 	metricTracesCreatedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "ingester_traces_created_total",
-		Help:      "The total number of traces created per tenant.",
+		Name:      "ingester_snapshots_created_total",
+		Help:      "The total number of snapshots created per tenant.",
 	}, []string{"tenant"})
 	metricLiveTraces = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "deep",
-		Name:      "ingester_live_traces",
-		Help:      "The current number of lives traces per tenant.",
+		Name:      "ingester_live_snapshots",
+		Help:      "The current number of lives snapshots per tenant.",
 	}, []string{"tenant"})
 	metricBlocksClearedTotal = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: "deep",
@@ -93,10 +94,10 @@ var (
 )
 
 type instance struct {
-	tracesMtx  sync.Mutex
-	traces     map[uint32]*liveTrace
-	traceSizes map[uint32]uint32
-	traceCount atomic.Int32
+	snapshotMtx   sync.Mutex
+	liveSnapshots map[uint32]*liveSnapshot
+	traceSizes    map[uint32]uint32
+	snapshotCount atomic.Int32
 
 	blocksMtx        sync.RWMutex
 	headBlock        common.WALBlock
@@ -120,8 +121,8 @@ type instance struct {
 
 func newInstance(instanceID string, limiter *Limiter, writer deepdb.Writer, l *local.Backend) (*instance, error) {
 	i := &instance{
-		traces:     map[uint32]*liveTrace{},
-		traceSizes: map[uint32]uint32{},
+		liveSnapshots: map[uint32]*liveSnapshot{},
+		traceSizes:    map[uint32]uint32{},
 
 		instanceID:         instanceID,
 		tracesCreatedTotal: metricTracesCreatedTotal.WithLabelValues(instanceID),
@@ -142,60 +143,59 @@ func newInstance(instanceID string, limiter *Limiter, writer deepdb.Writer, l *l
 	return i, nil
 }
 
-func (i *instance) PushBytesRequest(ctx context.Context, req *tempopb.PushBytesRequest) error {
-	for j := range req.Traces {
-		err := i.PushBytes(ctx, req.Ids[j].Slice, req.Traces[j].Slice)
-		if err != nil {
-			return err
-		}
+func (i *instance) PushBytesRequest(ctx context.Context, req *deeppb.PushBytesRequest) error {
+	err := i.PushBytes(ctx, req.Id, req.Snapshot)
+	if err != nil {
+		return err
 	}
+
 	return nil
 }
 
-// PushBytes is used to push an unmarshalled tempopb.Trace to the instance
-func (i *instance) PushBytes(ctx context.Context, id []byte, traceBytes []byte) error {
-	i.measureReceivedBytes(traceBytes)
+// PushBytes is used to push an unmarshalled deeppb.Snapshot to the instance
+func (i *instance) PushBytes(ctx context.Context, id []byte, snapshotBytes []byte) error {
+	i.measureReceivedBytes(snapshotBytes)
 
-	if !validation.ValidTraceID(id) {
-		return status.Errorf(codes.InvalidArgument, "%s is not a valid traceid", hex.EncodeToString(id))
+	if !validation.ValidSnapshotID(id) {
+		return status.Errorf(codes.InvalidArgument, "%s is not a valid snapshot id", hex.EncodeToString(id))
 	}
 
 	// check for max traces before grabbing the lock to better load shed
-	err := i.limiter.AssertMaxTracesPerUser(i.instanceID, int(i.traceCount.Load()))
+	err := i.limiter.AssertMaxTracesPerUser(i.instanceID, int(i.snapshotCount.Load()))
 	if err != nil {
 		return status.Errorf(codes.FailedPrecondition, "%s max live traces exceeded for tenant %s: %v", overrides.ErrorPrefixLiveTracesExceeded, i.instanceID, err)
 	}
 
-	return i.push(ctx, id, traceBytes)
+	return i.push(ctx, id, snapshotBytes)
 }
 
-func (i *instance) push(ctx context.Context, id, traceBytes []byte) error {
-	i.tracesMtx.Lock()
-	defer i.tracesMtx.Unlock()
+func (i *instance) push(ctx context.Context, id, snapshotBytes []byte) error {
+	i.snapshotMtx.Lock()
+	defer i.snapshotMtx.Unlock()
 
-	tkn := i.tokenForTraceID(id)
-	maxBytes := i.limiter.limits.MaxBytesPerTrace(i.instanceID)
+	tkn := i.tokenForSnapshotID(id)
+	maxBytes := i.limiter.limits.MaxBytesPerSnapshot(i.instanceID)
 
 	if maxBytes > 0 {
 		prevSize := int(i.traceSizes[tkn])
-		reqSize := len(traceBytes)
+		reqSize := len(snapshotBytes)
 		if prevSize+reqSize > maxBytes {
-			return status.Errorf(codes.FailedPrecondition, (newTraceTooLargeError(id, i.instanceID, maxBytes, reqSize).Error()))
+			return status.Errorf(codes.FailedPrecondition, newSnapshotTooLargeError(id, i.instanceID, maxBytes, reqSize).Error())
 		}
 	}
 
-	trace := i.getOrCreateTrace(id, tkn, maxBytes)
+	snapshot := i.getOrCreateSnapshot(id, tkn, maxBytes)
 
-	err := trace.Push(ctx, i.instanceID, traceBytes)
+	err := snapshot.Push(ctx, i.instanceID, snapshotBytes)
 	if err != nil {
-		if e, ok := err.(*traceTooLargeError); ok {
+		if e, ok := err.(*snapshotTooLargeError); ok {
 			return status.Errorf(codes.FailedPrecondition, e.Error())
 		}
 		return err
 	}
 
 	if maxBytes > 0 {
-		i.traceSizes[tkn] += uint32(len(traceBytes))
+		i.traceSizes[tkn] += uint32(len(snapshotBytes))
 	}
 
 	return nil
@@ -208,33 +208,27 @@ func (i *instance) measureReceivedBytes(traceBytes []byte) {
 	i.bytesReceivedTotal.WithLabelValues(i.instanceID, traceDataType).Add(float64(len(traceBytes)))
 }
 
-// CutCompleteTraces moves any complete traces out of the map to complete traces.
-func (i *instance) CutCompleteTraces(cutoff time.Duration, immediate bool) error {
-	tracesToCut := i.tracesToCut(cutoff, immediate)
+// CutSnapshots moves any complete traces out of the map to complete traces.
+func (i *instance) CutSnapshots(cutoff time.Duration, immediate bool) error {
+	snapshotsToCut := i.snapshotsToCut(cutoff, immediate)
 	segmentDecoder := model.MustNewSegmentDecoder(model.CurrentEncoding)
 
 	// Sort by ID
-	sort.Slice(tracesToCut, func(i, j int) bool {
-		return bytes.Compare(tracesToCut[i].traceID, tracesToCut[j].traceID) == -1
+	sort.Slice(snapshotsToCut, func(i, j int) bool {
+		return bytes.Compare(snapshotsToCut[i].snapshotId, snapshotsToCut[j].snapshotId) == -1
 	})
 
-	for _, t := range tracesToCut {
-		// sort batches before cutting to reduce combinations during compaction
-		sortByteSlices(t.batches)
+	for _, t := range snapshotsToCut {
 
-		out, err := segmentDecoder.ToObject(t.batches)
+		out, err := segmentDecoder.ToObject(t.bytes)
 		if err != nil {
 			return err
 		}
 
-		err = i.writeTraceToHeadBlock(t.traceID, out, t.start, t.end)
+		err = i.writeSnapshotToHeadBlock(t.snapshotId, out, t.start)
 		if err != nil {
 			return err
 		}
-
-		// return trace byte slices to be reused by proto marshalling
-		//  WARNING: can't reuse traceid's b/c the appender takes ownership of byte slices that are passed to it
-		tempopb.ReuseByteSlices(t.batches)
 	}
 
 	i.blocksMtx.Lock()
@@ -368,23 +362,23 @@ func (i *instance) ClearFlushedBlocks(completeBlockTimeout time.Duration) error 
 	return err
 }
 
-func (i *instance) FindTraceByID(ctx context.Context, id []byte) (*tempopb.Trace, error) {
+func (i *instance) FindTraceByID(ctx context.Context, id []byte) (*deep_tp.Snapshot, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "instance.FindTraceByID")
 	defer span.Finish()
 
 	var err error
-	var completeTrace *tempopb.Trace
+	var completeTrace *deep_tp.Snapshot
 
 	// live traces
-	i.tracesMtx.Lock()
-	if liveTrace, ok := i.traces[i.tokenForTraceID(id)]; ok {
-		completeTrace, err = model.MustNewSegmentDecoder(model.CurrentEncoding).PrepareForRead(liveTrace.batches)
+	i.snapshotMtx.Lock()
+	if liveTrace, ok := i.liveSnapshots[i.tokenForSnapshotID(id)]; ok {
+		completeTrace, err = model.MustNewSegmentDecoder(model.CurrentEncoding).PrepareForRead(liveTrace.bytes)
 		if err != nil {
-			i.tracesMtx.Unlock()
-			return nil, fmt.Errorf("unable to unmarshal liveTrace: %w", err)
+			i.snapshotMtx.Unlock()
+			return nil, fmt.Errorf("unable to unmarshal liveSnapshot: %w", err)
 		}
 	}
-	i.tracesMtx.Unlock()
+	i.snapshotMtx.Unlock()
 
 	i.blocksMtx.RLock()
 	defer i.blocksMtx.RUnlock()
@@ -431,25 +425,25 @@ func (i *instance) AddCompletingBlock(b common.WALBlock) {
 	i.completingBlocks = append(i.completingBlocks, b)
 }
 
-// getOrCreateTrace will return a new trace object for the given request
+// getOrCreateSnapshot will return a new trace object for the given request
 //
 //	It must be called under the i.tracesMtx lock
-func (i *instance) getOrCreateTrace(traceID []byte, fp uint32, maxBytes int) *liveTrace {
-	trace, ok := i.traces[fp]
+func (i *instance) getOrCreateSnapshot(traceID []byte, fp uint32, maxBytes int) *liveSnapshot {
+	snapshot, ok := i.liveSnapshots[fp]
 	if ok {
-		return trace
+		return snapshot
 	}
 
-	trace = newTrace(traceID, maxBytes)
-	i.traces[fp] = trace
+	snapshot = newLiveSnapshot(traceID, maxBytes)
+	i.liveSnapshots[fp] = snapshot
 	i.tracesCreatedTotal.Inc()
-	i.traceCount.Inc()
+	i.snapshotCount.Inc()
 
-	return trace
+	return snapshot
 }
 
-// tokenForTraceID hash trace ID, should be called under lock
-func (i *instance) tokenForTraceID(id []byte) uint32 {
+// tokenForSnapshotID hash trace ID, should be called under lock
+func (i *instance) tokenForSnapshotID(id []byte) uint32 {
 	i.hash.Reset()
 	_, _ = i.hash.Write(id)
 	return i.hash.Sum32()
@@ -459,9 +453,9 @@ func (i *instance) tokenForTraceID(id []byte) uint32 {
 func (i *instance) resetHeadBlock() error {
 
 	// Reset trace sizes when cutting block
-	i.tracesMtx.Lock()
+	i.snapshotMtx.Lock()
 	i.traceSizes = make(map[uint32]uint32, len(i.traceSizes))
-	i.tracesMtx.Unlock()
+	i.snapshotMtx.Unlock()
 
 	newHeadBlock, err := i.writer.WAL().NewBlock(uuid.New(), i.instanceID, model.CurrentEncoding)
 	if err != nil {
@@ -474,32 +468,32 @@ func (i *instance) resetHeadBlock() error {
 	return nil
 }
 
-func (i *instance) tracesToCut(cutoff time.Duration, immediate bool) []*liveTrace {
-	i.tracesMtx.Lock()
-	defer i.tracesMtx.Unlock()
+func (i *instance) snapshotsToCut(cutoff time.Duration, immediate bool) []*liveSnapshot {
+	i.snapshotMtx.Lock()
+	defer i.snapshotMtx.Unlock()
 
 	// Set this before cutting to give a more accurate number.
-	metricLiveTraces.WithLabelValues(i.instanceID).Set(float64(len(i.traces)))
+	metricLiveTraces.WithLabelValues(i.instanceID).Set(float64(len(i.liveSnapshots)))
 
 	cutoffTime := time.Now().Add(cutoff)
-	tracesToCut := make([]*liveTrace, 0, len(i.traces))
+	snapshotsToCut := make([]*liveSnapshot, 0, len(i.liveSnapshots))
 
-	for key, trace := range i.traces {
-		if cutoffTime.After(trace.lastAppend) || immediate {
-			tracesToCut = append(tracesToCut, trace)
-			delete(i.traces, key)
+	for key, snapshot := range i.liveSnapshots {
+		if cutoffTime.After(snapshot.lastAppend) || immediate {
+			snapshotsToCut = append(snapshotsToCut, snapshot)
+			delete(i.liveSnapshots, key)
 		}
 	}
-	i.traceCount.Store(int32(len(i.traces)))
+	i.snapshotCount.Store(int32(len(i.liveSnapshots)))
 
-	return tracesToCut
+	return snapshotsToCut
 }
 
-func (i *instance) writeTraceToHeadBlock(id common.ID, b []byte, start, end uint32) error {
+func (i *instance) writeSnapshotToHeadBlock(id common.ID, b []byte, start uint32) error {
 	i.blocksMtx.Lock()
 	defer i.blocksMtx.Unlock()
 
-	err := i.headBlock.Append(id, b, start, end)
+	err := i.headBlock.Append(id, b, start)
 	if err != nil {
 		return err
 	}
