@@ -20,6 +20,10 @@ endif
 deep:
 	GO111MODULE=on CGO_ENABLED=0 go build $(GO_OPT) -o ./bin/$(GOOS)/deep-$(GOARCH) $(BUILD_INFO) ./cmd/deep
 
+.PHONY: deep-cli
+deep-cli:
+	GO111MODULE=on CGO_ENABLED=0 go build $(GO_OPT) -o ./bin/$(GOOS)/deep-cli-$(GOARCH) $(BUILD_INFO) ./cmd/deep-cli
+
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component exe
 	docker build -t deep/$(COMPONENT) --build-arg=TARGETARCH=$(GOARCH) -f ./cmd/$(COMPONENT)/Dockerfile .
@@ -33,6 +37,10 @@ docker-component-debug: check-component exe-debug
 .PHONY: docker-deep
 docker-deep:
 	COMPONENT=deep $(MAKE) docker-component
+
+.PHONY: docker-deep-cli
+docker-deep-cli:
+	COMPONENT=deep-cli $(MAKE) docker-component
 
 docker-deep-debug:
 	COMPONENT=deep $(MAKE) docker-component-debug

@@ -78,6 +78,7 @@ require (
 
 require (
 	github.com/Azure/go-autorest/autorest v0.11.28
+	github.com/alecthomas/kong v0.2.11
 	github.com/gogo/protobuf v1.3.2
 	github.com/googleapis/gax-go/v2 v2.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0

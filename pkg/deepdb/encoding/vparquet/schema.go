@@ -68,29 +68,29 @@ type Attribute struct {
 	Key string `parquet:",snappy,dict"`
 
 	// This is a bad design that leads to millions of null values. How can we fix this?
-	Value       *string  `parquet:",dict,snappy,optional"`
-	ValueInt    *int64   `parquet:",snappy,optional"`
-	ValueDouble *float64 `parquet:",snappy,optional"`
-	ValueBool   *bool    `parquet:",snappy,optional"`
-	ValueKVList string   `parquet:",snappy,optional"`
-	ValueArray  string   `parquet:",snappy,optional"`
+	Value       *string  `parquet:",dict,snappy,optional"  json:",omitempty"`
+	ValueInt    *int64   `parquet:",snappy,optional"  json:",omitempty"`
+	ValueDouble *float64 `parquet:",snappy,optional"  json:",omitempty"`
+	ValueBool   *bool    `parquet:",snappy,optional"  json:",omitempty"`
+	ValueKVList string   `parquet:",snappy,optional"  json:",omitempty"`
+	ValueArray  string   `parquet:",snappy,optional"  json:",omitempty"`
 }
 
 type Resource struct {
 	Attrs []Attribute
 
 	// Known attributes
-	ServiceName      string  `parquet:",snappy,dict"`
-	Cluster          *string `parquet:",snappy,optional,dict"`
-	Namespace        *string `parquet:",snappy,optional,dict"`
-	Pod              *string `parquet:",snappy,optional,dict"`
-	Container        *string `parquet:",snappy,optional,dict"`
-	K8sClusterName   *string `parquet:",snappy,optional,dict"`
-	K8sNamespaceName *string `parquet:",snappy,optional,dict"`
-	K8sPodName       *string `parquet:",snappy,optional,dict"`
-	K8sContainerName *string `parquet:",snappy,optional,dict"`
+	ServiceName      string  `parquet:",snappy,dict" json:",omitempty"`
+	Cluster          *string `parquet:",snappy,optional,dict" json:",omitempty"`
+	Namespace        *string `parquet:",snappy,optional,dict" json:",omitempty"`
+	Pod              *string `parquet:",snappy,optional,dict" json:",omitempty"`
+	Container        *string `parquet:",snappy,optional,dict" json:",omitempty"`
+	K8sClusterName   *string `parquet:",snappy,optional,dict" json:",omitempty"`
+	K8sNamespaceName *string `parquet:",snappy,optional,dict" json:",omitempty"`
+	K8sPodName       *string `parquet:",snappy,optional,dict" json:",omitempty"`
+	K8sContainerName *string `parquet:",snappy,optional,dict" json:",omitempty"`
 
-	Test string `parquet:",snappy,dict,optional"` // Always empty for testing
+	Test string `parquet:",snappy,dict,optional" json:",omitempty"` // Always empty for testing
 }
 
 type TracePointConfig struct {
