@@ -3,6 +3,7 @@ package frontend
 import (
 	"bytes"
 	"fmt"
+	"github.com/intergral/deep/pkg/deeppb"
 	"io"
 	"net/http"
 	"net/url"
@@ -23,7 +24,6 @@ import (
 	"github.com/intergral/deep/modules/storage"
 	"github.com/intergral/deep/pkg/api"
 	"github.com/intergral/deep/pkg/deepdb"
-	"github.com/intergral/deep/pkg/tempopb"
 )
 
 const (
@@ -91,8 +91,7 @@ func newTraceByIDMiddleware(cfg Config, logger log.Logger) Middleware {
 		// - the RetryWare retries requests that have failed (error or http status 500)
 		rt := NewRoundTripper(
 			next,
-			newDeduper(logger),
-			newTraceByIDSharder(cfg.TraceByID.QueryShards, cfg.TolerateFailedBlocks, cfg.TraceByID.SLO, logger),
+			newSnapshotByIDSharder(cfg.TraceByID.QueryShards, cfg.TolerateFailedBlocks, cfg.TraceByID.SLO, logger),
 			newHedgedRequestWare(cfg.TraceByID.Hedging),
 		)
 
@@ -135,7 +134,7 @@ func newTraceByIDMiddleware(cfg Config, logger log.Logger) Middleware {
 				if err != nil {
 					return nil, errors.Wrap(err, "error reading response body at query frontend")
 				}
-				responseObject := &tempopb.TraceByIDResponse{}
+				responseObject := &deeppb.SnapshotByIDResponse{}
 				err = proto.Unmarshal(body, responseObject)
 				if err != nil {
 					return nil, err
@@ -144,13 +143,13 @@ func newTraceByIDMiddleware(cfg Config, logger log.Logger) Middleware {
 				if marshallingFormat == api.HeaderAcceptJSON {
 					var jsonTrace bytes.Buffer
 					marshaller := &jsonpb.Marshaler{}
-					err = marshaller.Marshal(&jsonTrace, responseObject.Trace)
+					err = marshaller.Marshal(&jsonTrace, responseObject.Snapshot)
 					if err != nil {
 						return nil, err
 					}
 					resp.Body = io.NopCloser(bytes.NewReader(jsonTrace.Bytes()))
 				} else {
-					traceBuffer, err := proto.Marshal(responseObject.Trace)
+					traceBuffer, err := proto.Marshal(responseObject.Snapshot)
 					if err != nil {
 						return nil, err
 					}

@@ -40,48 +40,31 @@ func TestBackendBlockFindTraceByID(t *testing.T) {
 	// half of the trace ID (which is stored as 32 hex text)
 	// Therefore it is important that the test data here has
 	// full-length trace IDs.
-	var traces []*Trace
+	var snapshots []*Snapshot
 	for i := 0; i < 16; i++ {
 		bar := "bar"
-		traces = append(traces, &Trace{
-			TraceID: test.ValidTraceID(nil),
-			ResourceSpans: []ResourceSpans{
-				{
-					Resource: Resource{
-						ServiceName: "s",
-					},
-					ScopeSpans: []ScopeSpan{
-						{
-							Spans: []Span{
-								{
-									Name: "hello",
-									Attrs: []Attribute{
-										{Key: "foo", Value: &bar},
-									},
-									ID:           []byte{},
-									ParentSpanID: []byte{},
-								},
-							},
-						},
-					},
-				},
+		snapshots = append(snapshots, &Snapshot{
+			ID:       test.ValidSnapshotID(nil),
+			Resource: Resource{ServiceName: "s"},
+			Attributes: []Attribute{
+				{Key: "foo", Value: &bar},
 			},
 		})
 	}
 
 	// Sort
-	sort.Slice(traces, func(i, j int) bool {
-		return bytes.Compare(traces[i].TraceID, traces[j].TraceID) == -1
+	sort.Slice(snapshots, func(i, j int) bool {
+		return bytes.Compare(snapshots[i].ID, snapshots[j].ID) == -1
 	})
 
 	meta := backend.NewBlockMeta("fake", uuid.New(), VersionString, backend.EncNone, "")
-	meta.TotalObjects = len(traces)
+	meta.TotalObjects = len(snapshots)
 	s := newStreamingBlock(ctx, cfg, meta, r, w, deep_io.NewBufferedWriter)
 
 	// Write test data, occasionally flushing (cutting new row group)
 	rowGroupSize := 5
-	for _, tr := range traces {
-		err := s.Add(tr, 0, 0)
+	for _, snap := range snapshots {
+		err := s.Add(snap, 0)
 		require.NoError(t, err)
 		if s.CurrentBufferedObjects() >= rowGroupSize {
 			_, err = s.Flush()
@@ -94,12 +77,14 @@ func TestBackendBlockFindTraceByID(t *testing.T) {
 	b := newBackendBlock(s.meta, r)
 
 	// Now find and verify all test traces
-	for _, tr := range traces {
-		wantProto := parquetTraceToTempopbTrace(tr)
+	for _, snap := range snapshots {
+		wantProto := parquetToDeepSnapshot(snap)
 
-		gotProto, err := b.FindTraceByID(ctx, tr.TraceID, common.DefaultSearchOptions())
+		gotProto, err := b.FindSnapshotByID(ctx, snap.ID, common.DefaultSearchOptions())
 		require.NoError(t, err)
-		require.Equal(t, wantProto, gotProto)
+		require.Equal(t, wantProto.Id, gotProto.Id)
+		require.Equal(t, wantProto.Resource[0].Value.GetStringValue(), "s")
+		require.Equal(t, wantProto.Attributes[0].Value.GetStringValue(), "bar")
 	}
 }
 
@@ -124,7 +109,7 @@ func TestBackendBlockFindTraceByID_TestData(t *testing.T) {
 	iter, err := b.RawIterator(context.Background(), newRowPool(10))
 	require.NoError(t, err)
 
-	sch := parquet.SchemaOf(new(Trace))
+	sch := parquet.SchemaOf(new(Snapshot))
 	for {
 		_, row, err := iter.Next(context.Background())
 		require.NoError(t, err)
@@ -133,11 +118,11 @@ func TestBackendBlockFindTraceByID_TestData(t *testing.T) {
 			break
 		}
 
-		tr := &Trace{}
+		tr := &Snapshot{}
 		err = sch.Reconstruct(tr, row)
 		require.NoError(t, err)
 
-		protoTr, err := b.FindTraceByID(ctx, tr.TraceID, common.DefaultSearchOptions())
+		protoTr, err := b.FindSnapshotByID(ctx, tr.ID, common.DefaultSearchOptions())
 		require.NoError(t, err)
 		require.NotNil(t, protoTr)
 	}
@@ -168,7 +153,7 @@ func BenchmarkFindTraceByID(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		tr, err := block.FindTraceByID(ctx, traceID, common.DefaultSearchOptions())
+		tr, err := block.FindSnapshotByID(ctx, traceID, common.DefaultSearchOptions())
 		require.NoError(b, err)
 		require.NotNil(b, tr)
 	}

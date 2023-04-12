@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/intergral/deep/pkg/deeppb"
 	"io"
 	"net/http"
 	"net/url"
@@ -18,7 +19,6 @@ import (
 	"github.com/intergral/deep/pkg/boundedwaitgroup"
 	"github.com/intergral/deep/pkg/deepdb"
 	"github.com/intergral/deep/pkg/deepdb/backend"
-	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -130,7 +130,7 @@ func (s searchSharder) RoundTrip(r *http.Request) (*http.Response, error) {
 
 	// build request to search ingester based on query_ingesters_until config and time range
 	// pass subCtx in requests so we can cancel and exit early
-	ingesterReq, err := s.ingesterRequest(subCtx, tenantID, r, *searchReq)
+	ingesterReq, err := s.ingesterRequest(subCtx, tenantID, r, searchReq)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func (s searchSharder) RoundTrip(r *http.Request) (*http.Response, error) {
 			}
 
 			// successful query, read the body
-			results := &tempopb.SearchResponse{}
+			results := &deeppb.SearchResponse{}
 			err = jsonpb.Unmarshal(resp.Body, results)
 			if err != nil {
 				_ = level.Error(s.logger).Log("msg", "error reading response body status == ok", "url", innerR.RequestURI, "err", err)
@@ -337,7 +337,7 @@ func (s *searchSharder) backendRequests(ctx context.Context, tenantID string, pa
 			subR := parent.Clone(ctx)
 			subR.Header.Set(user.OrgIDHeaderName, tenantID)
 
-			subR, err := api.BuildSearchBlockRequest(subR, &tempopb.SearchBlockRequest{
+			subR, err := api.BuildSearchBlockRequest(subR, &deeppb.SearchBlockRequest{
 				BlockID:       blockID,
 				StartPage:     uint32(startPage),
 				PagesToSearch: uint32(pagesPerQuery),
@@ -346,7 +346,7 @@ func (s *searchSharder) backendRequests(ctx context.Context, tenantID string, pa
 				TotalRecords:  m.TotalRecords,
 				DataEncoding:  m.DataEncoding,
 				Version:       m.Version,
-				Size_:         m.Size,
+				Size:          m.Size,
 				FooterSize:    m.FooterSize,
 			})
 
@@ -366,7 +366,7 @@ func (s *searchSharder) backendRequests(ctx context.Context, tenantID string, pa
 // that covers the ingesters. If nil is returned for the http.Request then there is no ingesters query.
 // since this function modifies searchReq.Start and End we are taking a value instead of a pointer to prevent it from
 // unexpectedly changing the passed searchReq.
-func (s *searchSharder) ingesterRequest(ctx context.Context, tenantID string, parent *http.Request, searchReq tempopb.SearchRequest) (*http.Request, error) {
+func (s *searchSharder) ingesterRequest(ctx context.Context, tenantID string, parent *http.Request, searchReq *deeppb.SearchRequest) (*http.Request, error) {
 	now := time.Now()
 	ingesterUntil := uint32(now.Add(-s.cfg.QueryIngestersUntil).Unix())
 
@@ -393,7 +393,7 @@ func (s *searchSharder) ingesterRequest(ctx context.Context, tenantID string, pa
 
 	searchReq.Start = ingesterStart
 	searchReq.End = ingesterEnd
-	subR, err := api.BuildSearchRequest(subR, &searchReq)
+	subR, err := api.BuildSearchRequest(subR, searchReq)
 	if err != nil {
 		return nil, err
 	}
@@ -404,7 +404,7 @@ func (s *searchSharder) ingesterRequest(ctx context.Context, tenantID string, pa
 
 // backendRange returns a new start/end range for the backend based on the config parameter
 // query_backend_after. If the returned start == the returned end then backend querying is not necessary.
-func (s *searchSharder) backendRange(searchReq *tempopb.SearchRequest) (uint32, uint32) {
+func (s *searchSharder) backendRange(searchReq *deeppb.SearchRequest) (uint32, uint32) {
 	now := time.Now()
 	backendAfter := uint32(now.Add(-s.cfg.QueryBackendAfter).Unix())
 

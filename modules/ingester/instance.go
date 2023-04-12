@@ -144,7 +144,7 @@ func newInstance(instanceID string, limiter *Limiter, writer deepdb.Writer, l *l
 }
 
 func (i *instance) PushBytesRequest(ctx context.Context, req *deeppb.PushBytesRequest) error {
-	err := i.PushBytes(ctx, req.Id, req.Snapshot)
+	err := i.PushBytes(ctx, req.ID, req.Snapshot)
 	if err != nil {
 		return err
 	}

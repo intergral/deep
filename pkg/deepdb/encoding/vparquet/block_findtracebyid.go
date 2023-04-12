@@ -24,7 +24,7 @@ const (
 	SearchNext     = -2
 	NotFound       = -3
 
-	SnapshotIDColumnName = "Id"
+	SnapshotIDColumnName = "ID"
 )
 
 func (b *backendBlock) checkBloom(ctx context.Context, id common.ID) (found bool, err error) {
@@ -53,7 +53,7 @@ func (b *backendBlock) checkBloom(ctx context.Context, id common.ID) (found bool
 	return filter.Test(id), nil
 }
 
-func (b *backendBlock) FindSnapshotByID(ctx context.Context, traceID common.ID, opts common.SearchOptions) (_ *deep_tp.Snapshot, err error) {
+func (b *backendBlock) FindSnapshotByID(ctx context.Context, snapshotID common.ID, opts common.SearchOptions) (_ *deep_tp.Snapshot, err error) {
 	span, derivedCtx := opentracing.StartSpanFromContext(ctx, "parquet.backendBlock.FindSnapshotByID",
 		opentracing.Tags{
 			"blockID":   b.meta.BlockID,
@@ -62,7 +62,7 @@ func (b *backendBlock) FindSnapshotByID(ctx context.Context, traceID common.ID, 
 		})
 	defer span.Finish()
 
-	found, err := b.checkBloom(derivedCtx, traceID)
+	found, err := b.checkBloom(derivedCtx, snapshotID)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (b *backendBlock) FindSnapshotByID(ctx context.Context, traceID common.ID, 
 		span.SetTag("inspectedBytes", rr.TotalBytesRead.Load())
 	}()
 
-	return findSnapshotByID(derivedCtx, traceID, b.meta, pf)
+	return findSnapshotByID(derivedCtx, snapshotID, b.meta, pf)
 }
 
 func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.BlockMeta, pf *parquet.File) (*deep_tp.Snapshot, error) {

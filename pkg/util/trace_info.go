@@ -8,12 +8,7 @@ import (
 
 	jaeger_grpc "github.com/jaegertracing/jaeger/cmd/agent/app/reporter/grpc"
 	thrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
-	jaegerTrans "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 	"github.com/weaveworks/common/user"
-	"go.opentelemetry.io/collector/pdata/ptrace"
-
-	"github.com/intergral/deep/pkg/tempopb"
-	v1common "github.com/intergral/deep/pkg/tempopb/common/v1"
 )
 
 var (
@@ -189,92 +184,6 @@ func (t *TraceInfo) generateRandomLogs() []*thrift.Log {
 	}
 
 	return logs
-}
-
-func (t *TraceInfo) ConstructTraceFromEpoch() (*tempopb.Trace, error) {
-	trace := &tempopb.Trace{}
-
-	// Create a new trace from our timestamp to ensure a fresh rand.Rand is used for consistency.
-	info := NewTraceInfo(t.timestamp, t.deepOrgID)
-
-	addBatches := func(t *TraceInfo, trace *tempopb.Trace) error {
-		for i := int64(0); i < t.generateRandomInt(1, maxBatchesPerWrite); i++ {
-			batch := t.makeThriftBatch(t.traceIDHigh, t.traceIDLow)
-			internalTrace, err := jaegerTrans.ThriftToTraces(batch)
-			if err != nil {
-				return err
-			}
-			conv, err := ptrace.NewProtoMarshaler().MarshalTraces(internalTrace)
-			if err != nil {
-				return err
-			}
-
-			t := tempopb.Trace{}
-			err = t.Unmarshal(conv)
-			if err != nil {
-				return err
-			}
-
-			// Due to the several transforms above, some manual mangling is required to
-			// get the parentSpanID to match.  In the case of an empty []byte in place
-			// for the ParentSpanId, we set to nil here to ensure that the final result
-			// matches the json.Unmarshal value when deep is queried.
-			for _, b := range t.Batches {
-				for _, l := range b.ScopeSpans {
-					for _, s := range l.Spans {
-						if len(s.GetParentSpanId()) == 0 {
-							s.ParentSpanId = nil
-						}
-					}
-				}
-			}
-
-			trace.Batches = append(trace.Batches, t.Batches...)
-		}
-
-		return nil
-	}
-
-	err := addBatches(info, trace)
-	if err != nil {
-		return nil, err
-	}
-
-	for info.longWritesRemaining > 0 {
-		info.Done()
-		err := addBatches(info, trace)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return trace, nil
-}
-
-func RandomAttrFromTrace(t *tempopb.Trace) *v1common.KeyValue {
-	r := newRand(time.Now())
-
-	if len(t.Batches) == 0 {
-		return nil
-	}
-	iBatch := r.Intn(len(t.Batches))
-
-	if len(t.Batches[iBatch].ScopeSpans) == 0 {
-		return nil
-	}
-	iSpans := r.Intn(len(t.Batches[iBatch].ScopeSpans))
-
-	if len(t.Batches[iBatch].ScopeSpans[iSpans].Spans) == 0 {
-		return nil
-	}
-	iSpan := r.Intn(len(t.Batches[iBatch].ScopeSpans[iSpans].Spans))
-
-	if len(t.Batches[iBatch].ScopeSpans[iSpans].Spans[iSpan].Attributes) == 0 {
-		return nil
-	}
-	iAttr := r.Intn(len(t.Batches[iBatch].ScopeSpans[iSpans].Spans[iSpan].Attributes))
-
-	return t.Batches[iBatch].ScopeSpans[iSpans].Spans[iSpan].Attributes[iAttr]
 }
 
 func newRand(t time.Time) *rand.Rand {

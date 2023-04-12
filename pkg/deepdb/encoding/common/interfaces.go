@@ -2,15 +2,15 @@ package common
 
 import (
 	"context"
+	"github.com/intergral/deep/pkg/deeppb"
 	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"time"
 
 	"github.com/go-kit/log"
 
 	"github.com/intergral/deep/pkg/deepdb/backend"
+	"github.com/intergral/deep/pkg/deepql"
 	"github.com/intergral/deep/pkg/model"
-	"github.com/intergral/deep/pkg/tempopb"
-	"github.com/intergral/deep/pkg/traceql"
 )
 
 type Finder interface {
@@ -19,15 +19,15 @@ type Finder interface {
 
 type TagCallback func(t string)
 
-type TagCallbackV2 func(traceql.Static) (stop bool)
+type TagCallbackV2 func(deepql.Static) (stop bool)
 
 type Searcher interface {
-	Search(ctx context.Context, req *tempopb.SearchRequest, opts SearchOptions) (*tempopb.SearchResponse, error)
+	Search(ctx context.Context, req *deeppb.SearchRequest, opts SearchOptions) (*deeppb.SearchResponse, error)
 	SearchTags(ctx context.Context, cb TagCallback, opts SearchOptions) error
 	SearchTagValues(ctx context.Context, tag string, cb TagCallback, opts SearchOptions) error
-	SearchTagValuesV2(ctx context.Context, tag traceql.Attribute, cb TagCallbackV2, opts SearchOptions) error
+	SearchTagValuesV2(ctx context.Context, tag deepql.Attribute, cb TagCallbackV2, opts SearchOptions) error
 
-	Fetch(context.Context, traceql.FetchSpansRequest, SearchOptions) (traceql.FetchSpansResponse, error)
+	Fetch(context.Context, deepql.FetchSnapshotRequest, SearchOptions) (deepql.FetchSnapshotResponse, error)
 }
 
 type CacheControl struct {

@@ -2,6 +2,8 @@ package util
 
 import (
 	"fmt"
+	"github.com/intergral/deep/pkg/deeppb"
+	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"io"
 	"net/http"
 	"net/url"
@@ -10,7 +12,6 @@ import (
 
 	"github.com/golang/protobuf/jsonpb" //nolint:all
 	"github.com/golang/protobuf/proto"  //nolint:all
-	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/klauspost/compress/gzhttp"
 )
 
@@ -106,8 +107,8 @@ func (c *Client) getFor(url string, m proto.Message) (*http.Response, error) {
 	return resp, nil
 }
 
-func (c *Client) SearchTags() (*tempopb.SearchTagsResponse, error) {
-	m := &tempopb.SearchTagsResponse{}
+func (c *Client) SearchTags() (*deeppb.SearchTagsResponse, error) {
+	m := &deeppb.SearchTagsResponse{}
 	_, err := c.getFor(c.BaseURL+"/api/search/tags", m)
 	if err != nil {
 		return nil, err
@@ -116,8 +117,8 @@ func (c *Client) SearchTags() (*tempopb.SearchTagsResponse, error) {
 	return m, nil
 }
 
-func (c *Client) SearchTagValues(key string) (*tempopb.SearchTagValuesResponse, error) {
-	m := &tempopb.SearchTagValuesResponse{}
+func (c *Client) SearchTagValues(key string) (*deeppb.SearchTagValuesResponse, error) {
+	m := &deeppb.SearchTagValuesResponse{}
 	_, err := c.getFor(c.BaseURL+"/api/search/tag/"+key+"/values", m)
 	if err != nil {
 		return nil, err
@@ -127,8 +128,8 @@ func (c *Client) SearchTagValues(key string) (*tempopb.SearchTagValuesResponse, 
 }
 
 // Search Tempo. tags must be in logfmt format, that is "key1=value1 key2=value2"
-func (c *Client) Search(tags string) (*tempopb.SearchResponse, error) {
-	m := &tempopb.SearchResponse{}
+func (c *Client) Search(tags string) (*deeppb.SearchResponse, error) {
+	m := &deeppb.SearchResponse{}
 	_, err := c.getFor(c.BaseURL+"/api/search?tags="+url.QueryEscape(tags), m)
 	if err != nil {
 		return nil, err
@@ -139,8 +140,8 @@ func (c *Client) Search(tags string) (*tempopb.SearchResponse, error) {
 
 // SearchWithRange calls the /api/search endpoint. tags is expected to be in logfmt format and start/end are unix
 // epoch timestamps in seconds.
-func (c *Client) SearchWithRange(tags string, start int64, end int64) (*tempopb.SearchResponse, error) {
-	m := &tempopb.SearchResponse{}
+func (c *Client) SearchWithRange(tags string, start int64, end int64) (*deeppb.SearchResponse, error) {
+	m := &deeppb.SearchResponse{}
 	_, err := c.getFor(c.BaseURL+"/api/search?tags="+url.QueryEscape(tags)+"&start="+strconv.FormatInt(start, 10)+"&end="+strconv.FormatInt(end, 10), m)
 	if err != nil {
 		return nil, err
@@ -149,8 +150,8 @@ func (c *Client) SearchWithRange(tags string, start int64, end int64) (*tempopb.
 	return m, nil
 }
 
-func (c *Client) QueryTrace(id string) (*tempopb.Trace, error) {
-	m := &tempopb.Trace{}
+func (c *Client) QueryTrace(id string) (*deep_tp.Snapshot, error) {
+	m := &deep_tp.Snapshot{}
 	resp, err := c.getFor(c.BaseURL+QueryTraceEndpoint+"/"+id, m)
 	if err != nil {
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
@@ -162,8 +163,8 @@ func (c *Client) QueryTrace(id string) (*tempopb.Trace, error) {
 	return m, nil
 }
 
-func (c *Client) SearchTraceQL(query string) (*tempopb.SearchResponse, error) {
-	m := &tempopb.SearchResponse{}
+func (c *Client) SearchTraceQL(query string) (*deeppb.SearchResponse, error) {
+	m := &deeppb.SearchResponse{}
 	_, err := c.getFor(c.BaseURL+"/api/search?q="+url.QueryEscape(query), m)
 	if err != nil {
 		return nil, err

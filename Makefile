@@ -91,6 +91,7 @@ gen-proto:
 	@echo -- Copying to $(PROTO_INTERMEDIATE_DIR)
 	@echo --
 	git submodule update --init
+	cd deep-proto && git pull origin master
 	mkdir -p $(PROTO_INTERMEDIATE_DIR)
 	mkdir -p $(PROTO_INTERMEDIATE_DIR)/out
 	cp -R deep-proto/deepproto/proto/* $(PROTO_INTERMEDIATE_DIR)
@@ -126,3 +127,20 @@ gen-proto:
 	@echo --
 	cp -r $(PROTO_INTERMEDIATE_DIR)/out/github.com/intergral/deep/pkg/deeppb/* pkg/deeppb
 
+	@echo --
+	@echo -- Clean up --
+	@echo --
+	rm -rf $(PROTO_INTERMEDIATE_DIR)
+
+# ##############
+# Gen deepql
+# ##############
+GO_YACC_IMAGE ?= grafana/loki-build-image:0.21.0
+
+.PHONY: gen-deepql
+gen-deepql:
+	docker run --rm -v${PWD}:/src/loki ${GO_YACC_IMAGE} gen-deepql-local
+
+.PHONY: gen-deepql-local
+gen-deepql-local:
+	goyacc -o pkg/deepql/expr.y.go pkg/deepql/expr.y

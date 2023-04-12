@@ -2,20 +2,20 @@ package ingester
 
 import (
 	"context"
+	"github.com/intergral/deep/pkg/deeppb"
 
-	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/pkg/errors"
 	"github.com/weaveworks/common/user"
 )
 
-func (i *Ingester) SearchRecent(ctx context.Context, req *tempopb.SearchRequest) (*tempopb.SearchResponse, error) {
+func (i *Ingester) SearchRecent(ctx context.Context, req *deeppb.SearchRequest) (*deeppb.SearchResponse, error) {
 	instanceID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
 	}
 	inst, ok := i.getInstanceByID(instanceID)
 	if !ok || inst == nil {
-		return &tempopb.SearchResponse{}, nil
+		return &deeppb.SearchResponse{}, nil
 	}
 
 	res, err := inst.Search(ctx, req)
@@ -26,14 +26,14 @@ func (i *Ingester) SearchRecent(ctx context.Context, req *tempopb.SearchRequest)
 	return res, nil
 }
 
-func (i *Ingester) SearchTags(ctx context.Context, req *tempopb.SearchTagsRequest) (*tempopb.SearchTagsResponse, error) {
+func (i *Ingester) SearchTags(ctx context.Context, req *deeppb.SearchTagsRequest) (*deeppb.SearchTagsResponse, error) {
 	instanceID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
 	}
 	inst, ok := i.getInstanceByID(instanceID)
 	if !ok || inst == nil {
-		return &tempopb.SearchTagsResponse{}, nil
+		return &deeppb.SearchTagsResponse{}, nil
 	}
 
 	res, err := inst.SearchTags(ctx)
@@ -44,14 +44,14 @@ func (i *Ingester) SearchTags(ctx context.Context, req *tempopb.SearchTagsReques
 	return res, nil
 }
 
-func (i *Ingester) SearchTagValues(ctx context.Context, req *tempopb.SearchTagValuesRequest) (*tempopb.SearchTagValuesResponse, error) {
+func (i *Ingester) SearchTagValues(ctx context.Context, req *deeppb.SearchTagValuesRequest) (*deeppb.SearchTagValuesResponse, error) {
 	instanceID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
 	}
 	inst, ok := i.getInstanceByID(instanceID)
 	if !ok || inst == nil {
-		return &tempopb.SearchTagValuesResponse{}, nil
+		return &deeppb.SearchTagValuesResponse{}, nil
 	}
 
 	res, err := inst.SearchTagValues(ctx, req.TagName)
@@ -62,14 +62,14 @@ func (i *Ingester) SearchTagValues(ctx context.Context, req *tempopb.SearchTagVa
 	return res, nil
 }
 
-func (i *Ingester) SearchTagValuesV2(ctx context.Context, req *tempopb.SearchTagValuesRequest) (*tempopb.SearchTagValuesV2Response, error) {
+func (i *Ingester) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagValuesRequest) (*deeppb.SearchTagValuesV2Response, error) {
 	instanceID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
 	}
 	inst, ok := i.getInstanceByID(instanceID)
 	if !ok || inst == nil {
-		return &tempopb.SearchTagValuesV2Response{}, nil
+		return &deeppb.SearchTagValuesV2Response{}, nil
 	}
 
 	res, err := inst.SearchTagValuesV2(ctx, req)
@@ -82,6 +82,6 @@ func (i *Ingester) SearchTagValuesV2(ctx context.Context, req *tempopb.SearchTag
 
 // SearchBlock only exists here to fulfill the protobuf interface. The ingester will never support
 // backend search
-func (i *Ingester) SearchBlock(context.Context, *tempopb.SearchBlockRequest) (*tempopb.SearchResponse, error) {
+func (i *Ingester) SearchBlock(context.Context, *deeppb.SearchBlockRequest) (*deeppb.SearchResponse, error) {
 	return nil, errors.New("not implemented")
 }

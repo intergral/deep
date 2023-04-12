@@ -9,7 +9,7 @@ import (
 
 	"github.com/intergral/deep/modules/ingester/client"
 	"github.com/intergral/deep/modules/overrides"
-	"github.com/intergral/deep/pkg/tempopb"
+	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/atomic"
 	"github.com/weaveworks/common/user"
@@ -72,7 +72,7 @@ func TestQuerierUsesSearchExternalEndpoint(t *testing.T) {
 		for i := 0; i < tc.queriesToExecute; i++ {
 			// ignore error purposefully here. all queries will error, but we don't care
 			// numExternalRequests will tell us what we need to know
-			_, _ = q.SearchBlock(ctx, &tempopb.SearchBlockRequest{})
+			_, _ = q.SearchBlock(ctx, &deeppb.SearchBlockRequest{})
 		}
 
 		require.Equal(t, tc.externalExpected, numExternalRequests.Load())

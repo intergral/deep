@@ -1,4 +1,4 @@
-package traceql
+package deepql
 
 import "fmt"
 
@@ -23,11 +23,11 @@ const (
 	OpAnd
 	OpOr
 	OpNot
-	OpSpansetChild
-	OpSpansetDescendant
-	OpSpansetAnd
-	OpSpansetUnion
-	OpSpansetSibling
+	OpSnapshotChild
+	OpSnapshotDescendant
+	OpSnapshotAnd
+	OpSnapshotUnion
+	OpSnapshotSibling
 )
 
 func (op Operator) isBoolean() bool {
@@ -82,10 +82,6 @@ func binaryTypeValid(op Operator, t StaticType) bool {
 			op == OpRegex ||
 			op == OpNotRegex
 	case TypeNil:
-		fallthrough
-	case TypeStatus:
-		return op == OpEqual || op == OpNotEqual
-	case TypeKind:
 		return op == OpEqual || op == OpNotEqual
 	}
 
@@ -144,15 +140,15 @@ func (op Operator) String() string {
 		return "||"
 	case OpNot:
 		return "!"
-	case OpSpansetChild:
+	case OpSnapshotChild:
 		return ">"
-	case OpSpansetDescendant:
+	case OpSnapshotDescendant:
 		return ">>"
-	case OpSpansetAnd:
+	case OpSnapshotAnd:
 		return "&&"
-	case OpSpansetSibling:
+	case OpSnapshotSibling:
 		return "~"
-	case OpSpansetUnion:
+	case OpSnapshotUnion:
 		return "||"
 	}
 

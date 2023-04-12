@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/intergral/deep/pkg/deeppb"
 	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	"github.com/intergral/deep/pkg/deepql"
 	"time"
 
 	gkLog "github.com/go-kit/log"
@@ -30,8 +32,6 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	"github.com/intergral/deep/pkg/deepdb/pool"
 	"github.com/intergral/deep/pkg/deepdb/wal"
-	"github.com/intergral/deep/pkg/tempopb"
-	"github.com/intergral/deep/pkg/traceql"
 	"github.com/intergral/deep/pkg/util/log"
 )
 
@@ -78,8 +78,8 @@ type IterateObjectCallback func(id common.ID, obj []byte) bool
 type Reader interface {
 	FindSnapshot(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) (*deep_tp.Snapshot, []error, error)
 
-	Search(ctx context.Context, meta *backend.BlockMeta, req *tempopb.SearchRequest, opts common.SearchOptions) (*tempopb.SearchResponse, error)
-	Fetch(ctx context.Context, meta *backend.BlockMeta, req traceql.FetchSpansRequest, opts common.SearchOptions) (traceql.FetchSpansResponse, error)
+	Search(ctx context.Context, meta *backend.BlockMeta, req *deeppb.SearchRequest, opts common.SearchOptions) (*deeppb.SearchResponse, error)
+	Fetch(ctx context.Context, meta *backend.BlockMeta, req deepql.FetchSnapshotRequest, opts common.SearchOptions) (deepql.FetchSnapshotResponse, error)
 	BlockMetas(tenantID string) []*backend.BlockMeta
 	EnablePolling(sharder blocklist.JobSharder)
 
@@ -335,10 +335,11 @@ func (rw *readerWriter) FindSnapshot(ctx context.Context, tenantID string, id co
 		return foundObject, nil
 	})
 
-	snapshotObjects := make([]*deep_tp.Snapshot, len(jobsResults))
+	var result *deep_tp.Snapshot
 	for i := range jobsResults {
-		if snapshotObjects[i] != nil {
-			snapshotObjects[i] = jobsResults[i].(*deep_tp.Snapshot)
+		res := jobsResults[i].(*deep_tp.Snapshot)
+		if res != nil {
+			result = res
 		}
 	}
 
@@ -348,12 +349,12 @@ func (rw *readerWriter) FindSnapshot(ctx context.Context, tenantID string, id co
 	span.SetTag("compactedBlocks", len(compactedBlocklist))
 	span.SetTag("compactedBlocksSearched", compactedBlocksSearched)
 
-	return snapshotObjects[0], funcErrs, err
+	return result, funcErrs, err
 }
 
 // Search the given block.  This method takes the pre-loaded block meta instead of a block ID, which
 // eliminates a read per search request.
-func (rw *readerWriter) Search(ctx context.Context, meta *backend.BlockMeta, req *tempopb.SearchRequest, opts common.SearchOptions) (*tempopb.SearchResponse, error) {
+func (rw *readerWriter) Search(ctx context.Context, meta *backend.BlockMeta, req *deeppb.SearchRequest, opts common.SearchOptions) (*deeppb.SearchResponse, error) {
 	block, err := encoding.OpenBlock(meta, rw.r)
 	if err != nil {
 		return nil, err
@@ -363,10 +364,10 @@ func (rw *readerWriter) Search(ctx context.Context, meta *backend.BlockMeta, req
 	return block.Search(ctx, req, opts)
 }
 
-func (rw *readerWriter) Fetch(ctx context.Context, meta *backend.BlockMeta, req traceql.FetchSpansRequest, opts common.SearchOptions) (traceql.FetchSpansResponse, error) {
+func (rw *readerWriter) Fetch(ctx context.Context, meta *backend.BlockMeta, req deepql.FetchSnapshotRequest, opts common.SearchOptions) (deepql.FetchSnapshotResponse, error) {
 	block, err := encoding.OpenBlock(meta, rw.r)
 	if err != nil {
-		return traceql.FetchSpansResponse{}, err
+		return deepql.FetchSnapshotResponse{}, err
 	}
 
 	rw.cfg.Search.ApplyToOptions(&opts)

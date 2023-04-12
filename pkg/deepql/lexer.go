@@ -1,4 +1,4 @@
-package traceql
+package deepql
 
 import (
 	"strconv"
@@ -11,59 +11,44 @@ import (
 )
 
 var tokens = map[string]int{
-	".":           DOT,
-	"{":           OPEN_BRACE,
-	"}":           CLOSE_BRACE,
-	"(":           OPEN_PARENS,
-	")":           CLOSE_PARENS,
-	"=":           EQ,
-	"!=":          NEQ,
-	"=~":          RE,
-	"!~":          NRE,
-	">":           GT,
-	">=":          GTE,
-	"<":           LT,
-	"<=":          LTE,
-	"+":           ADD,
-	"-":           SUB,
-	"/":           DIV,
-	"%":           MOD,
-	"*":           MUL,
-	"^":           POW,
-	"true":        TRUE,
-	"false":       FALSE,
-	"nil":         NIL,
-	"ok":          STATUS_OK,
-	"error":       STATUS_ERROR,
-	"unset":       STATUS_UNSET,
-	"unspecified": KIND_UNSPECIFIED,
-	"internal":    KIND_INTERNAL,
-	"server":      KIND_SERVER,
-	"client":      KIND_CLIENT,
-	"producer":    KIND_PRODUCER,
-	"consumer":    KIND_CONSUMER,
-	"&&":          AND,
-	"||":          OR,
-	"!":           NOT,
-	"|":           PIPE,
-	">>":          DESC,
-	"~":           TILDE,
-	"duration":    IDURATION,
-	"childCount":  CHILDCOUNT,
-	"name":        NAME,
-	"status":      STATUS,
-	"kind":        KIND,
-	"parent":      PARENT,
-	"parent.":     PARENT_DOT,
-	"resource.":   RESOURCE_DOT,
-	"span.":       SPAN_DOT,
-	"count":       COUNT,
-	"avg":         AVG,
-	"max":         MAX,
-	"min":         MIN,
-	"sum":         SUM,
-	"by":          BY,
-	"coalesce":    COALESCE,
+	".":         DOT,
+	"{":         OPEN_BRACE,
+	"}":         CLOSE_BRACE,
+	"(":         OPEN_PARENS,
+	")":         CLOSE_PARENS,
+	"=":         EQ,
+	"!=":        NEQ,
+	"=~":        RE,
+	"!~":        NRE,
+	">":         GT,
+	">=":        GTE,
+	"<":         LT,
+	"<=":        LTE,
+	"+":         ADD,
+	"-":         SUB,
+	"/":         DIV,
+	"%":         MOD,
+	"*":         MUL,
+	"^":         POW,
+	"true":      TRUE,
+	"false":     FALSE,
+	"nil":       NIL,
+	"&&":        AND,
+	"||":        OR,
+	"!":         NOT,
+	"|":         PIPE,
+	">>":        DESC,
+	"~":         TILDE,
+	"duration":  IDURATION,
+	"name":      NAME,
+	"resource.": RESOURCE_DOT,
+	"count":     COUNT,
+	"avg":       AVG,
+	"max":       MAX,
+	"min":       MIN,
+	"sum":       SUM,
+	"by":        BY,
+	"coalesce":  COALESCE,
 }
 
 type lexer struct {
@@ -92,7 +77,7 @@ func (l *lexer) Lex(lval *yySymType) int {
 		str := l.TokenText()
 		// parse out any scopes here
 		tok := tokens[str+string(l.Peek())]
-		if tok == RESOURCE_DOT || tok == SPAN_DOT {
+		if tok == RESOURCE_DOT {
 			l.Next()
 			return tok
 		}
@@ -245,7 +230,5 @@ func isAttributeRune(r rune) bool {
 
 func startsAttribute(tok int) bool {
 	return tok == DOT ||
-		tok == RESOURCE_DOT ||
-		tok == SPAN_DOT ||
-		tok == PARENT_DOT
+		tok == RESOURCE_DOT
 }

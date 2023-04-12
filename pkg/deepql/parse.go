@@ -1,4 +1,4 @@
-package traceql
+package deepql
 
 import (
 	"errors"
@@ -58,7 +58,7 @@ func ParseIdentifier(s string) (Attribute, error) {
 	case strings.HasPrefix(s, "resource."):
 		return NewScopedAttribute(AttributeScopeResource, false, strings.TrimPrefix(s, "resource.")), nil
 	case strings.HasPrefix(s, "span."):
-		return NewScopedAttribute(AttributeScopeSpan, false, strings.TrimPrefix(s, "span.")), nil
+		return NewScopedAttribute(AttributeScopeSnapshot, false, strings.TrimPrefix(s, "span.")), nil
 	default:
 		return Attribute{}, fmt.Errorf("tag name is not valid intrinsic or scoped attribute: %s", s)
 	}

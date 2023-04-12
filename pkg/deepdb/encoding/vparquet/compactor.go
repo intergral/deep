@@ -69,65 +69,10 @@ func (c *Compactor) Compact(ctx context.Context, l log.Logger, r backend.Reader,
 
 	var (
 		nextCompactionLevel = compactionLevel + 1
-		sch                 = parquet.SchemaOf(new(Snapshot))
 	)
 
-	// Dedupe rows and also call the metrics callback.
-	combine := func(rows []parquet.Row) (parquet.Row, error) {
-		if len(rows) == 0 {
-			return nil, nil
-		}
-
-		if len(rows) == 1 {
-			return rows[0], nil
-		}
-
-		isEqual := true
-		for i := 1; i < len(rows) && isEqual; i++ {
-			isEqual = rows[0].Equal(rows[i])
-		}
-		if isEqual {
-			for i := 1; i < len(rows); i++ {
-				pool.Put(rows[i])
-			}
-			return rows[0], nil
-		}
-
-		// Total
-		if c.opts.MaxBytesPerTrace > 0 {
-			sum := 0
-			for _, row := range rows {
-				sum += estimateProtoSizeFromParquetRow(row)
-			}
-			if sum > c.opts.MaxBytesPerTrace {
-				// Trace too large to compact
-				for i := 1; i < len(rows); i++ {
-					c.opts.SpansDiscarded(countSpans(sch, rows[i]))
-					pool.Put(rows[i])
-				}
-				return rows[0], nil
-			}
-		}
-
-		// Time to combine.
-		cmb := NewCombiner()
-		for i, row := range rows {
-			tr := new(Snapshot)
-			err := sch.Reconstruct(tr, row)
-			if err != nil {
-				return nil, err
-			}
-			cmb.ConsumeWithFinal(tr, i == len(rows)-1)
-			pool.Put(row)
-		}
-		tr, _ := cmb.Result()
-
-		c.opts.ObjectsCombined(int(compactionLevel), 1)
-		return sch.Deconstruct(pool.Get(), tr), nil
-	}
-
 	var (
-		m               = newMultiblockIterator(bookmarks, combine)
+		m               = newMultiblockIterator(bookmarks)
 		recordsPerBlock = (totalRecords / int(c.opts.OutputBlocks))
 		currentBlock    *streamingBlock
 	)

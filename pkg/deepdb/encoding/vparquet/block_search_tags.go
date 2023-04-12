@@ -7,29 +7,28 @@ import (
 	"io"
 
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
+	"github.com/intergral/deep/pkg/deepql"
 	pq "github.com/intergral/deep/pkg/parquetquery"
-	"github.com/intergral/deep/pkg/traceql"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 )
 
-var translateTagToAttribute = map[string]traceql.Attribute{
+var translateTagToAttribute = map[string]deepql.Attribute{
 	// Preserve behavior of v1 tag lookups which directed some attributes
 	// to dedicated columns.
-	LabelServiceName:      traceql.NewScopedAttribute(traceql.AttributeScopeResource, false, LabelServiceName),
-	LabelCluster:          traceql.NewScopedAttribute(traceql.AttributeScopeResource, false, LabelCluster),
-	LabelNamespace:        traceql.NewScopedAttribute(traceql.AttributeScopeResource, false, LabelNamespace),
-	LabelPod:              traceql.NewScopedAttribute(traceql.AttributeScopeResource, false, LabelPod),
-	LabelContainer:        traceql.NewScopedAttribute(traceql.AttributeScopeResource, false, LabelContainer),
-	LabelK8sNamespaceName: traceql.NewScopedAttribute(traceql.AttributeScopeResource, false, LabelK8sNamespaceName),
-	LabelK8sClusterName:   traceql.NewScopedAttribute(traceql.AttributeScopeResource, false, LabelK8sClusterName),
-	LabelK8sPodName:       traceql.NewScopedAttribute(traceql.AttributeScopeResource, false, LabelK8sPodName),
-	LabelK8sContainerName: traceql.NewScopedAttribute(traceql.AttributeScopeResource, false, LabelK8sContainerName),
+	LabelServiceName:      deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelServiceName),
+	LabelCluster:          deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelCluster),
+	LabelNamespace:        deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelNamespace),
+	LabelPod:              deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelPod),
+	LabelContainer:        deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelContainer),
+	LabelK8sNamespaceName: deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelK8sNamespaceName),
+	LabelK8sClusterName:   deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelK8sClusterName),
+	LabelK8sPodName:       deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelK8sPodName),
+	LabelK8sContainerName: deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelK8sContainerName),
 }
 
-var nonTraceQLAttributes = map[string]string{
-	LabelRootServiceName: columnPathRootServiceName,
-	LabelRootSpanName:    columnPathRootSpanName,
+var nondeepqlAttributes = map[string]string{
+	LabelRootServiceName: columnPathServiceName,
 }
 
 func (b *backendBlock) SearchTags(ctx context.Context, cb common.TagCallback, opts common.SearchOptions) error {
@@ -162,11 +161,11 @@ func (b *backendBlock) SearchTagValues(ctx context.Context, tag string, cb commo
 
 	att, ok := translateTagToAttribute[tag]
 	if !ok {
-		att = traceql.NewAttribute(tag)
+		att = deepql.NewAttribute(tag)
 	}
 
 	// Wrap to v2-style
-	cb2 := func(v traceql.Static) bool {
+	cb2 := func(v deepql.Static) bool {
 		cb(v.EncodeToString(false))
 		return false
 	}
@@ -174,7 +173,7 @@ func (b *backendBlock) SearchTagValues(ctx context.Context, tag string, cb commo
 	return b.SearchTagValuesV2(ctx, att, cb2, opts)
 }
 
-func (b *backendBlock) SearchTagValuesV2(ctx context.Context, tag traceql.Attribute, cb common.TagCallbackV2, opts common.SearchOptions) error {
+func (b *backendBlock) SearchTagValuesV2(ctx context.Context, tag deepql.Attribute, cb common.TagCallbackV2, opts common.SearchOptions) error {
 	span, derivedCtx := opentracing.StartSpanFromContext(ctx, "parquet.backendBlock.SearchTagValuesV2",
 		opentracing.Tags{
 			"blockID":   b.meta.BlockID,
@@ -192,21 +191,21 @@ func (b *backendBlock) SearchTagValuesV2(ctx context.Context, tag traceql.Attrib
 	return searchTagValues(derivedCtx, tag, cb, pf)
 }
 
-func searchTagValues(ctx context.Context, tag traceql.Attribute, cb common.TagCallbackV2, pf *parquet.File) error {
+func searchTagValues(ctx context.Context, tag deepql.Attribute, cb common.TagCallbackV2, pf *parquet.File) error {
 	// Special handling for intrinsics
-	if tag.Intrinsic != traceql.IntrinsicNone {
-		lookup := intrinsicColumnLookups[tag.Intrinsic]
-		if lookup.columnPath != "" {
-			err := searchSpecialTagValues(ctx, lookup.columnPath, pf, cb)
-			if err != nil {
-				return fmt.Errorf("unexpected error searching special tags: %w", err)
-			}
-		}
+	if tag.Intrinsic != deepql.IntrinsicNone {
+		//lookup := intrinsicColumnLookups[tag.Intrinsic]
+		//if lookup.columnPath != "" {
+		//	err := searchSpecialTagValues(ctx, lookup.columnPath, pf, cb)
+		//	if err != nil {
+		//		return fmt.Errorf("unexpected error searching special tags: %w", err)
+		//	}
+		//}
 		return nil
 	}
 
-	// Special handling for weird non-traceql things
-	if columnPath := nonTraceQLAttributes[tag.Name]; columnPath != "" {
+	// Special handling for weird non-deepql things
+	if columnPath := nondeepqlAttributes[tag.Name]; columnPath != "" {
 		err := searchSpecialTagValues(ctx, columnPath, pf, cb)
 		if err != nil {
 			return fmt.Errorf("unexpected error searching special tags: %s %w", columnPath, err)
@@ -215,13 +214,13 @@ func searchTagValues(ctx context.Context, tag traceql.Attribute, cb common.TagCa
 	}
 
 	// Search dedicated attribute column if one exists and is a compatible scope.
-	column := wellKnownColumnLookups[tag.Name]
-	if column.columnPath != "" && (tag.Scope == column.level || tag.Scope == traceql.AttributeScopeNone) {
-		err := searchSpecialTagValues(ctx, column.columnPath, pf, cb)
-		if err != nil {
-			return fmt.Errorf("unexpected error searching special tags: %w", err)
-		}
-	}
+	//column := wellKnownColumnLookups[tag.Name]
+	//if column.columnPath != "" && (tag.Scope == column.level || tag.Scope == deepql.AttributeScopeNone) {
+	//	err := searchSpecialTagValues(ctx, column.columnPath, pf, cb)
+	//	if err != nil {
+	//		return fmt.Errorf("unexpected error searching special tags: %w", err)
+	//	}
+	//}
 
 	// Finally also search generic key/values
 	err := searchStandardTagValues(ctx, tag, pf, cb)
@@ -234,13 +233,13 @@ func searchTagValues(ctx context.Context, tag traceql.Attribute, cb common.TagCa
 
 // searchStandardTagValues searches a parquet file for "standard" tags. i.e. tags that don't have unique
 // columns and are contained in labelMappings
-func searchStandardTagValues(ctx context.Context, tag traceql.Attribute, pf *parquet.File, cb common.TagCallbackV2) error {
+func searchStandardTagValues(ctx context.Context, tag deepql.Attribute, pf *parquet.File, cb common.TagCallbackV2) error {
 	rgs := pf.RowGroups()
 	makeIter := makeIterFunc(ctx, rgs, pf)
 
 	keyPred := pq.NewStringInPredicate([]string{tag.Name})
 
-	if tag.Scope == traceql.AttributeScopeNone || tag.Scope == traceql.AttributeScopeResource {
+	if tag.Scope == deepql.AttributeScopeNone || tag.Scope == deepql.AttributeScopeResource {
 		err := searchKeyValues(DefinitionLevelResourceAttrs,
 			FieldResourceAttrKey,
 			FieldResourceAttrVal,
@@ -253,7 +252,7 @@ func searchStandardTagValues(ctx context.Context, tag traceql.Attribute, pf *par
 		}
 	}
 
-	if tag.Scope == traceql.AttributeScopeNone || tag.Scope == traceql.AttributeScopeSpan {
+	if tag.Scope == deepql.AttributeScopeNone || tag.Scope == deepql.AttributeScopeSnapshot {
 		err := searchKeyValues(DefinitionLevelResourceSpansILSSpanAttrs,
 			FieldAttrKey,
 			FieldAttrVal,

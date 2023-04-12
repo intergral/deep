@@ -195,7 +195,7 @@ func (i *Ingester) PushBytes(ctx context.Context, req *deeppb.PushBytesRequest) 
 }
 
 func (i *Ingester) FindSnapshotByID(ctx context.Context, req *deeppb.SnapshotByIDRequest) (*deeppb.SnapshotByIDResponse, error) {
-	if !validation.ValidSnapshotID(req.Id) {
+	if !validation.ValidSnapshotID(req.ID) {
 		return nil, fmt.Errorf("invalid snapshot id")
 	}
 
@@ -212,7 +212,7 @@ func (i *Ingester) FindSnapshotByID(ctx context.Context, req *deeppb.SnapshotByI
 		return &deeppb.SnapshotByIDResponse{}, nil
 	}
 
-	snapshot, err := inst.FindSnapshotByID(ctx, req.Id)
+	snapshot, err := inst.FindSnapshotByID(ctx, req.ID)
 	if err != nil {
 		return nil, err
 	}

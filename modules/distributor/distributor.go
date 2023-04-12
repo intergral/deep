@@ -146,7 +146,7 @@ func (d *Distributor) Poll(ctx context.Context, pollRequest *pb.PollRequest) (*p
 		Ts:          time.Now().UnixMilli(),
 		CurrentHash: "123",
 		Response: []*tp.TracePointConfig{{
-			Id: "17", Path: "/simple-app/simple_test.py", LineNo: 31,
+			ID: "17", Path: "/simple-app/simple_test.py", LineNo: 31,
 			Args:    map[string]string{"some": "thing", "fire_count": "-1", "fire_period": "10000"},
 			Watches: []string{"len(uuid)", "uuid", "self.char_counter"},
 		}},
@@ -357,13 +357,13 @@ func (d *Distributor) PushSnapshot(ctx context.Context, in *tp.Snapshot) (*tp.Sn
 func extractKeys(snapshot *deeppb_tp.Snapshot, userId string) ([]uint32, error) {
 	keys := make([]uint32, 1)
 
-	keys[0] = deep_util.TokenFor(userId, []byte(snapshot.GetId()))
+	keys[0] = deep_util.TokenFor(userId, snapshot.GetID())
 
 	return keys, nil
 }
 
 func logSnapshot(snapshot *deeppb_tp.Snapshot, logger log.Logger) {
-	level.Info(logger).Log("msg", "received", "snapshotId", snapshot.GetId())
+	level.Info(logger).Log("msg", "received", "snapshotId", snapshot.GetID())
 }
 
 func logSnapshotWithAllAttributes(snapshot *deeppb_tp.Snapshot, logger log.Logger) {
@@ -448,7 +448,7 @@ func (d *Distributor) sendToIngester(ctx context.Context, userID string, keys []
 
 		req := deeppb.PushBytesRequest{
 			Snapshot: bytes,
-			Id:       snapshot.Id,
+			ID:       snapshot.ID,
 		}
 
 		c, err := d.pool.GetClientFor(ingester.Addr)

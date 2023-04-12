@@ -39,7 +39,7 @@ func CreateBlock(ctx context.Context, cfg *common.BlockConfig, meta *backend.Blo
 	var next func(context.Context) (common.ID, parquet.Row, error)
 
 	if ii, ok := i.(*commonIterator); ok {
-		// Use interal iterator and avoid translation to/from proto
+		// Use internal iterator and avoid translation to/from proto
 		next = ii.NextRow
 	} else {
 		// Need to convert from proto->parquet obj
@@ -134,7 +134,7 @@ func (b *streamingBlock) Add(tr *Snapshot, start uint32) error {
 	if err != nil {
 		return err
 	}
-	id := tr.Id
+	id := tr.ID
 
 	b.bloom.Add(id)
 	b.meta.ObjectAdded(id, start)

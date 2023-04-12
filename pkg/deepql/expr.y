@@ -1,5 +1,5 @@
 %{
-package traceql
+package deepql
 
 import (
   "time"
@@ -13,11 +13,11 @@ import (
     groupOperation GroupOperation
     coalesceOperation CoalesceOperation
 
-    spansetExpression SpansetExpression
-    spansetPipelineExpression SpansetExpression
-    wrappedSpansetPipeline Pipeline
-    spansetPipeline Pipeline
-    spansetFilter SpansetFilter
+    snapshotExpression SnapshotExpression
+    snapshotPipelineExpression SnapshotExpression
+    wrappedSnapshotPipeline Pipeline
+    snapshotPipeline Pipeline
+    snapshotFilter SnapshotFilter
     scalarFilter ScalarFilter
     scalarFilterOperation Operator
 
@@ -44,11 +44,11 @@ import (
 %type <groupOperation> groupOperation
 %type <coalesceOperation> coalesceOperation
 
-%type <spansetExpression> spansetExpression
-%type <spansetPipelineExpression> spansetPipelineExpression
-%type <wrappedSpansetPipeline> wrappedSpansetPipeline
-%type <spansetPipeline> spansetPipeline
-%type <spansetFilter> spansetFilter
+%type <snapshotExpression> snapshotExpression
+%type <snapshotPipelineExpression> snapshotPipelineExpression
+%type <wrappedSnapshotPipeline> wrappedSnapshotPipeline
+%type <snapshotPipeline> snapshotPipeline
+%type <snapshotFilter> snapshotFilter
 %type <scalarFilter> scalarFilter
 %type <scalarFilterOperation> scalarFilterOperation
 
@@ -57,7 +57,7 @@ import (
 %type <scalarExpression> scalarExpression
 %type <wrappedScalarPipeline> wrappedScalarPipeline
 %type <scalarPipeline> scalarPipeline
-%type <aggregate> aggregate 
+%type <aggregate> aggregate
 
 %type <fieldExpression> fieldExpression
 %type <static> static
@@ -69,10 +69,9 @@ import (
 %token <staticFloat>    FLOAT
 %token <staticDuration> DURATION
 %token <val>            DOT OPEN_BRACE CLOSE_BRACE OPEN_PARENS CLOSE_PARENS
-                        NIL TRUE FALSE STATUS_ERROR STATUS_OK STATUS_UNSET
-                        KIND_UNSPECIFIED KIND_INTERNAL KIND_SERVER KIND_CLIENT KIND_PRODUCER KIND_CONSUMER
-                        IDURATION CHILDCOUNT NAME STATUS PARENT KIND
-                        PARENT_DOT RESOURCE_DOT SPAN_DOT
+                        NIL TRUE FALSE
+                        IDURATION NAME
+                        RESOURCE_DOT
                         COUNT AVG MAX MIN SUM
                         BY COALESCE
                         END_ATTRIBUTE
@@ -91,35 +90,35 @@ import (
 // Pipeline
 // **********************
 root:
-    spansetPipeline                             { yylex.(*lexer).expr = newRootExpr($1) }
-  | spansetPipelineExpression                   { yylex.(*lexer).expr = newRootExpr($1) }
-  | scalarPipelineExpressionFilter              { yylex.(*lexer).expr = newRootExpr($1) }
+    snapshotPipeline                             { yylex.(*lexer).expr = newRootExpr($1) }
+  | snapshotPipelineExpression                   { yylex.(*lexer).expr = newRootExpr($1) }
+  | scalarPipelineExpressionFilter               { yylex.(*lexer).expr = newRootExpr($1) }
   ;
 
 // **********************
-// Spanset Expressions
+// snapshot Expressions
 // **********************
-spansetPipelineExpression: // shares the same operators as spansetExpression. split out for readability
-    OPEN_PARENS spansetPipelineExpression CLOSE_PARENS           { $$ = $2 }
-  | spansetPipelineExpression AND   spansetPipelineExpression    { $$ = newSpansetOperation(OpSpansetAnd, $1, $3) }
-  | spansetPipelineExpression GT    spansetPipelineExpression    { $$ = newSpansetOperation(OpSpansetChild, $1, $3) }
-  | spansetPipelineExpression DESC  spansetPipelineExpression    { $$ = newSpansetOperation(OpSpansetDescendant, $1, $3) }
-  | spansetPipelineExpression OR    spansetPipelineExpression    { $$ = newSpansetOperation(OpSpansetUnion, $1, $3) }
-  | spansetPipelineExpression TILDE spansetPipelineExpression    { $$ = newSpansetOperation(OpSpansetSibling, $1, $3) }
-  | wrappedSpansetPipeline                                       { $$ = $1 }
+snapshotPipelineExpression: // shares the same operators as snapshotExpression. split out for readability
+    OPEN_PARENS snapshotPipelineExpression CLOSE_PARENS            { $$ = $2 }
+  | snapshotPipelineExpression AND   snapshotPipelineExpression    { $$ = newSnapshotOperation(OpSnapshotAnd, $1, $3) }
+  | snapshotPipelineExpression GT    snapshotPipelineExpression    { $$ = newSnapshotOperation(OpSnapshotChild, $1, $3) }
+  | snapshotPipelineExpression DESC  snapshotPipelineExpression    { $$ = newSnapshotOperation(OpSnapshotDescendant, $1, $3) }
+  | snapshotPipelineExpression OR    snapshotPipelineExpression    { $$ = newSnapshotOperation(OpSnapshotUnion, $1, $3) }
+  | snapshotPipelineExpression TILDE snapshotPipelineExpression    { $$ = newSnapshotOperation(OpSnapshotSibling, $1, $3) }
+  | wrappedSnapshotPipeline                                        { $$ = $1 }
   ;
 
-wrappedSpansetPipeline:
-    OPEN_PARENS spansetPipeline CLOSE_PARENS   { $$ = $2 }
+wrappedSnapshotPipeline:
+    OPEN_PARENS snapshotPipeline CLOSE_PARENS   { $$ = $2 }
 
-spansetPipeline:
-    spansetExpression                          { $$ = newPipeline($1) }
-  | scalarFilter                               { $$ = newPipeline($1) }
-  | groupOperation                             { $$ = newPipeline($1) }
-  | spansetPipeline PIPE spansetExpression     { $$ = $1.addItem($3)  }
-  | spansetPipeline PIPE scalarFilter          { $$ = $1.addItem($3)  }
-  | spansetPipeline PIPE groupOperation        { $$ = $1.addItem($3)  }
-  | spansetPipeline PIPE coalesceOperation     { $$ = $1.addItem($3)  }
+snapshotPipeline:
+    snapshotExpression                          { $$ = newPipeline($1) }
+  | scalarFilter                                { $$ = newPipeline($1) }
+  | groupOperation                              { $$ = newPipeline($1) }
+  | snapshotPipeline PIPE snapshotExpression    { $$ = $1.addItem($3)  }
+  | snapshotPipeline PIPE scalarFilter          { $$ = $1.addItem($3)  }
+  | snapshotPipeline PIPE groupOperation        { $$ = $1.addItem($3)  }
+  | snapshotPipeline PIPE coalesceOperation     { $$ = $1.addItem($3)  }
   ;
 
 groupOperation:
@@ -130,19 +129,19 @@ coalesceOperation:
     COALESCE OPEN_PARENS CLOSE_PARENS           { $$ = newCoalesceOperation() }
   ;
 
-spansetExpression: // shares the same operators as scalarPipelineExpression. split out for readability
-    OPEN_PARENS spansetExpression CLOSE_PARENS   { $$ = $2 }
-  | spansetExpression AND   spansetExpression    { $$ = newSpansetOperation(OpSpansetAnd, $1, $3) }
-  | spansetExpression GT    spansetExpression    { $$ = newSpansetOperation(OpSpansetChild, $1, $3) }
-  | spansetExpression DESC  spansetExpression    { $$ = newSpansetOperation(OpSpansetDescendant, $1, $3) }
-  | spansetExpression OR    spansetExpression    { $$ = newSpansetOperation(OpSpansetUnion, $1, $3) }
-  | spansetExpression TILDE spansetExpression    { $$ = newSpansetOperation(OpSpansetSibling, $1, $3) }
-  | spansetFilter                                { $$ = $1 } 
+snapshotExpression: // shares the same operators as scalarPipelineExpression. split out for readability
+    OPEN_PARENS snapshotExpression CLOSE_PARENS    { $$ = $2 }
+  | snapshotExpression AND   snapshotExpression    { $$ = newSnapshotOperation(OpSnapshotAnd, $1, $3) }
+  | snapshotExpression GT    snapshotExpression    { $$ = newSnapshotOperation(OpSnapshotChild, $1, $3) }
+  | snapshotExpression DESC  snapshotExpression    { $$ = newSnapshotOperation(OpSnapshotDescendant, $1, $3) }
+  | snapshotExpression OR    snapshotExpression    { $$ = newSnapshotOperation(OpSnapshotUnion, $1, $3) }
+  | snapshotExpression TILDE snapshotExpression    { $$ = newSnapshotOperation(OpSnapshotSibling, $1, $3) }
+  | snapshotFilter                                 { $$ = $1 }
   ;
 
-spansetFilter:
-    OPEN_BRACE CLOSE_BRACE                      { $$ = newSpansetFilter(NewStaticBool(true)) }
-  | OPEN_BRACE fieldExpression CLOSE_BRACE      { $$ = newSpansetFilter($2) }
+snapshotFilter:
+    OPEN_BRACE CLOSE_BRACE                      { $$ = newSnapshotFilter(NewStaticBool(true)) }
+  | OPEN_BRACE fieldExpression CLOSE_BRACE      { $$ = newSnapshotFilter($2) }
   ;
 
 scalarFilter:
@@ -167,7 +166,7 @@ scalarPipelineExpressionFilter:
   ;
 
 scalarPipelineExpression: // shares the same operators as scalarExpression. split out for readability
-    OPEN_PARENS scalarPipelineExpression CLOSE_PARENS        { $$ = $2 }                                   
+    OPEN_PARENS scalarPipelineExpression CLOSE_PARENS        { $$ = $2 }
   | scalarPipelineExpression ADD scalarPipelineExpression    { $$ = newScalarOperation(OpAdd, $1, $3) }
   | scalarPipelineExpression SUB scalarPipelineExpression    { $$ = newScalarOperation(OpSub, $1, $3) }
   | scalarPipelineExpression MUL scalarPipelineExpression    { $$ = newScalarOperation(OpMult, $1, $3) }
@@ -182,11 +181,11 @@ wrappedScalarPipeline:
   ;
 
 scalarPipeline:
-    spansetPipeline PIPE aggregate      { $$ = $1.addItem($3)  }
+    snapshotPipeline PIPE aggregate      { $$ = $1.addItem($3)  }
   ;
 
 scalarExpression: // shares the same operators as scalarPipelineExpression. split out for readability
-    OPEN_PARENS scalarExpression CLOSE_PARENS  { $$ = $2 }                                   
+    OPEN_PARENS scalarExpression CLOSE_PARENS  { $$ = $2 }
   | scalarExpression ADD scalarExpression      { $$ = newScalarOperation(OpAdd, $1, $3) }
   | scalarExpression SUB scalarExpression      { $$ = newScalarOperation(OpSub, $1, $3) }
   | scalarExpression MUL scalarExpression      { $$ = newScalarOperation(OpMult, $1, $3) }
@@ -209,7 +208,7 @@ aggregate:
 // FieldExpressions
 // **********************
 fieldExpression:
-    OPEN_PARENS fieldExpression CLOSE_PARENS { $$ = $2 }                                   
+    OPEN_PARENS fieldExpression CLOSE_PARENS { $$ = $2 }
   | fieldExpression ADD fieldExpression      { $$ = newBinaryOperation(OpAdd, $1, $3) }
   | fieldExpression SUB fieldExpression      { $$ = newBinaryOperation(OpSub, $1, $3) }
   | fieldExpression MUL fieldExpression      { $$ = newBinaryOperation(OpMult, $1, $3) }
@@ -244,31 +243,14 @@ static:
   | FALSE            { $$ = NewStaticBool(false)          }
   | NIL              { $$ = NewStaticNil()                }
   | DURATION         { $$ = NewStaticDuration($1)         }
-  | STATUS_OK        { $$ = NewStaticStatus(StatusOk)     }
-  | STATUS_ERROR     { $$ = NewStaticStatus(StatusError)  }
-  | STATUS_UNSET     { $$ = NewStaticStatus(StatusUnset)  } 
-  | KIND_UNSPECIFIED { $$ = NewStaticKind(KindUnspecified)}
-  | KIND_INTERNAL    { $$ = NewStaticKind(KindInternal)   }
-  | KIND_SERVER      { $$ = NewStaticKind(KindServer)     }
-  | KIND_CLIENT      { $$ = NewStaticKind(KindClient)     }
-  | KIND_PRODUCER    { $$ = NewStaticKind(KindProducer)   }
-  | KIND_CONSUMER    { $$ = NewStaticKind(KindConsumer)   }
   ;
 
 intrinsicField:
     IDURATION      { $$ = NewIntrinsic(IntrinsicDuration)   }
-  | CHILDCOUNT     { $$ = NewIntrinsic(IntrinsicChildCount) }
   | NAME           { $$ = NewIntrinsic(IntrinsicName)       }
-  | STATUS         { $$ = NewIntrinsic(IntrinsicStatus)     }
-  | KIND           { $$ = NewIntrinsic(IntrinsicKind)       }
-  | PARENT         { $$ = NewIntrinsic(IntrinsicParent)     }
   ;
 
 attributeField:
     DOT IDENTIFIER END_ATTRIBUTE                      { $$ = NewAttribute($2)                                      }
   | RESOURCE_DOT IDENTIFIER END_ATTRIBUTE             { $$ = NewScopedAttribute(AttributeScopeResource, false, $2) }
-  | SPAN_DOT IDENTIFIER END_ATTRIBUTE                 { $$ = NewScopedAttribute(AttributeScopeSpan, false, $2)     }
-  | PARENT_DOT IDENTIFIER END_ATTRIBUTE               { $$ = NewScopedAttribute(AttributeScopeNone, true, $2)      }
-  | PARENT_DOT RESOURCE_DOT IDENTIFIER END_ATTRIBUTE  { $$ = NewScopedAttribute(AttributeScopeResource, true, $3)  }
-  | PARENT_DOT SPAN_DOT IDENTIFIER END_ATTRIBUTE      { $$ = NewScopedAttribute(AttributeScopeSpan, true, $3)      }
   ;

@@ -41,7 +41,7 @@ type TracePointConfig struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id      string            `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                                                                                             // The id of the config
+	ID      string            `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`                                                                                             // The ID of the config
 	Path    string            `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`                                                                                         // The path for the file to install in
 	LineNo  int32             `protobuf:"varint,3,opt,name=line_no,json=lineNo,proto3" json:"line_no,omitempty"`                                                                      // the line number to install on
 	Args    map[string]string `protobuf:"bytes,4,rep,name=args,proto3" json:"args,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"` // arbitrary key/kay of config values (this can contain conditions, logs, fire counts etc)
@@ -80,9 +80,9 @@ func (*TracePointConfig) Descriptor() ([]byte, []int) {
 	return file_tracepoint_v1_tracepoint_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *TracePointConfig) GetId() string {
+func (x *TracePointConfig) GetID() string {
 	if x != nil {
-		return x.Id
+		return x.ID
 	}
 	return ""
 }
@@ -115,18 +115,18 @@ func (x *TracePointConfig) GetWatches() []string {
 	return nil
 }
 
-type VariableId struct {
+type VariableID struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id        string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`               // the id to use to look up in the snapshot 'var_lookup'
-	Name      string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`           // the name of the variable at the point this id is referenced
-	Modifiers []string `protobuf:"bytes,3,rep,name=modifiers,proto3" json:"modifiers,omitempty"` // the modifiers (private, static etc) at the point this id is referenced
+	ID        string   `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`               // the ID to use to look up in the snapshot 'var_lookup'
+	Name      string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`           // the name of the variable at the point this ID is referenced
+	Modifiers []string `protobuf:"bytes,3,rep,name=modifiers,proto3" json:"modifiers,omitempty"` // the modifiers (private, static etc) at the point this ID is referenced
 }
 
-func (x *VariableId) Reset() {
-	*x = VariableId{}
+func (x *VariableID) Reset() {
+	*x = VariableID{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_tracepoint_v1_tracepoint_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -134,13 +134,13 @@ func (x *VariableId) Reset() {
 	}
 }
 
-func (x *VariableId) String() string {
+func (x *VariableID) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*VariableId) ProtoMessage() {}
+func (*VariableID) ProtoMessage() {}
 
-func (x *VariableId) ProtoReflect() protoreflect.Message {
+func (x *VariableID) ProtoReflect() protoreflect.Message {
 	mi := &file_tracepoint_v1_tracepoint_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -152,26 +152,26 @@ func (x *VariableId) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use VariableId.ProtoReflect.Descriptor instead.
-func (*VariableId) Descriptor() ([]byte, []int) {
+// Deprecated: Use VariableID.ProtoReflect.Descriptor instead.
+func (*VariableID) Descriptor() ([]byte, []int) {
 	return file_tracepoint_v1_tracepoint_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *VariableId) GetId() string {
+func (x *VariableID) GetID() string {
 	if x != nil {
-		return x.Id
+		return x.ID
 	}
 	return ""
 }
 
-func (x *VariableId) GetName() string {
+func (x *VariableID) GetName() string {
 	if x != nil {
 		return x.Name
 	}
 	return ""
 }
 
-func (x *VariableId) GetModifiers() []string {
+func (x *VariableID) GetModifiers() []string {
 	if x != nil {
 		return x.Modifiers
 	}
@@ -185,8 +185,8 @@ type Variable struct {
 
 	Type      string        `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`                  // the type of the variable (e.g string)
 	Value     string        `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`                // the value of the variable as a string. All values are converted to string for simplicity. This can also result in the value being truncated if it is a very large string. Collection types should not be to stringed, instead a summary should be given as the value 'HashSet of size: 10'.
-	Hash      string        `protobuf:"bytes,3,opt,name=hash,proto3" json:"hash,omitempty"`                  // This is the hash of the object, this is primarily of use in Java/Python, node does not really have global object ids, so this is less useful. However using the debugger apis we are exposed the object id at the time of collection. This can change depending on the script location as well (e.g. the stack frame). We send this object id hashed to obfuscate any data. For non object values (that do not have an object id) we hash the value.
-	Children  []*VariableId `protobuf:"bytes,4,rep,name=children,proto3" json:"children,omitempty"`          // This is a list of children of this variable, using the var ids, requiring them to be looked up in the var lookup
+	Hash      string        `protobuf:"bytes,3,opt,name=hash,proto3" json:"hash,omitempty"`                  // This is the hash of the object, this is primarily of use in Java/Python, node does not really have global object ids, so this is less useful. However using the debugger apis we are exposed the object ID at the time of collection. This can change depending on the script location as well (e.g. the stack frame). We send this object ID hashed to obfuscate any data. For non object values (that do not have an object ID) we hash the value.
+	Children  []*VariableID `protobuf:"bytes,4,rep,name=children,proto3" json:"children,omitempty"`          // This is a list of children of this variable, using the var ids, requiring them to be looked up in the var lookup
 	Truncated *bool         `protobuf:"varint,5,opt,name=truncated,proto3,oneof" json:"truncated,omitempty"` // true if the value has been truncated
 }
 
@@ -243,7 +243,7 @@ func (x *Variable) GetHash() string {
 	return ""
 }
 
-func (x *Variable) GetChildren() []*VariableId {
+func (x *Variable) GetChildren() []*VariableID {
 	if x != nil {
 		return x.Children
 	}
@@ -271,7 +271,7 @@ type StackFrame struct {
 	TranspiledFileName     *string       `protobuf:"bytes,7,opt,name=transpiled_file_name,json=transpiledFileName,proto3,oneof" json:"transpiled_file_name,omitempty"`              //The name of the transpiled file. If we have mappings available we can map the file 'something.js' to the original typescript. This will be the transpiled file name e.g. something.js
 	TranspiledLineNumber   *int32        `protobuf:"varint,8,opt,name=transpiled_line_number,json=transpiledLineNumber,proto3,oneof" json:"transpiled_line_number,omitempty"`       //The transpiled line number
 	TranspiledColumnNumber *int32        `protobuf:"varint,9,opt,name=transpiled_column_number,json=transpiledColumnNumber,proto3,oneof" json:"transpiled_column_number,omitempty"` //The transpiled column number
-	Variables              []*VariableId `protobuf:"bytes,10,rep,name=variables,proto3" json:"variables,omitempty"`                                                                 //This is the list of variables (using var ids) that are present at this point in the code.
+	Variables              []*VariableID `protobuf:"bytes,10,rep,name=variables,proto3" json:"variables,omitempty"`                                                                 //This is the list of variables (using var ids) that are present at this point in the code.
 	AppFrame               *bool         `protobuf:"varint,11,opt,name=app_frame,json=appFrame,proto3,oneof" json:"app_frame,omitempty"`                                            //This indicates if the frame is from inside the app, or is from a library
 }
 
@@ -370,7 +370,7 @@ func (x *StackFrame) GetTranspiledColumnNumber() int32 {
 	return 0
 }
 
-func (x *StackFrame) GetVariables() []*VariableId {
+func (x *StackFrame) GetVariables() []*VariableID {
 	if x != nil {
 		return x.Variables
 	}
@@ -442,7 +442,7 @@ func (m *WatchResult) GetResult() isWatchResult_Result {
 	return nil
 }
 
-func (x *WatchResult) GetGoodResult() *VariableId {
+func (x *WatchResult) GetGoodResult() *VariableID {
 	if x, ok := x.GetResult().(*WatchResult_GoodResult); ok {
 		return x.GoodResult
 	}
@@ -461,7 +461,7 @@ type isWatchResult_Result interface {
 }
 
 type WatchResult_GoodResult struct {
-	GoodResult *VariableId `protobuf:"bytes,2,opt,name=good_result,json=goodResult,proto3,oneof"` // the id of the variable that represents the result
+	GoodResult *VariableID `protobuf:"bytes,2,opt,name=good_result,json=goodResult,proto3,oneof"` // the ID of the variable that represents the result
 }
 
 type WatchResult_ErrorResult struct {
@@ -477,7 +477,7 @@ type Snapshot struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id            []byte               `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                                                                                                                        // the client generated id for this snapshot
+	ID            []byte               `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`                                                                                                                        // the client generated ID for this snapshot
 	Tracepoint    *TracePointConfig    `protobuf:"bytes,2,opt,name=tracepoint,proto3" json:"tracepoint,omitempty"`                                                                                                        // the config that was used to generate this snapshot (it could be deleted by the time we look at the data)
 	VarLookup     map[string]*Variable `protobuf:"bytes,3,rep,name=var_lookup,json=varLookup,proto3" json:"var_lookup,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"` // this is a flat list of all the collected variables for this snapshot, to reduce data size we dereference as much as we can
 	Ts            int64                `protobuf:"varint,4,opt,name=ts,proto3" json:"ts,omitempty"`                                                                                                                       // the time in ms when this snapshot was generated
@@ -520,9 +520,9 @@ func (*Snapshot) Descriptor() ([]byte, []int) {
 	return file_tracepoint_v1_tracepoint_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *Snapshot) GetId() []byte {
+func (x *Snapshot) GetID() []byte {
 	if x != nil {
-		return x.Id
+		return x.ID
 	}
 	return nil
 }
@@ -630,8 +630,8 @@ var file_tracepoint_v1_tracepoint_proto_rawDesc = []byte{
 	0x69, 0x6e, 0x74, 0x2e, 0x76, 0x31, 0x1a, 0x16, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2f, 0x76,
 	0x31, 0x2f, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xe8,
 	0x01, 0x0a, 0x10, 0x54, 0x72, 0x61, 0x63, 0x65, 0x50, 0x6f, 0x69, 0x6e, 0x74, 0x43, 0x6f, 0x6e,
-	0x66, 0x69, 0x67, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x70, 0x61, 0x74, 0x68, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x66, 0x69, 0x67, 0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x02, 0x49, 0x44, 0x12, 0x12, 0x0a, 0x04, 0x70, 0x61, 0x74, 0x68, 0x18, 0x02, 0x20, 0x01, 0x28,
 	0x09, 0x52, 0x04, 0x70, 0x61, 0x74, 0x68, 0x12, 0x17, 0x0a, 0x07, 0x6c, 0x69, 0x6e, 0x65, 0x5f,
 	0x6e, 0x6f, 0x18, 0x03, 0x20, 0x01, 0x28, 0x05, 0x52, 0x06, 0x6c, 0x69, 0x6e, 0x65, 0x4e, 0x6f,
 	0x12, 0x44, 0x0a, 0x04, 0x61, 0x72, 0x67, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x30,
@@ -644,8 +644,8 @@ var file_tracepoint_v1_tracepoint_proto_rawDesc = []byte{
 	0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12,
 	0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
 	0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x4e, 0x0a, 0x0a, 0x56, 0x61, 0x72,
-	0x69, 0x61, 0x62, 0x6c, 0x65, 0x49, 0x64, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18,
+	0x69, 0x61, 0x62, 0x6c, 0x65, 0x49, 0x44, 0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x02, 0x49, 0x44, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18,
 	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x1c, 0x0a, 0x09, 0x6d,
 	0x6f, 0x64, 0x69, 0x66, 0x69, 0x65, 0x72, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x09, 0x52, 0x09,
 	0x6d, 0x6f, 0x64, 0x69, 0x66, 0x69, 0x65, 0x72, 0x73, 0x22, 0xb7, 0x01, 0x0a, 0x08, 0x56, 0x61,
@@ -656,7 +656,7 @@ var file_tracepoint_v1_tracepoint_proto_rawDesc = []byte{
 	0x68, 0x61, 0x73, 0x68, 0x12, 0x3c, 0x0a, 0x08, 0x63, 0x68, 0x69, 0x6c, 0x64, 0x72, 0x65, 0x6e,
 	0x18, 0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x2e,
 	0x74, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x61,
-	0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x49, 0x64, 0x52, 0x08, 0x63, 0x68, 0x69, 0x6c, 0x64, 0x72,
+	0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x49, 0x44, 0x52, 0x08, 0x63, 0x68, 0x69, 0x6c, 0x64, 0x72,
 	0x65, 0x6e, 0x12, 0x21, 0x0a, 0x09, 0x74, 0x72, 0x75, 0x6e, 0x63, 0x61, 0x74, 0x65, 0x64, 0x18,
 	0x05, 0x20, 0x01, 0x28, 0x08, 0x48, 0x00, 0x52, 0x09, 0x74, 0x72, 0x75, 0x6e, 0x63, 0x61, 0x74,
 	0x65, 0x64, 0x88, 0x01, 0x01, 0x42, 0x0c, 0x0a, 0x0a, 0x5f, 0x74, 0x72, 0x75, 0x6e, 0x63, 0x61,
@@ -688,7 +688,7 @@ var file_tracepoint_v1_tracepoint_proto_rawDesc = []byte{
 	0x12, 0x3e, 0x0a, 0x09, 0x76, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x18, 0x0a, 0x20,
 	0x03, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x2e, 0x74, 0x72, 0x61,
 	0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x61, 0x72, 0x69, 0x61,
-	0x62, 0x6c, 0x65, 0x49, 0x64, 0x52, 0x09, 0x76, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73,
+	0x62, 0x6c, 0x65, 0x49, 0x44, 0x52, 0x09, 0x76, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73,
 	0x12, 0x20, 0x0a, 0x09, 0x61, 0x70, 0x70, 0x5f, 0x66, 0x72, 0x61, 0x6d, 0x65, 0x18, 0x0b, 0x20,
 	0x01, 0x28, 0x08, 0x48, 0x06, 0x52, 0x08, 0x61, 0x70, 0x70, 0x46, 0x72, 0x61, 0x6d, 0x65, 0x88,
 	0x01, 0x01, 0x42, 0x0d, 0x0a, 0x0b, 0x5f, 0x63, 0x6c, 0x61, 0x73, 0x73, 0x5f, 0x6e, 0x61, 0x6d,
@@ -706,12 +706,12 @@ var file_tracepoint_v1_tracepoint_proto_rawDesc = []byte{
 	0x43, 0x0a, 0x0b, 0x67, 0x6f, 0x6f, 0x64, 0x5f, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x18, 0x02,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x2e, 0x74, 0x72,
 	0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x61, 0x72, 0x69,
-	0x61, 0x62, 0x6c, 0x65, 0x49, 0x64, 0x48, 0x00, 0x52, 0x0a, 0x67, 0x6f, 0x6f, 0x64, 0x52, 0x65,
+	0x61, 0x62, 0x6c, 0x65, 0x49, 0x44, 0x48, 0x00, 0x52, 0x0a, 0x67, 0x6f, 0x6f, 0x64, 0x52, 0x65,
 	0x73, 0x75, 0x6c, 0x74, 0x12, 0x23, 0x0a, 0x0c, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x5f, 0x72, 0x65,
 	0x73, 0x75, 0x6c, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x0b, 0x65, 0x72,
 	0x72, 0x6f, 0x72, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x42, 0x08, 0x0a, 0x06, 0x72, 0x65, 0x73,
 	0x75, 0x6c, 0x74, 0x22, 0xb0, 0x04, 0x0a, 0x08, 0x53, 0x6e, 0x61, 0x70, 0x73, 0x68, 0x6f, 0x74,
-	0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x02, 0x69, 0x64,
+	0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x02, 0x49, 0x44,
 	0x12, 0x46, 0x0a, 0x0a, 0x74, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x18, 0x02,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x2e, 0x74, 0x72,
 	0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x72, 0x61, 0x63,
@@ -777,7 +777,7 @@ func file_tracepoint_v1_tracepoint_proto_rawDescGZIP() []byte {
 var file_tracepoint_v1_tracepoint_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_tracepoint_v1_tracepoint_proto_goTypes = []interface{}{
 	(*TracePointConfig)(nil), // 0: deeppb.tracepoint.v1.TracePointConfig
-	(*VariableId)(nil),       // 1: deeppb.tracepoint.v1.VariableId
+	(*VariableID)(nil),       // 1: deeppb.tracepoint.v1.VariableID
 	(*Variable)(nil),         // 2: deeppb.tracepoint.v1.Variable
 	(*StackFrame)(nil),       // 3: deeppb.tracepoint.v1.StackFrame
 	(*WatchResult)(nil),      // 4: deeppb.tracepoint.v1.WatchResult
@@ -789,9 +789,9 @@ var file_tracepoint_v1_tracepoint_proto_goTypes = []interface{}{
 }
 var file_tracepoint_v1_tracepoint_proto_depIdxs = []int32{
 	7,  // 0: deeppb.tracepoint.v1.TracePointConfig.args:type_name -> deeppb.tracepoint.v1.TracePointConfig.ArgsEntry
-	1,  // 1: deeppb.tracepoint.v1.Variable.children:type_name -> deeppb.tracepoint.v1.VariableId
-	1,  // 2: deeppb.tracepoint.v1.StackFrame.variables:type_name -> deeppb.tracepoint.v1.VariableId
-	1,  // 3: deeppb.tracepoint.v1.WatchResult.good_result:type_name -> deeppb.tracepoint.v1.VariableId
+	1,  // 1: deeppb.tracepoint.v1.Variable.children:type_name -> deeppb.tracepoint.v1.VariableID
+	1,  // 2: deeppb.tracepoint.v1.StackFrame.variables:type_name -> deeppb.tracepoint.v1.VariableID
+	1,  // 3: deeppb.tracepoint.v1.WatchResult.good_result:type_name -> deeppb.tracepoint.v1.VariableID
 	0,  // 4: deeppb.tracepoint.v1.Snapshot.tracepoint:type_name -> deeppb.tracepoint.v1.TracePointConfig
 	8,  // 5: deeppb.tracepoint.v1.Snapshot.var_lookup:type_name -> deeppb.tracepoint.v1.Snapshot.VarLookupEntry
 	3,  // 6: deeppb.tracepoint.v1.Snapshot.frames:type_name -> deeppb.tracepoint.v1.StackFrame
@@ -827,7 +827,7 @@ func file_tracepoint_v1_tracepoint_proto_init() {
 			}
 		}
 		file_tracepoint_v1_tracepoint_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*VariableId); i {
+			switch v := v.(*VariableID); i {
 			case 0:
 				return &v.state
 			case 1:

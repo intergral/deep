@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/intergral/deep/pkg/deeppb"
 	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	"github.com/intergral/deep/pkg/deepql"
 	"github.com/segmentio/parquet-go"
 	"io"
 	"io/fs"
@@ -20,8 +22,6 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/parquetquery"
-	"github.com/intergral/deep/pkg/tempopb"
-	"github.com/intergral/deep/pkg/traceql"
 	"github.com/pkg/errors"
 )
 
@@ -251,22 +251,6 @@ func (b *pageFile) Close() error {
 	return b.osFile.Close()
 }
 
-type pageFileClosingIterator struct {
-	iter     *spansetMetadataIterator
-	pageFile *pageFile
-}
-
-var _ traceql.SpansetIterator = (*pageFileClosingIterator)(nil)
-
-func (b *pageFileClosingIterator) Next(ctx context.Context) (*traceql.Spanset, error) {
-	return b.iter.Next(ctx)
-}
-
-func (b *pageFileClosingIterator) Close() {
-	b.iter.Close()
-	b.pageFile.Close()
-}
-
 type walBlock struct {
 	meta           *backend.BlockMeta
 	path           string
@@ -426,28 +410,7 @@ func (b *walBlock) Iterator() (common.Iterator, error) {
 	}
 
 	sch := parquet.SchemaOf(new(Snapshot))
-	iter := newMultiblockIterator(bookmarks, func(rows []parquet.Row) (parquet.Row, error) {
-		if len(rows) == 1 {
-			return rows[0], nil
-		}
-
-		ts := make([]*Snapshot, 0, len(rows))
-		for _, row := range rows {
-			tr := &Snapshot{}
-			err := sch.Reconstruct(tr, row)
-			if err != nil {
-				return nil, err
-			}
-			ts = append(ts, tr)
-			completeBlockRowPool.Put(row)
-		}
-
-		t := CombineTraces(ts...)
-		row := completeBlockRowPool.Get()
-		row = sch.Deconstruct(row, t)
-
-		return row, nil
-	})
+	iter := newMultiblockIterator(bookmarks)
 
 	return newCommonIterator(iter, sch), nil
 }
@@ -468,40 +431,47 @@ func (b *walBlock) Clear() error {
 func (b *walBlock) FindSnapshotByID(ctx context.Context, id common.ID, _ common.SearchOptions) (*deep_tp.Snapshot, error) {
 	for _, page := range b.flushed {
 		if rowNumber, ok := page.ids.Get(id); ok {
-			file, err := page.file()
-			if err != nil {
-				return nil, fmt.Errorf("error opening file %s: %w", page.path, err)
+			trp, err := b.findInPage(page, rowNumber)
+			if trp != nil || err != nil {
+				return trp, err
 			}
-
-			defer file.Close()
-			pf := file.parquetFile
-
-			r := parquet.NewReader(pf)
-			defer r.Close()
-
-			err = r.SeekToRow(rowNumber)
-			if err != nil {
-				return nil, errors.Wrap(err, "seek to row")
-			}
-
-			sp := new(Snapshot)
-			err = r.Read(sp)
-			if err != nil {
-				return nil, errors.Wrap(err, "error reading row from backend")
-			}
-
-			trp := parquetToDeepSnapshot(sp)
-
-			return trp, nil
 		}
 	}
 
 	return nil, nil
 }
 
-func (b *walBlock) Search(ctx context.Context, req *tempopb.SearchRequest, opts common.SearchOptions) (*tempopb.SearchResponse, error) {
-	results := &tempopb.SearchResponse{
-		Metrics: &tempopb.SearchMetrics{
+func (b *walBlock) findInPage(page *walBlockFlush, rowNumber int64) (*deep_tp.Snapshot, error) {
+	file, err := page.file()
+	if err != nil {
+		return nil, fmt.Errorf("error opening file %s: %w", page.path, err)
+	}
+
+	defer file.Close()
+	pf := file.parquetFile
+
+	r := parquet.NewReader(pf)
+	defer r.Close()
+
+	err = r.SeekToRow(rowNumber)
+	if err != nil {
+		return nil, errors.Wrap(err, "seek to row")
+	}
+
+	sp := new(Snapshot)
+	err = r.Read(sp)
+	if err != nil {
+		return nil, errors.Wrap(err, "error reading row from backend")
+	}
+
+	trp := parquetToDeepSnapshot(sp)
+
+	return trp, nil
+}
+
+func (b *walBlock) Search(ctx context.Context, req *deeppb.SearchRequest, opts common.SearchOptions) (*deeppb.SearchResponse, error) {
+	results := &deeppb.SearchResponse{
+		Metrics: &deeppb.SearchMetrics{
 			InspectedBlocks: 1,
 		},
 	}
@@ -520,10 +490,10 @@ func (b *walBlock) Search(ctx context.Context, req *tempopb.SearchRequest, opts 
 			return nil, fmt.Errorf("error searching block [%s %d]: %w", b.meta.BlockID.String(), i, err)
 		}
 
-		results.Traces = append(results.Traces, r.Traces...)
+		results.Snapshots = append(results.Snapshots, r.Snapshots...)
 		results.Metrics.InspectedBytes += uint64(pf.Size())
 		results.Metrics.InspectedTraces += uint32(pf.NumRows())
-		if len(results.Traces) >= int(req.Limit) {
+		if len(results.Snapshots) >= int(req.Limit) {
 			break
 		}
 	}
@@ -553,11 +523,11 @@ func (b *walBlock) SearchTags(ctx context.Context, cb common.TagCallback, opts c
 func (b *walBlock) SearchTagValues(ctx context.Context, tag string, cb common.TagCallback, opts common.SearchOptions) error {
 	att, ok := translateTagToAttribute[tag]
 	if !ok {
-		att = traceql.NewAttribute(tag)
+		att = deepql.NewAttribute(tag)
 	}
 
 	// Wrap to v2-style
-	cb2 := func(v traceql.Static) bool {
+	cb2 := func(v deepql.Static) bool {
 		cb(v.EncodeToString(false))
 		return false
 	}
@@ -565,7 +535,7 @@ func (b *walBlock) SearchTagValues(ctx context.Context, tag string, cb common.Ta
 	return b.SearchTagValuesV2(ctx, att, cb2, opts)
 }
 
-func (b *walBlock) SearchTagValuesV2(ctx context.Context, tag traceql.Attribute, cb common.TagCallbackV2, opts common.SearchOptions) error {
+func (b *walBlock) SearchTagValuesV2(ctx context.Context, tag deepql.Attribute, cb common.TagCallbackV2, opts common.SearchOptions) error {
 	for i, page := range b.readFlushes() {
 		file, err := page.file()
 		if err != nil {
@@ -584,38 +554,39 @@ func (b *walBlock) SearchTagValuesV2(ctx context.Context, tag traceql.Attribute,
 	return nil
 }
 
-func (b *walBlock) Fetch(ctx context.Context, req traceql.FetchSpansRequest, opts common.SearchOptions) (traceql.FetchSpansResponse, error) {
+func (b *walBlock) Fetch(ctx context.Context, req deepql.FetchSnapshotRequest, opts common.SearchOptions) (deepql.FetchSnapshotResponse, error) {
 	// todo: this same method is called in backendBlock.Fetch. is there anyway to share this?
-	err := checkConditions(req.Conditions)
-	if err != nil {
-		return traceql.FetchSpansResponse{}, errors.Wrap(err, "conditions invalid")
-	}
-
-	pages := b.readFlushes()
-	iters := make([]traceql.SpansetIterator, 0, len(pages))
-	for _, page := range pages {
-		file, err := page.file()
-		if err != nil {
-			return traceql.FetchSpansResponse{}, fmt.Errorf("error opening file %s: %w", page.path, err)
-		}
-
-		pf := file.parquetFile
-
-		iter, err := fetch(ctx, req, pf, opts)
-		if err != nil {
-			return traceql.FetchSpansResponse{}, errors.Wrap(err, "creating fetch iter")
-		}
-
-		wrappedIterator := &pageFileClosingIterator{iter: iter, pageFile: file}
-		iters = append(iters, wrappedIterator)
-	}
-
-	// combine iters?
-	return traceql.FetchSpansResponse{
-		Results: &mergeSpansetIterator{
-			iters: iters,
-		},
-	}, nil
+	//err := checkConditions(req.Conditions)
+	//if err != nil {
+	//	return deepql.FetchSnapshotResponse{}, errors.Wrap(err, "conditions invalid")
+	//}
+	//
+	//pages := b.readFlushes()
+	//iters := make([]deepql.SnapshotResultIterator, 0, len(pages))
+	//for _, page := range pages {
+	//	file, err := page.file()
+	//	if err != nil {
+	//		return deepql.FetchSnapshotResponse{}, fmt.Errorf("error opening file %s: %w", page.path, err)
+	//	}
+	//
+	//	pf := file.parquetFile
+	//
+	//	iter, err := fetch(ctx, req, pf, opts)
+	//	if err != nil {
+	//		return deepql.FetchSnapshotResponse{}, errors.Wrap(err, "creating fetch iter")
+	//	}
+	//
+	//	wrappedIterator := &pageFileClosingIterator{iter: iter, pageFile: file}
+	//	iters = append(iters, wrappedIterator)
+	//}
+	//
+	//// combine iters?
+	//return deepql.FetchSnapshotResponse{
+	//	Results: &mergeSpansetIterator{
+	//		iters: iters,
+	//	},
+	//}, nil
+	return deepql.FetchSnapshotResponse{}, nil
 }
 
 func (b *walBlock) walPath() string {

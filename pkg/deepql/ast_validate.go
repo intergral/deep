@@ -1,4 +1,4 @@
-package traceql
+package deepql
 
 import "fmt"
 
@@ -33,8 +33,8 @@ func (o GroupOperation) validate() error {
 	return newUnsupportedError("by()")
 
 	// todo: once grouping is supported the below validation will apply
-	// if !o.Expression.referencesSpan() {
-	// 	return fmt.Errorf("grouping field expressions must reference the span: %s", o.String())
+	// if !o.Expression.referencesSnapshot() {
+	// 	return fmt.Errorf("grouping field expressions must reference the snapshot: %s", o.String())
 	// }
 
 	// return o.Expression.validate()
@@ -80,8 +80,8 @@ func (a Aggregate) validate() error {
 		return fmt.Errorf("aggregate field expressions must resolve to a number type: %s", a.String())
 	}
 
-	if !a.e.referencesSpan() {
-		return fmt.Errorf("aggregate field expressions must reference the span: %s", a.String())
+	if !a.e.referencesSnapshot() {
+		return fmt.Errorf("aggregate field expressions must reference the snapshot: %s", a.String())
 	}
 
 	switch a.op {
@@ -93,8 +93,8 @@ func (a Aggregate) validate() error {
 	return nil
 }
 
-func (o SpansetOperation) validate() error {
-	// TODO validate operator is a SpanSetOperator
+func (o SnapshotOperation) validate() error {
+	// TODO validate operator is a SnapshotSetOperator
 	if err := o.LHS.validate(); err != nil {
 		return err
 	}
@@ -102,23 +102,23 @@ func (o SpansetOperation) validate() error {
 		return err
 	}
 
-	// supported spanset operations
+	// supported snapshotset operations
 	switch o.Op {
-	case OpSpansetChild, OpSpansetDescendant, OpSpansetSibling:
-		return newUnsupportedError(fmt.Sprintf("spanset operation (%v)", o.Op))
+	case OpSnapshotChild, OpSnapshotDescendant, OpSnapshotSibling:
+		return newUnsupportedError(fmt.Sprintf("snapshotset operation (%v)", o.Op))
 	}
 
 	return nil
 }
 
-func (f SpansetFilter) validate() error {
+func (f SnapshotFilter) validate() error {
 	if err := f.Expression.validate(); err != nil {
 		return err
 	}
 
 	t := f.Expression.impliedType()
 	if t != TypeAttribute && t != TypeBoolean {
-		return fmt.Errorf("span filter field expressions must resolve to a boolean: %s", f.String())
+		return fmt.Errorf("snapshot filter field expressions must resolve to a boolean: %s", f.String())
 	}
 
 	return nil
@@ -178,9 +178,9 @@ func (o BinaryOperation) validate() error {
 
 	switch o.Op {
 	case OpNotRegex,
-		OpSpansetChild,
-		OpSpansetDescendant,
-		OpSpansetSibling:
+		OpSnapshotChild,
+		OpSnapshotDescendant,
+		OpSnapshotSibling:
 		return newUnsupportedError(fmt.Sprintf("binary operation (%v)", o.Op))
 	}
 
@@ -216,11 +216,5 @@ func (a Attribute) validate() error {
 	if a.Parent {
 		return newUnsupportedError("parent")
 	}
-	switch a.Intrinsic {
-	case IntrinsicParent,
-		IntrinsicChildCount:
-		return newUnsupportedError(fmt.Sprintf("intrinsic (%v)", a.Intrinsic))
-	}
-
 	return nil
 }

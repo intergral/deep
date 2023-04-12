@@ -2,12 +2,12 @@ package frontend
 
 import (
 	"context"
+	"github.com/intergral/deep/pkg/deeppb"
 	"net/http"
 	"sort"
 	"sync"
 
 	"github.com/intergral/deep/pkg/search"
-	"github.com/intergral/deep/pkg/tempopb"
 )
 
 // searchResponse is a thread safe struct used to aggregate the responses from all downstream
@@ -18,8 +18,8 @@ type searchResponse struct {
 	statusMsg  string
 	ctx        context.Context
 
-	resultsMap       map[string]*tempopb.TraceSearchMetadata
-	resultsMetrics   *tempopb.SearchMetrics
+	resultsMap       map[string]*deeppb.SnapshotSearchMetadata
+	resultsMetrics   *deeppb.SearchMetrics
 	cancelFunc       context.CancelFunc
 	finishedRequests int
 
@@ -33,9 +33,9 @@ func newSearchResponse(ctx context.Context, limit int, cancelFunc context.Cancel
 		statusCode:       http.StatusOK,
 		limit:            limit,
 		cancelFunc:       cancelFunc,
-		resultsMetrics:   &tempopb.SearchMetrics{},
+		resultsMetrics:   &deeppb.SearchMetrics{},
 		finishedRequests: 0,
-		resultsMap:       map[string]*tempopb.TraceSearchMetadata{},
+		resultsMap:       map[string]*deeppb.SnapshotSearchMetadata{},
 	}
 }
 
@@ -64,15 +64,15 @@ func (r *searchResponse) setError(err error) {
 	}
 }
 
-func (r *searchResponse) addResponse(res *tempopb.SearchResponse) {
+func (r *searchResponse) addResponse(res *deeppb.SearchResponse) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	for _, t := range res.Traces {
-		if _, ok := r.resultsMap[t.TraceID]; !ok {
-			r.resultsMap[t.TraceID] = t
+	for _, t := range res.Snapshots {
+		if _, ok := r.resultsMap[t.SnapshotID]; !ok {
+			r.resultsMap[t.SnapshotID] = t
 		} else {
-			search.CombineSearchResults(r.resultsMap[t.TraceID], t)
+			search.CombineSearchResults(r.resultsMap[t.SnapshotID], t)
 		}
 	}
 
@@ -124,19 +124,19 @@ func (r *searchResponse) internalShouldQuit() bool {
 	return false
 }
 
-func (r *searchResponse) result() *tempopb.SearchResponse {
+func (r *searchResponse) result() *deeppb.SearchResponse {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	res := &tempopb.SearchResponse{
+	res := &deeppb.SearchResponse{
 		Metrics: r.resultsMetrics,
 	}
 
 	for _, t := range r.resultsMap {
-		res.Traces = append(res.Traces, t)
+		res.Snapshots = append(res.Snapshots, t)
 	}
-	sort.Slice(res.Traces, func(i, j int) bool {
-		return res.Traces[i].StartTimeUnixNano > res.Traces[j].StartTimeUnixNano
+	sort.Slice(res.Snapshots, func(i, j int) bool {
+		return res.Snapshots[i].StartTimeUnixNano > res.Snapshots[j].StartTimeUnixNano
 	})
 
 	return res

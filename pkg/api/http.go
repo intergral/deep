@@ -3,6 +3,8 @@ package api
 import (
 	"errors"
 	"fmt"
+	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/deepql"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -15,8 +17,6 @@ import (
 
 	"github.com/intergral/deep/pkg/deepdb"
 	"github.com/intergral/deep/pkg/deepdb/backend"
-	"github.com/intergral/deep/pkg/tempopb"
-	"github.com/intergral/deep/pkg/traceql"
 	"github.com/intergral/deep/pkg/util"
 )
 
@@ -75,12 +75,12 @@ const (
 
 func ParseSnapshotID(r *http.Request) ([]byte, error) {
 	vars := mux.Vars(r)
-	traceID, ok := vars[URLParamSnapshotID]
+	snapshotID, ok := vars[URLParamSnapshotID]
 	if !ok {
 		return nil, fmt.Errorf("please provide a snapshotID")
 	}
 
-	byteID, err := util.HexStringToTraceID(traceID)
+	byteID, err := util.HexStringToTraceID(snapshotID)
 	if err != nil {
 		return nil, err
 	}
@@ -103,9 +103,9 @@ func ParseTraceID(r *http.Request) ([]byte, error) {
 	return byteID, nil
 }
 
-// ParseSearchRequest takes an http.Request and decodes query params to create a tempopb.SearchRequest
-func ParseSearchRequest(r *http.Request) (*tempopb.SearchRequest, error) {
-	req := &tempopb.SearchRequest{
+// ParseSearchRequest takes an http.Request and decodes query params to create a deeppb.SearchRequest
+func ParseSearchRequest(r *http.Request) (*deeppb.SearchRequest, error) {
+	req := &deeppb.SearchRequest{
 		Tags:  map[string]string{},
 		Limit: defaultLimit,
 	}
@@ -130,7 +130,7 @@ func ParseSearchRequest(r *http.Request) (*tempopb.SearchRequest, error) {
 	if queryFound {
 		// TODO hacky fix: we don't validate {} since this isn't handled correctly yet
 		if query != "{}" {
-			_, err := traceql.Parse(query)
+			_, err := deepql.Parse(query)
 			if err != nil {
 				return nil, fmt.Errorf("invalid TraceQL query: %w", err)
 			}
@@ -228,7 +228,7 @@ func ParseSearchRequest(r *http.Request) (*tempopb.SearchRequest, error) {
 }
 
 // ParseSearchBlockRequest parses all http parameters necessary to perform a block search.
-func ParseSearchBlockRequest(r *http.Request) (*tempopb.SearchBlockRequest, error) {
+func ParseSearchBlockRequest(r *http.Request) (*deeppb.SearchBlockRequest, error) {
 	searchReq, err := ParseSearchRequest(r)
 	if err != nil {
 		return nil, err
@@ -239,7 +239,7 @@ func ParseSearchBlockRequest(r *http.Request) (*tempopb.SearchBlockRequest, erro
 		return nil, errors.New("start and end required")
 	}
 
-	req := &tempopb.SearchBlockRequest{
+	req := &deeppb.SearchBlockRequest{
 		SearchReq: searchReq,
 	}
 
@@ -311,7 +311,7 @@ func ParseSearchBlockRequest(r *http.Request) (*tempopb.SearchBlockRequest, erro
 	if err != nil {
 		return nil, fmt.Errorf("invalid size %s: %w", s, err)
 	}
-	req.Size_ = size
+	req.Size = size
 
 	// Footer size can be 0 for some blocks, just ensure we
 	// get a valid integer.
@@ -325,9 +325,9 @@ func ParseSearchBlockRequest(r *http.Request) (*tempopb.SearchBlockRequest, erro
 	return req, nil
 }
 
-// BuildSearchRequest takes a tempopb.SearchRequest and populates the passed http.Request
+// BuildSearchRequest takes a deeppb.SearchRequest and populates the passed http.Request
 // with the appropriate params. If no http.Request is provided a new one is created.
-func BuildSearchRequest(req *http.Request, searchReq *tempopb.SearchRequest) (*http.Request, error) {
+func BuildSearchRequest(req *http.Request, searchReq *deeppb.SearchRequest) (*http.Request, error) {
 	if req == nil {
 		req = &http.Request{
 			URL: &url.URL{},
@@ -374,9 +374,9 @@ func BuildSearchRequest(req *http.Request, searchReq *tempopb.SearchRequest) (*h
 	return req, nil
 }
 
-// BuildSearchBlockRequest takes a tempopb.SearchBlockRequest and populates the passed http.Request
+// BuildSearchBlockRequest takes a deeppb.SearchBlockRequest and populates the passed http.Request
 // with the appropriate params. If no http.Request is provided a new one is created.
-func BuildSearchBlockRequest(req *http.Request, searchReq *tempopb.SearchBlockRequest) (*http.Request, error) {
+func BuildSearchBlockRequest(req *http.Request, searchReq *deeppb.SearchBlockRequest) (*http.Request, error) {
 	if req == nil {
 		req = &http.Request{
 			URL: &url.URL{},
@@ -389,7 +389,7 @@ func BuildSearchBlockRequest(req *http.Request, searchReq *tempopb.SearchBlockRe
 	}
 
 	q := req.URL.Query()
-	q.Set(urlParamSize, strconv.FormatUint(searchReq.Size_, 10))
+	q.Set(urlParamSize, strconv.FormatUint(searchReq.Size, 10))
 	q.Set(urlParamBlockID, searchReq.BlockID)
 	q.Set(urlParamStartPage, strconv.FormatUint(uint64(searchReq.StartPage), 10))
 	q.Set(urlParamPagesToSearch, strconv.FormatUint(uint64(searchReq.PagesToSearch), 10))

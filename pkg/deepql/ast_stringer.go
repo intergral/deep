@@ -1,4 +1,4 @@
-package traceql
+package deepql
 
 import (
 	"fmt"
@@ -38,11 +38,11 @@ func (a Aggregate) String() string {
 	return a.op.String() + "(" + a.e.String() + ")"
 }
 
-func (o SpansetOperation) String() string {
+func (o SnapshotOperation) String() string {
 	return binaryOp(o.Op, o.LHS, o.RHS)
 }
 
-func (f SpansetFilter) String() string {
+func (f SnapshotFilter) String() string {
 	return "{ " + f.Expression.String() + " }"
 }
 
@@ -79,10 +79,6 @@ func (n Static) EncodeToString(quotes bool) string {
 		return "nil"
 	case TypeDuration:
 		return n.D.String()
-	case TypeStatus:
-		return n.Status.String()
-	case TypeKind:
-		return n.Kind.String()
 	}
 
 	return fmt.Sprintf("static(%d)", n.Type)

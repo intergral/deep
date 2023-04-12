@@ -1,4 +1,4 @@
-package traceql
+package deepql
 
 import "fmt"
 

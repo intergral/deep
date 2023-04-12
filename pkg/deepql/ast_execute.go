@@ -1,4 +1,4 @@
-package traceql
+package deepql
 
 import (
 	"errors"
@@ -7,7 +7,7 @@ import (
 	"regexp"
 )
 
-func (o SpansetOperation) evaluate(input []*Spanset) (output []*Spanset, err error) {
+func (o SnapshotOperation) evaluate(input []*SnapshotResult) (output []*SnapshotResult, err error) {
 
 	for i := range input {
 		curr := input[i : i+1]
@@ -23,29 +23,27 @@ func (o SpansetOperation) evaluate(input []*Spanset) (output []*Spanset, err err
 		}
 
 		switch o.Op {
-		case OpSpansetAnd:
+		case OpSnapshotAnd:
 			if len(lhs) > 0 && len(rhs) > 0 {
-				matchingSpanset := input[i].clone()
-				matchingSpanset.Spans = uniqueSpans(lhs, rhs)
-				output = append(output, matchingSpanset)
+				matchingSnapshot := input[i].clone()
+				output = append(output, matchingSnapshot)
 			}
 
-		case OpSpansetUnion:
+		case OpSnapshotUnion:
 			if len(lhs) > 0 || len(rhs) > 0 {
-				matchingSpanset := input[i].clone()
-				matchingSpanset.Spans = uniqueSpans(lhs, rhs)
-				output = append(output, matchingSpanset)
+				matchingSnapshot := input[i].clone()
+				output = append(output, matchingSnapshot)
 			}
 
 		default:
-			return nil, fmt.Errorf("spanset operation (%v) not supported", o.Op)
+			return nil, fmt.Errorf("Snapshot operation (%v) not supported", o.Op)
 		}
 	}
 
 	return output, nil
 }
 
-func (f ScalarFilter) evaluate(input []*Spanset) (output []*Spanset, err error) {
+func (f ScalarFilter) evaluate(input []*SnapshotResult) (output []*SnapshotResult, err error) {
 
 	// TODO we solve this gap where pipeline elements and scalar binary
 	// operations meet in a generic way. For now we only support well-defined
@@ -80,27 +78,24 @@ func (f ScalarFilter) evaluate(input []*Spanset) (output []*Spanset, err error) 
 	return output, nil
 }
 
-func (a Aggregate) evaluate(input []*Spanset) (output []*Spanset, err error) {
+func (a Aggregate) evaluate(input []*SnapshotResult) (output []*SnapshotResult, err error) {
 
 	for _, ss := range input {
 		switch a.op {
 		case aggregateCount:
 			copy := ss.clone()
-			copy.Scalar = NewStaticInt(len(ss.Spans))
+			copy.Scalar = NewStaticInt(1)
 			output = append(output, copy)
 
 		case aggregateAvg:
 			sum := 0.0
-			count := 0
-			for _, s := range ss.Spans {
-				val, err := a.e.execute(s)
-				if err != nil {
-					return nil, err
-				}
-
-				sum += val.asFloat()
-				count++
+			count := 1
+			val, err := a.e.execute(ss.Snapshot)
+			if err != nil {
+				return nil, err
 			}
+
+			sum += val.asFloat()
 
 			copy := ss.clone()
 			copy.Scalar = NewStaticFloat(sum / float64(count))
@@ -108,14 +103,12 @@ func (a Aggregate) evaluate(input []*Spanset) (output []*Spanset, err error) {
 
 		case aggregateMax:
 			max := math.Inf(-1)
-			for _, s := range ss.Spans {
-				val, err := a.e.execute(s)
-				if err != nil {
-					return nil, err
-				}
-				if val.asFloat() > max {
-					max = val.asFloat()
-				}
+			val, err := a.e.execute(ss.Snapshot)
+			if err != nil {
+				return nil, err
+			}
+			if val.asFloat() > max {
+				max = val.asFloat()
 			}
 			copy := ss.clone()
 			copy.Scalar = NewStaticFloat(max)
@@ -123,14 +116,12 @@ func (a Aggregate) evaluate(input []*Spanset) (output []*Spanset, err error) {
 
 		case aggregateMin:
 			min := math.Inf(1)
-			for _, s := range ss.Spans {
-				val, err := a.e.execute(s)
-				if err != nil {
-					return nil, err
-				}
-				if val.asFloat() < min {
-					min = val.asFloat()
-				}
+			val, err := a.e.execute(ss.Snapshot)
+			if err != nil {
+				return nil, err
+			}
+			if val.asFloat() < min {
+				min = val.asFloat()
 			}
 			copy := ss.clone()
 			copy.Scalar = NewStaticFloat(min)
@@ -138,13 +129,11 @@ func (a Aggregate) evaluate(input []*Spanset) (output []*Spanset, err error) {
 
 		case aggregateSum:
 			sum := 0.0
-			for _, s := range ss.Spans {
-				val, err := a.e.execute(s)
-				if err != nil {
-					return nil, err
-				}
-				sum += val.asFloat()
+			val, err := a.e.execute(ss.Snapshot)
+			if err != nil {
+				return nil, err
 			}
+			sum += val.asFloat()
 			copy := ss.clone()
 			copy.Scalar = NewStaticFloat(sum)
 			output = append(output, copy)
@@ -157,13 +146,13 @@ func (a Aggregate) evaluate(input []*Spanset) (output []*Spanset, err error) {
 	return output, nil
 }
 
-func (o BinaryOperation) execute(span Span) (Static, error) {
-	lhs, err := o.LHS.execute(span)
+func (o BinaryOperation) execute(snapshot Snapshot) (Static, error) {
+	lhs, err := o.LHS.execute(snapshot)
 	if err != nil {
 		return NewStaticNil(), err
 	}
 
-	rhs, err := o.RHS.execute(span)
+	rhs, err := o.RHS.execute(snapshot)
 	if err != nil {
 		return NewStaticNil(), err
 	}
@@ -253,8 +242,8 @@ func binOp(op Operator, lhs, rhs Static) (bool, error) {
 	return false, errors.New("unexpected operator " + op.String())
 }
 
-func (o UnaryOperation) execute(span Span) (Static, error) {
-	static, err := o.Expression.execute(span)
+func (o UnaryOperation) execute(snapshot Snapshot) (Static, error) {
+	static, err := o.Expression.execute(snapshot)
 	if err != nil {
 		return NewStaticNil(), err
 	}
@@ -282,12 +271,12 @@ func (o UnaryOperation) execute(span Span) (Static, error) {
 	return NewStaticNil(), errors.New("UnaryOperation has Op different from Not and Sub")
 }
 
-func (s Static) execute(span Span) (Static, error) {
+func (s Static) execute(snapshot Snapshot) (Static, error) {
 	return s, nil
 }
 
-func (a Attribute) execute(span Span) (Static, error) {
-	atts := span.Attributes()
+func (a Attribute) execute(snapshot Snapshot) (Static, error) {
+	atts := snapshot.Attributes()
 	static, ok := atts[a]
 	if ok {
 		return static, nil
@@ -295,7 +284,7 @@ func (a Attribute) execute(span Span) (Static, error) {
 
 	if a.Scope == AttributeScopeNone {
 		for attribute, static := range atts {
-			if a.Name == attribute.Name && attribute.Scope == AttributeScopeSpan {
+			if a.Name == attribute.Name && attribute.Scope == AttributeScopeSnapshot {
 				return static, nil
 			}
 		}
@@ -309,17 +298,11 @@ func (a Attribute) execute(span Span) (Static, error) {
 	return NewStaticNil(), nil
 }
 
-func uniqueSpans(ss1 []*Spanset, ss2 []*Spanset) []Span {
-	ss1Count := 0
-	ss2Count := 0
+func uniqueSnapshots(ss1 []*SnapshotResult, ss2 []*SnapshotResult) []Snapshot {
+	ss1Count := len(ss1)
+	ss2Count := len(ss2)
 
-	for _, ss1 := range ss1 {
-		ss1Count += len(ss1.Spans)
-	}
-	for _, ss2 := range ss2 {
-		ss2Count += len(ss2.Spans)
-	}
-	output := make([]Span, 0, ss1Count+ss2Count)
+	output := make([]Snapshot, 0, ss1Count+ss2Count)
 
 	ssCount := ss2Count
 	ssSmaller := ss2
@@ -330,21 +313,16 @@ func uniqueSpans(ss1 []*Spanset, ss2 []*Spanset) []Span {
 		ssLarger = ss2
 	}
 
-	// make the map with ssSmaller
-	spans := make(map[Span]struct{}, ssCount)
+	spans := make(map[Snapshot]struct{}, ssCount)
 	for _, ss := range ssSmaller {
-		for _, span := range ss.Spans {
-			spans[span] = struct{}{}
-			output = append(output, span)
-		}
+		spans[ss.Snapshot] = struct{}{}
+		output = append(output, ss.Snapshot)
 	}
 
 	// only add the spans from ssLarger that aren't in the map
 	for _, ss := range ssLarger {
-		for _, span := range ss.Spans {
-			if _, ok := spans[span]; !ok {
-				output = append(output, span)
-			}
+		if _, ok := spans[ss.Snapshot]; !ok {
+			output = append(output, ss.Snapshot)
 		}
 	}
 

@@ -23,6 +23,11 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QuerierServiceClient interface {
 	FindSnapshotByID(ctx context.Context, in *SnapshotByIDRequest, opts ...grpc.CallOption) (*SnapshotByIDResponse, error)
+	SearchRecent(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error)
+	SearchBlock(ctx context.Context, in *SearchBlockRequest, opts ...grpc.CallOption) (*SearchResponse, error)
+	SearchTags(ctx context.Context, in *SearchTagsRequest, opts ...grpc.CallOption) (*SearchTagsResponse, error)
+	SearchTagValues(ctx context.Context, in *SearchTagValuesRequest, opts ...grpc.CallOption) (*SearchTagValuesResponse, error)
+	SearchTagValuesV2(ctx context.Context, in *SearchTagValuesRequest, opts ...grpc.CallOption) (*SearchTagValuesV2Response, error)
 }
 
 type querierServiceClient struct {
@@ -42,11 +47,61 @@ func (c *querierServiceClient) FindSnapshotByID(ctx context.Context, in *Snapsho
 	return out, nil
 }
 
+func (c *querierServiceClient) SearchRecent(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error) {
+	out := new(SearchResponse)
+	err := c.cc.Invoke(ctx, "/deeppb.QuerierService/SearchRecent", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *querierServiceClient) SearchBlock(ctx context.Context, in *SearchBlockRequest, opts ...grpc.CallOption) (*SearchResponse, error) {
+	out := new(SearchResponse)
+	err := c.cc.Invoke(ctx, "/deeppb.QuerierService/SearchBlock", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *querierServiceClient) SearchTags(ctx context.Context, in *SearchTagsRequest, opts ...grpc.CallOption) (*SearchTagsResponse, error) {
+	out := new(SearchTagsResponse)
+	err := c.cc.Invoke(ctx, "/deeppb.QuerierService/SearchTags", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *querierServiceClient) SearchTagValues(ctx context.Context, in *SearchTagValuesRequest, opts ...grpc.CallOption) (*SearchTagValuesResponse, error) {
+	out := new(SearchTagValuesResponse)
+	err := c.cc.Invoke(ctx, "/deeppb.QuerierService/SearchTagValues", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *querierServiceClient) SearchTagValuesV2(ctx context.Context, in *SearchTagValuesRequest, opts ...grpc.CallOption) (*SearchTagValuesV2Response, error) {
+	out := new(SearchTagValuesV2Response)
+	err := c.cc.Invoke(ctx, "/deeppb.QuerierService/SearchTagValuesV2", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QuerierServiceServer is the server API for QuerierService service.
 // All implementations must embed UnimplementedQuerierServiceServer
 // for forward compatibility
 type QuerierServiceServer interface {
 	FindSnapshotByID(context.Context, *SnapshotByIDRequest) (*SnapshotByIDResponse, error)
+	SearchRecent(context.Context, *SearchRequest) (*SearchResponse, error)
+	SearchBlock(context.Context, *SearchBlockRequest) (*SearchResponse, error)
+	SearchTags(context.Context, *SearchTagsRequest) (*SearchTagsResponse, error)
+	SearchTagValues(context.Context, *SearchTagValuesRequest) (*SearchTagValuesResponse, error)
+	SearchTagValuesV2(context.Context, *SearchTagValuesRequest) (*SearchTagValuesV2Response, error)
 	mustEmbedUnimplementedQuerierServiceServer()
 }
 
@@ -56,6 +111,21 @@ type UnimplementedQuerierServiceServer struct {
 
 func (UnimplementedQuerierServiceServer) FindSnapshotByID(context.Context, *SnapshotByIDRequest) (*SnapshotByIDResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FindSnapshotByID not implemented")
+}
+func (UnimplementedQuerierServiceServer) SearchRecent(context.Context, *SearchRequest) (*SearchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchRecent not implemented")
+}
+func (UnimplementedQuerierServiceServer) SearchBlock(context.Context, *SearchBlockRequest) (*SearchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchBlock not implemented")
+}
+func (UnimplementedQuerierServiceServer) SearchTags(context.Context, *SearchTagsRequest) (*SearchTagsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchTags not implemented")
+}
+func (UnimplementedQuerierServiceServer) SearchTagValues(context.Context, *SearchTagValuesRequest) (*SearchTagValuesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchTagValues not implemented")
+}
+func (UnimplementedQuerierServiceServer) SearchTagValuesV2(context.Context, *SearchTagValuesRequest) (*SearchTagValuesV2Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchTagValuesV2 not implemented")
 }
 func (UnimplementedQuerierServiceServer) mustEmbedUnimplementedQuerierServiceServer() {}
 
@@ -88,6 +158,96 @@ func _QuerierService_FindSnapshotByID_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _QuerierService_SearchRecent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QuerierServiceServer).SearchRecent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/deeppb.QuerierService/SearchRecent",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QuerierServiceServer).SearchRecent(ctx, req.(*SearchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QuerierService_SearchBlock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchBlockRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QuerierServiceServer).SearchBlock(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/deeppb.QuerierService/SearchBlock",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QuerierServiceServer).SearchBlock(ctx, req.(*SearchBlockRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QuerierService_SearchTags_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchTagsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QuerierServiceServer).SearchTags(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/deeppb.QuerierService/SearchTags",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QuerierServiceServer).SearchTags(ctx, req.(*SearchTagsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QuerierService_SearchTagValues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchTagValuesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QuerierServiceServer).SearchTagValues(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/deeppb.QuerierService/SearchTagValues",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QuerierServiceServer).SearchTagValues(ctx, req.(*SearchTagValuesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QuerierService_SearchTagValuesV2_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchTagValuesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QuerierServiceServer).SearchTagValuesV2(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/deeppb.QuerierService/SearchTagValuesV2",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QuerierServiceServer).SearchTagValuesV2(ctx, req.(*SearchTagValuesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // QuerierService_ServiceDesc is the grpc.ServiceDesc for QuerierService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -98,6 +258,26 @@ var QuerierService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FindSnapshotByID",
 			Handler:    _QuerierService_FindSnapshotByID_Handler,
+		},
+		{
+			MethodName: "SearchRecent",
+			Handler:    _QuerierService_SearchRecent_Handler,
+		},
+		{
+			MethodName: "SearchBlock",
+			Handler:    _QuerierService_SearchBlock_Handler,
+		},
+		{
+			MethodName: "SearchTags",
+			Handler:    _QuerierService_SearchTags_Handler,
+		},
+		{
+			MethodName: "SearchTagValues",
+			Handler:    _QuerierService_SearchTagValues_Handler,
+		},
+		{
+			MethodName: "SearchTagValuesV2",
+			Handler:    _QuerierService_SearchTagValuesV2_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

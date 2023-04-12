@@ -94,15 +94,15 @@ type Resource struct {
 }
 
 type TracePointConfig struct {
-	Id      string            `parquet:",snappy,dict"`
+	ID      string            `parquet:",snappy,dict"`
 	Path    string            `parquet:",snappy,dict"`
 	LineNo  int32             `parquet:",delta"`
 	Args    map[string]string `parquet:""`
 	Watches []string          `parquet:""`
 }
 
-type VariableId struct {
-	Id        string   `parquet:",snappy,dict"`
+type VariableID struct {
+	ID        string   `parquet:",snappy,dict"`
 	Name      string   `parquet:",snappy,dict"`
 	Modifiers []string `parquet:""`
 }
@@ -111,7 +111,7 @@ type Variable struct {
 	Type      string       `parquet:",snappy,dict"`
 	Value     string       `parquet:",snappy,dict"`
 	Hash      string       `parquet:",snappy,dict"`
-	Children  []VariableId `parquet:""`
+	Children  []VariableID `parquet:""`
 	Truncated bool         `parquet:""`
 }
 
@@ -125,19 +125,19 @@ type StackFrame struct {
 	TranspiledFileName     *string      `parquet:",snappy,optional,dict"`
 	TranspiledLineNumber   *int32       `parquet:",snappy,optional"`
 	TranspiledColumnNumber *int32       `parquet:",snappy,optional"`
-	Variables              []VariableId `parquet:""`
+	Variables              []VariableID `parquet:""`
 	AppFrame               bool         `parquet:""`
 }
 
 type WatchResult struct {
 	Expression  string      `parquet:",snappy"`
-	GoodResult  *VariableId `parquet:""`
+	GoodResult  *VariableID `parquet:""`
 	ErrorResult *string     `parquet:",snappy"`
 }
 
 type Snapshot struct {
-	Id            []byte              `parquet:""`
-	IdText        string              `parquet:",snappy"`
+	ID            []byte              `parquet:""`
+	IDText        string              `parquet:",snappy"`
 	Tracepoint    TracePointConfig    `parquet:"tp"`
 	VarLookup     map[string]Variable `parquet:""`
 	Ts            int64               `parquet:",delta"`
@@ -182,8 +182,8 @@ func snapshotToParquet(id common.ID, snapshot *deep_tp.Snapshot, sp *Snapshot) *
 		sp = &Snapshot{}
 	}
 
-	sp.Id = util.PadTraceIDTo16Bytes(id)
-	sp.IdText = util.TraceIDToHexString(id)
+	sp.ID = util.PadTraceIDTo16Bytes(id)
+	sp.IDText = util.TraceIDToHexString(id)
 
 	sp.Tracepoint = convertTracepoint(snapshot.Tracepoint)
 	sp.VarLookup = convertLookup(snapshot.VarLookup)
@@ -316,17 +316,17 @@ func convertVariable(variable *deep_tp.Variable) Variable {
 	}
 }
 
-func convertChildren(children []*deep_tp.VariableId) []VariableId {
-	var parChildren = make([]VariableId, len(children))
+func convertChildren(children []*deep_tp.VariableID) []VariableID {
+	var parChildren = make([]VariableID, len(children))
 	for i, child := range children {
 		parChildren[i] = convertVariableId(child)
 	}
 	return parChildren
 }
 
-func convertVariableId(child *deep_tp.VariableId) VariableId {
-	return VariableId{
-		Id:        child.Id,
+func convertVariableId(child *deep_tp.VariableID) VariableID {
+	return VariableID{
+		ID:        child.ID,
 		Name:      child.Name,
 		Modifiers: child.Modifiers,
 	}
@@ -334,7 +334,7 @@ func convertVariableId(child *deep_tp.VariableId) VariableId {
 
 func convertTracepoint(tracepoint *deep_tp.TracePointConfig) TracePointConfig {
 	return TracePointConfig{
-		Id:      tracepoint.Id,
+		ID:      tracepoint.ID,
 		Path:    tracepoint.Path,
 		LineNo:  tracepoint.LineNo,
 		Args:    tracepoint.Args,
@@ -355,9 +355,9 @@ func extendReuseSlice[T any](sz int, in []T) []T {
 
 func parquetToDeepSnapshot(snap *Snapshot) *deep_tp.Snapshot {
 	return &deep_tp.Snapshot{
-		Id: snap.Id,
+		ID: snap.ID,
 		Tracepoint: &deep_tp.TracePointConfig{
-			Id:      snap.Tracepoint.Id,
+			ID:      snap.Tracepoint.ID,
 			Path:    snap.Tracepoint.Path,
 			LineNo:  snap.Tracepoint.LineNo,
 			Args:    snap.Tracepoint.Args,
@@ -454,7 +454,7 @@ func parquetConvertWatchResult(watch WatchResult) *deep_tp.WatchResult {
 	if watch.GoodResult != nil {
 		return &deep_tp.WatchResult{
 			Expression: watch.Expression,
-			Result:     &deep_tp.WatchResult_GoodResult{GoodResult: parquetConvertVariableId(*watch.GoodResult)},
+			Result:     &deep_tp.WatchResult_GoodResult{GoodResult: parquetConvertVariableID(*watch.GoodResult)},
 		}
 	} else {
 		return &deep_tp.WatchResult{
@@ -506,17 +506,17 @@ func parquetConvertVariable(variable Variable) *deep_tp.Variable {
 	}
 }
 
-func parquetConvertChildren(children []VariableId) []*deep_tp.VariableId {
-	var varChildren = make([]*deep_tp.VariableId, len(children))
+func parquetConvertChildren(children []VariableID) []*deep_tp.VariableID {
+	var varChildren = make([]*deep_tp.VariableID, len(children))
 	for i, child := range children {
-		varChildren[i] = parquetConvertVariableId(child)
+		varChildren[i] = parquetConvertVariableID(child)
 	}
 	return varChildren
 }
 
-func parquetConvertVariableId(child VariableId) *deep_tp.VariableId {
-	return &deep_tp.VariableId{
-		Id:        child.Id,
+func parquetConvertVariableID(child VariableID) *deep_tp.VariableID {
+	return &deep_tp.VariableID{
+		ID:        child.ID,
 		Name:      child.Name,
 		Modifiers: child.Modifiers,
 	}

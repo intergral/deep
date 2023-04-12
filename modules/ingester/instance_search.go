@@ -8,9 +8,9 @@ import (
 	"github.com/go-kit/log/level"
 	"github.com/intergral/deep/pkg/api"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
+	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/deepql"
 	"github.com/intergral/deep/pkg/search"
-	"github.com/intergral/deep/pkg/tempopb"
-	"github.com/intergral/deep/pkg/traceql"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/intergral/deep/pkg/util/log"
 	"github.com/opentracing/opentracing-go"
@@ -18,7 +18,7 @@ import (
 	"github.com/weaveworks/common/user"
 )
 
-func (i *instance) Search(ctx context.Context, req *tempopb.SearchRequest) (*tempopb.SearchResponse, error) {
+func (i *instance) Search(ctx context.Context, req *deeppb.SearchRequest) (*deeppb.SearchResponse, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "instance.Search")
 	defer span.Finish()
 
@@ -47,7 +47,7 @@ func (i *instance) Search(ctx context.Context, req *tempopb.SearchRequest) (*tem
 	sr.AllWorkersStarted()
 
 	// read and combine search results
-	resultsMap := map[string]*tempopb.TraceSearchMetadata{}
+	resultsMap := map[string]*deeppb.SnapshotSearchMetadata{}
 
 	// collect results from all the goroutines via sr.Results channel.
 	// range loop will exit when sr.Results channel is closed.
@@ -58,10 +58,10 @@ func (i *instance) Search(ctx context.Context, req *tempopb.SearchRequest) (*tem
 		}
 
 		// Dedupe/combine results
-		if existing := resultsMap[result.TraceID]; existing != nil {
+		if existing := resultsMap[result.SnapshotID]; existing != nil {
 			search.CombineSearchResults(existing, result)
 		} else {
-			resultsMap[result.TraceID] = result
+			resultsMap[result.SnapshotID] = result
 		}
 
 		if len(resultsMap) >= maxResults {
@@ -75,7 +75,7 @@ func (i *instance) Search(ctx context.Context, req *tempopb.SearchRequest) (*tem
 		return nil, sr.Error()
 	}
 
-	results := make([]*tempopb.TraceSearchMetadata, 0, len(resultsMap))
+	results := make([]*deeppb.SnapshotSearchMetadata, 0, len(resultsMap))
 	for _, result := range resultsMap {
 		results = append(results, result)
 	}
@@ -85,9 +85,9 @@ func (i *instance) Search(ctx context.Context, req *tempopb.SearchRequest) (*tem
 		return results[i].StartTimeUnixNano > results[j].StartTimeUnixNano
 	})
 
-	return &tempopb.SearchResponse{
-		Traces: results,
-		Metrics: &tempopb.SearchMetrics{
+	return &deeppb.SearchResponse{
+		Snapshots: results,
+		Metrics: &deeppb.SearchMetrics{
 			InspectedTraces: sr.TracesInspected(),
 			InspectedBytes:  sr.BytesInspected(),
 			InspectedBlocks: sr.BlocksInspected(),
@@ -97,7 +97,7 @@ func (i *instance) Search(ctx context.Context, req *tempopb.SearchRequest) (*tem
 }
 
 // searchWAL starts a search task for every WAL block. Must be called under lock.
-func (i *instance) searchWAL(ctx context.Context, req *tempopb.SearchRequest, sr *search.Results) {
+func (i *instance) searchWAL(ctx context.Context, req *deeppb.SearchRequest, sr *search.Results) {
 	searchWalBlock := func(b common.WALBlock) {
 		blockID := b.BlockMeta().BlockID.String()
 		span, ctx := opentracing.StartSpanFromContext(ctx, "instance.searchWALBlock", opentracing.Tags{
@@ -106,14 +106,14 @@ func (i *instance) searchWAL(ctx context.Context, req *tempopb.SearchRequest, sr
 		defer span.Finish()
 		defer sr.FinishWorker()
 
-		var resp *tempopb.SearchResponse
+		var resp *deeppb.SearchResponse
 		var err error
 
 		opts := common.DefaultSearchOptions()
 		if api.IsTraceQLQuery(req) {
 			// note: we are creating new engine for each wal block,
 			// and engine.Execute is parsing the query for each block
-			resp, err = traceql.NewEngine().Execute(ctx, req, traceql.NewSpansetFetcherWrapper(func(ctx context.Context, req traceql.FetchSpansRequest) (traceql.FetchSpansResponse, error) {
+			resp, err = deepql.NewEngine().Execute(ctx, req, deepql.NewSnapshotResultFetcherWrapper(func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
 				return b.Fetch(ctx, req, opts)
 			}))
 		} else {
@@ -133,7 +133,7 @@ func (i *instance) searchWAL(ctx context.Context, req *tempopb.SearchRequest, sr
 		sr.AddBlockInspected()
 		sr.AddBytesInspected(resp.Metrics.InspectedBytes)
 		sr.AddTraceInspected(resp.Metrics.InspectedTraces)
-		for _, r := range resp.Traces {
+		for _, r := range resp.Snapshots {
 			sr.AddResult(ctx, r)
 		}
 	}
@@ -152,7 +152,7 @@ func (i *instance) searchWAL(ctx context.Context, req *tempopb.SearchRequest, sr
 }
 
 // searchLocalBlocks starts a search task for every local block. Must be called under lock.
-func (i *instance) searchLocalBlocks(ctx context.Context, req *tempopb.SearchRequest, sr *search.Results) {
+func (i *instance) searchLocalBlocks(ctx context.Context, req *deeppb.SearchRequest, sr *search.Results) {
 	// next check all complete blocks to see if they were not searched, if they weren't then attempt to search them
 	for _, e := range i.completeBlocks {
 		sr.StartWorker()
@@ -167,14 +167,14 @@ func (i *instance) searchLocalBlocks(ctx context.Context, req *tempopb.SearchReq
 			span.LogFields(ot_log.Event("local block entry mtx acquired"))
 			span.SetTag("blockID", blockID)
 
-			var resp *tempopb.SearchResponse
+			var resp *deeppb.SearchResponse
 			var err error
 
 			opts := common.DefaultSearchOptions()
 			if api.IsTraceQLQuery(req) {
 				// note: we are creating new engine for each wal block,
 				// and engine.Execute is parsing the query for each block
-				resp, err = traceql.NewEngine().Execute(ctx, req, traceql.NewSpansetFetcherWrapper(func(ctx context.Context, req traceql.FetchSpansRequest) (traceql.FetchSpansResponse, error) {
+				resp, err = deepql.NewEngine().Execute(ctx, req, deepql.NewSnapshotResultFetcherWrapper(func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
 					return e.Fetch(ctx, req, opts)
 				}))
 			} else {
@@ -191,7 +191,7 @@ func (i *instance) searchLocalBlocks(ctx context.Context, req *tempopb.SearchReq
 				return
 			}
 
-			for _, t := range resp.Traces {
+			for _, t := range resp.Snapshots {
 				sr.AddResult(ctx, t)
 			}
 			sr.AddBlockInspected()
@@ -202,7 +202,7 @@ func (i *instance) searchLocalBlocks(ctx context.Context, req *tempopb.SearchReq
 	}
 }
 
-func (i *instance) SearchTags(ctx context.Context) (*tempopb.SearchTagsResponse, error) {
+func (i *instance) SearchTags(ctx context.Context) (*deeppb.SearchTagsResponse, error) {
 	userID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
@@ -248,12 +248,12 @@ func (i *instance) SearchTags(ctx context.Context) (*tempopb.SearchTagsResponse,
 		level.Warn(log.Logger).Log("msg", "size of tags in instance exceeded limit, reduce cardinality or size of tags", "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
 	}
 
-	return &tempopb.SearchTagsResponse{
+	return &deeppb.SearchTagsResponse{
 		TagNames: distinctValues.Strings(),
 	}, nil
 }
 
-func (i *instance) SearchTagValues(ctx context.Context, tagName string) (*tempopb.SearchTagValuesResponse, error) {
+func (i *instance) SearchTagValues(ctx context.Context, tagName string) (*deeppb.SearchTagValuesResponse, error) {
 	userID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
@@ -299,58 +299,54 @@ func (i *instance) SearchTagValues(ctx context.Context, tagName string) (*tempop
 		level.Warn(log.Logger).Log("msg", "size of tag values in instance exceeded limit, reduce cardinality or size of tags", "tag", tagName, "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
 	}
 
-	return &tempopb.SearchTagValuesResponse{
+	return &deeppb.SearchTagValuesResponse{
 		TagValues: distinctValues.Strings(),
 	}, nil
 }
 
-func (i *instance) SearchTagValuesV2(ctx context.Context, req *tempopb.SearchTagValuesRequest) (*tempopb.SearchTagValuesV2Response, error) {
+func (i *instance) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagValuesRequest) (*deeppb.SearchTagValuesV2Response, error) {
 	userID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	tag, err := traceql.ParseIdentifier(req.TagName)
+	tag, err := deepql.ParseIdentifier(req.TagName)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := i.limiter.limits.MaxBytesPerTagValuesQuery(userID)
-	distinctValues := util.NewDistinctValueCollector[tempopb.TagValue](limit, func(v tempopb.TagValue) int { return len(v.Type) + len(v.Value) })
+	distinctValues := util.NewDistinctValueCollector[*deeppb.TagValue](limit, func(v *deeppb.TagValue) int { return len(v.Type) + len(v.Value) })
 
-	cb := func(v traceql.Static) bool {
-		tv := tempopb.TagValue{}
+	cb := func(v deepql.Static) bool {
+		tv := deeppb.TagValue{}
 
 		switch v.Type {
-		case traceql.TypeString:
+		case deepql.TypeString:
 			tv.Type = "string"
 			tv.Value = v.S // avoid formatting
 
-		case traceql.TypeBoolean:
+		case deepql.TypeBoolean:
 			tv.Type = "bool"
 			tv.Value = v.String()
 
-		case traceql.TypeInt:
+		case deepql.TypeInt:
 			tv.Type = "int"
 			tv.Value = v.String()
 
-		case traceql.TypeFloat:
+		case deepql.TypeFloat:
 			tv.Type = "float"
 			tv.Value = v.String()
 
-		case traceql.TypeDuration:
+		case deepql.TypeDuration:
 			tv.Type = "duration"
-			tv.Value = v.String()
-
-		case traceql.TypeStatus:
-			tv.Type = "keyword"
 			tv.Value = v.String()
 		}
 
-		return distinctValues.Collect(tv)
+		return distinctValues.Collect(&tv)
 	}
 
-	search := func(s common.Searcher, dv *util.DistinctValueCollector[tempopb.TagValue]) error {
+	search := func(s common.Searcher, dv *util.DistinctValueCollector[*deeppb.TagValue]) error {
 		if s == nil || dv.Exceeded() {
 			return nil
 		}
@@ -387,11 +383,11 @@ func (i *instance) SearchTagValuesV2(ctx context.Context, req *tempopb.SearchTag
 		level.Warn(log.Logger).Log("msg", "size of tag values in instance exceeded limit, reduce cardinality or size of tags", "tag", req.TagName, "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
 	}
 
-	resp := &tempopb.SearchTagValuesV2Response{}
+	resp := &deeppb.SearchTagValuesV2Response{}
 
 	for _, v := range distinctValues.Values() {
 		v2 := v
-		resp.TagValues = append(resp.TagValues, &v2)
+		resp.TagValues = append(resp.TagValues, v2)
 	}
 
 	return resp, nil

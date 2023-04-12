@@ -3,6 +3,8 @@ package vparquet
 import (
 	"context"
 	"fmt"
+	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/deepql"
 	"github.com/segmentio/parquet-go"
 	"io"
 	"math"
@@ -11,9 +13,6 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	deep_io "github.com/intergral/deep/pkg/io"
 	pq "github.com/intergral/deep/pkg/parquetquery"
-	"github.com/intergral/deep/pkg/tempopb"
-	v1 "github.com/intergral/deep/pkg/tempopb/trace/v1"
-	"github.com/intergral/deep/pkg/traceql"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
@@ -22,34 +21,7 @@ import (
 // These are reserved search parameters
 const (
 	LabelDuration = "duration"
-
-	StatusCodeTag   = "status.code"
-	StatusCodeUnset = "unset"
-	StatusCodeOK    = "ok"
-	StatusCodeError = "error"
-
-	KindUnspecified = "unspecified"
-	KindInternal    = "internal"
-	KindClient      = "client"
-	KindServer      = "server"
-	KindProducer    = "producer"
-	KindConsumer    = "consumer"
 )
-
-var StatusCodeMapping = map[string]int{
-	StatusCodeUnset: int(v1.Status_STATUS_CODE_UNSET),
-	StatusCodeOK:    int(v1.Status_STATUS_CODE_OK),
-	StatusCodeError: int(v1.Status_STATUS_CODE_ERROR),
-}
-
-var KindMapping = map[string]int{
-	KindUnspecified: int(v1.Span_SPAN_KIND_UNSPECIFIED),
-	KindInternal:    int(v1.Span_SPAN_KIND_INTERNAL),
-	KindClient:      int(v1.Span_SPAN_KIND_CLIENT),
-	KindServer:      int(v1.Span_SPAN_KIND_SERVER),
-	KindProducer:    int(v1.Span_SPAN_KIND_PRODUCER),
-	KindConsumer:    int(v1.Span_SPAN_KIND_CONSUMER),
-}
 
 // openForSearch consolidates all the logic for opening a parquet file
 func (b *backendBlock) openForSearch(ctx context.Context, opts common.SearchOptions) (*parquet.File, *BackendReaderAt, error) {
@@ -99,7 +71,7 @@ func (b *backendBlock) openForSearch(ctx context.Context, opts common.SearchOpti
 	return pf, backendReaderAt, err
 }
 
-func (b *backendBlock) Search(ctx context.Context, req *tempopb.SearchRequest, opts common.SearchOptions) (_ *tempopb.SearchResponse, err error) {
+func (b *backendBlock) Search(ctx context.Context, req *deeppb.SearchRequest, opts common.SearchOptions) (_ *deeppb.SearchResponse, err error) {
 	span, derivedCtx := opentracing.StartSpanFromContext(ctx, "parquet.backendBlock.Search",
 		opentracing.Tags{
 			"blockID":   b.meta.BlockID,
@@ -129,7 +101,7 @@ func (b *backendBlock) Search(ctx context.Context, req *tempopb.SearchRequest, o
 	return results, nil
 }
 
-func makePipelineWithRowGroups(ctx context.Context, req *tempopb.SearchRequest, pf *parquet.File, rgs []parquet.RowGroup) pq.Iterator {
+func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, pf *parquet.File, rgs []parquet.RowGroup) pq.Iterator {
 	makeIter := makeIterFunc(ctx, rgs, pf)
 
 	// Wire up iterators
@@ -245,7 +217,7 @@ func makePipelineWithRowGroups(ctx context.Context, req *tempopb.SearchRequest, 
 	}
 }
 
-func searchParquetFile(ctx context.Context, pf *parquet.File, req *tempopb.SearchRequest, rgs []parquet.RowGroup) (*tempopb.SearchResponse, error) {
+func searchParquetFile(ctx context.Context, pf *parquet.File, req *deeppb.SearchRequest, rgs []parquet.RowGroup) (*deeppb.SearchResponse, error) {
 
 	// Search happens in 2 phases for an optimization.
 	// Phase 1 is iterate all columns involved in the request.
@@ -258,7 +230,7 @@ func searchParquetFile(ctx context.Context, pf *parquet.File, req *tempopb.Searc
 		return nil, err
 	}
 	if len(matchingRows) == 0 {
-		return &tempopb.SearchResponse{Metrics: &tempopb.SearchMetrics{}}, nil
+		return &deeppb.SearchResponse{Metrics: &deeppb.SearchMetrics{}}, nil
 	}
 
 	// We have some results, now load the display columns
@@ -267,13 +239,13 @@ func searchParquetFile(ctx context.Context, pf *parquet.File, req *tempopb.Searc
 		return nil, err
 	}
 
-	return &tempopb.SearchResponse{
-		Traces:  results,
-		Metrics: &tempopb.SearchMetrics{},
+	return &deeppb.SearchResponse{
+		Snapshots: results,
+		Metrics:   &deeppb.SearchMetrics{},
 	}, nil
 }
 
-func searchRaw(ctx context.Context, pf *parquet.File, req *tempopb.SearchRequest, rgs []parquet.RowGroup) ([]pq.RowNumber, error) {
+func searchRaw(ctx context.Context, pf *parquet.File, req *deeppb.SearchRequest, rgs []parquet.RowGroup) ([]pq.RowNumber, error) {
 	iter := makePipelineWithRowGroups(ctx, req, pf, rgs)
 	if iter == nil {
 		return nil, errors.New("make pipeline returned a nil iterator")
@@ -299,10 +271,10 @@ func searchRaw(ctx context.Context, pf *parquet.File, req *tempopb.SearchRequest
 	return matchingRows, nil
 }
 
-func rawToResults(ctx context.Context, pf *parquet.File, rgs []parquet.RowGroup, rowNumbers []pq.RowNumber) ([]*tempopb.TraceSearchMetadata, error) {
+func rawToResults(ctx context.Context, pf *parquet.File, rgs []parquet.RowGroup, rowNumbers []pq.RowNumber) ([]*deeppb.SnapshotSearchMetadata, error) {
 	makeIter := makeIterFunc(ctx, rgs, pf)
 
-	results := []*tempopb.TraceSearchMetadata{}
+	results := []*deeppb.SnapshotSearchMetadata{}
 	iter2 := pq.NewJoinIterator(DefinitionLevelTrace, []pq.Iterator{
 		&rowNumberIterator{rowNumbers: rowNumbers},
 		makeIter("TraceID", nil, "TraceID"),
@@ -323,12 +295,13 @@ func rawToResults(ctx context.Context, pf *parquet.File, rgs []parquet.RowGroup,
 		}
 
 		matchMap := match.ToMap()
-		result := &tempopb.TraceSearchMetadata{
-			TraceID:           util.TraceIDToHexString(matchMap["TraceID"][0].Bytes()),
-			RootServiceName:   matchMap["RootServiceName"][0].String(),
-			RootTraceName:     matchMap["RootSpanName"][0].String(),
+		result := &deeppb.SnapshotSearchMetadata{
+			SnapshotID:        util.TraceIDToHexString(matchMap["SnapshotID"][0].Bytes()),
+			ServiceName:       matchMap["ServiceName"][0].String(),
+			FilePath:          matchMap["FilePath"][0].String(),
+			LineNo:            matchMap["LineNo"][0].Uint32(),
 			StartTimeUnixNano: matchMap["StartTimeUnixNano"][0].Uint64(),
-			DurationMs:        uint32(matchMap["DurationNanos"][0].Int64() / int64(time.Millisecond)),
+			DurationNano:      matchMap["DurationNanos"][0].Uint32(),
 		}
 		results = append(results, result)
 	}
@@ -437,16 +410,16 @@ func callback(cb common.TagCallbackV2, v parquet.Value) (stop bool) {
 	switch v.Kind() {
 
 	case parquet.Boolean:
-		return cb(traceql.NewStaticBool(v.Boolean()))
+		return cb(deepql.NewStaticBool(v.Boolean()))
 
 	case parquet.Int32, parquet.Int64:
-		return cb(traceql.NewStaticInt(int(v.Int64())))
+		return cb(deepql.NewStaticInt(int(v.Int64())))
 
 	case parquet.Float, parquet.Double:
-		return cb(traceql.NewStaticFloat(v.Double()))
+		return cb(deepql.NewStaticFloat(v.Double()))
 
 	case parquet.ByteArray, parquet.FixedLenByteArray:
-		return cb(traceql.NewStaticString(v.String()))
+		return cb(deepql.NewStaticString(v.String()))
 
 	default:
 		// Skip nils or unsupported type

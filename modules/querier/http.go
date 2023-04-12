@@ -3,7 +3,10 @@ package querier
 import (
 	"context"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/deepql"
+	"github.com/pkg/errors"
 	"net/http"
 	"time"
 
@@ -53,7 +56,7 @@ func (q *Querier) SnapshotByIdHandler(w http.ResponseWriter, r *http.Request) {
 		ot_log.String("timeEnd", fmt.Sprint(timeEnd)))
 
 	resp, err := q.FindSnapshotByID(ctx, &deeppb.SnapshotByIDRequest{
-		Id:         byteID,
+		ID:         byteID,
 		BlockStart: blockStart,
 		BlockEnd:   blockEnd,
 		QueryMode:  queryMode,
@@ -96,153 +99,153 @@ func (q *Querier) SnapshotByIdHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
 }
 
-//func (q *Querier) SearchHandler(w http.ResponseWriter, r *http.Request) {
-//	isSearchBlock := api.IsSearchBlock(r)
-//
-//	// Enforce the query timeout while querying backends
-//	ctx, cancel := context.WithDeadline(r.Context(), time.Now().Add(q.cfg.Search.QueryTimeout))
-//	defer cancel()
-//
-//	span, ctx := opentracing.StartSpanFromContext(ctx, "Querier.SearchHandler")
-//	defer span.Finish()
-//
-//	span.SetTag("requestURI", r.RequestURI)
-//	span.SetTag("isSearchBlock", isSearchBlock)
-//
-//	var resp *tempopb.SearchResponse
-//	if !isSearchBlock {
-//		req, err := api.ParseSearchRequest(r)
-//		if err != nil {
-//			http.Error(w, err.Error(), http.StatusBadRequest)
-//			return
-//		}
-//
-//		span.SetTag("SearchRequest", req.String())
-//
-//		resp, err = q.SearchRecent(ctx, req)
-//		if err != nil {
-//			http.Error(w, err.Error(), http.StatusInternalServerError)
-//			return
-//		}
-//	} else {
-//		req, err := api.ParseSearchBlockRequest(r)
-//		if err != nil {
-//			http.Error(w, err.Error(), http.StatusBadRequest)
-//			return
-//		}
-//
-//		span.SetTag("SearchRequestBlock", req.String())
-//
-//		resp, err = q.SearchBlock(ctx, req)
-//		if err != nil {
-//			http.Error(w, err.Error(), http.StatusInternalServerError)
-//			return
-//		}
-//	}
-//
-//	marshaller := &jsonpb.Marshaler{}
-//	err := marshaller.Marshal(w, resp)
-//	if err != nil {
-//		http.Error(w, err.Error(), http.StatusInternalServerError)
-//		return
-//	}
-//	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
-//}
+func (q *Querier) SearchHandler(w http.ResponseWriter, r *http.Request) {
+	isSearchBlock := api.IsSearchBlock(r)
 
-//func (q *Querier) SearchTagsHandler(w http.ResponseWriter, r *http.Request) {
-//	// Enforce the query timeout while querying backends
-//	ctx, cancel := context.WithDeadline(r.Context(), time.Now().Add(q.cfg.Search.QueryTimeout))
-//	defer cancel()
-//
-//	span, ctx := opentracing.StartSpanFromContext(ctx, "Querier.SearchTagsHandler")
-//	defer span.Finish()
-//
-//	req := &tempopb.SearchTagsRequest{}
-//
-//	resp, err := q.SearchTags(ctx, req)
-//	if err != nil {
-//		http.Error(w, err.Error(), http.StatusInternalServerError)
-//		return
-//	}
-//
-//	marshaller := &jsonpb.Marshaler{}
-//	err = marshaller.Marshal(w, resp)
-//	if err != nil {
-//		http.Error(w, err.Error(), http.StatusInternalServerError)
-//		return
-//	}
-//	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
-//}
+	// Enforce the query timeout while querying backends
+	ctx, cancel := context.WithDeadline(r.Context(), time.Now().Add(q.cfg.Search.QueryTimeout))
+	defer cancel()
 
-//func (q *Querier) SearchTagValuesHandler(w http.ResponseWriter, r *http.Request) {
-//	// Enforce the query timeout while querying backends
-//	ctx, cancel := context.WithDeadline(r.Context(), time.Now().Add(q.cfg.Search.QueryTimeout))
-//	defer cancel()
-//
-//	span, ctx := opentracing.StartSpanFromContext(ctx, "Querier.SearchTagValuesHandler")
-//	defer span.Finish()
-//
-//	vars := mux.Vars(r)
-//	tagName, ok := vars["tagName"]
-//	if !ok {
-//		http.Error(w, "please provide a tagName", http.StatusBadRequest)
-//		return
-//	}
-//	req := &tempopb.SearchTagValuesRequest{
-//		TagName: tagName,
-//	}
-//
-//	resp, err := q.SearchTagValues(ctx, req)
-//	if err != nil {
-//		http.Error(w, err.Error(), http.StatusInternalServerError)
-//		return
-//	}
-//
-//	marshaller := &jsonpb.Marshaler{}
-//	err = marshaller.Marshal(w, resp)
-//	if err != nil {
-//		http.Error(w, err.Error(), http.StatusInternalServerError)
-//		return
-//	}
-//	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
-//}
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Querier.SearchHandler")
+	defer span.Finish()
 
-//func (q *Querier) SearchTagValuesV2Handler(w http.ResponseWriter, r *http.Request) {
-//	// Enforce the query timeout while querying backends
-//	ctx, cancel := context.WithDeadline(r.Context(), time.Now().Add(q.cfg.Search.QueryTimeout))
-//	defer cancel()
-//
-//	span, ctx := opentracing.StartSpanFromContext(ctx, "Querier.SearchTagValuesHandler")
-//	defer span.Finish()
-//
-//	vars := mux.Vars(r)
-//	tagName, ok := vars["tagName"]
-//	if !ok {
-//		http.Error(w, "please provide a tagName", http.StatusBadRequest)
-//		return
-//	}
-//
-//	_, err := traceql.ParseIdentifier(tagName)
-//	if err != nil {
-//		http.Error(w, errors.Wrap(err, "please provide a valid tagName").Error(), http.StatusBadRequest)
-//		return
-//	}
-//
-//	req := &tempopb.SearchTagValuesRequest{
-//		TagName: tagName,
-//	}
-//
-//	resp, err := q.SearchTagValuesV2(ctx, req)
-//	if err != nil {
-//		http.Error(w, err.Error(), http.StatusInternalServerError)
-//		return
-//	}
-//
-//	marshaller := &jsonpb.Marshaler{}
-//	err = marshaller.Marshal(w, resp)
-//	if err != nil {
-//		http.Error(w, err.Error(), http.StatusInternalServerError)
-//		return
-//	}
-//	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
-//}
+	span.SetTag("requestURI", r.RequestURI)
+	span.SetTag("isSearchBlock", isSearchBlock)
+
+	var resp *deeppb.SearchResponse
+	if !isSearchBlock {
+		req, err := api.ParseSearchRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		span.SetTag("SearchRequest", req.String())
+
+		resp, err = q.SearchRecent(ctx, req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		req, err := api.ParseSearchBlockRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		span.SetTag("SearchRequestBlock", req.String())
+
+		resp, err = q.SearchBlock(ctx, req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	marshaller := &jsonpb.Marshaler{}
+	err := marshaller.Marshal(w, resp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
+}
+
+func (q *Querier) SearchTagsHandler(w http.ResponseWriter, r *http.Request) {
+	// Enforce the query timeout while querying backends
+	ctx, cancel := context.WithDeadline(r.Context(), time.Now().Add(q.cfg.Search.QueryTimeout))
+	defer cancel()
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Querier.SearchTagsHandler")
+	defer span.Finish()
+
+	req := &deeppb.SearchTagsRequest{}
+
+	resp, err := q.SearchTags(ctx, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	marshaller := &jsonpb.Marshaler{}
+	err = marshaller.Marshal(w, resp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
+}
+
+func (q *Querier) SearchTagValuesHandler(w http.ResponseWriter, r *http.Request) {
+	// Enforce the query timeout while querying backends
+	ctx, cancel := context.WithDeadline(r.Context(), time.Now().Add(q.cfg.Search.QueryTimeout))
+	defer cancel()
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Querier.SearchTagValuesHandler")
+	defer span.Finish()
+
+	vars := mux.Vars(r)
+	tagName, ok := vars["tagName"]
+	if !ok {
+		http.Error(w, "please provide a tagName", http.StatusBadRequest)
+		return
+	}
+	req := &deeppb.SearchTagValuesRequest{
+		TagName: tagName,
+	}
+
+	resp, err := q.SearchTagValues(ctx, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	marshaller := &jsonpb.Marshaler{}
+	err = marshaller.Marshal(w, resp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
+}
+
+func (q *Querier) SearchTagValuesV2Handler(w http.ResponseWriter, r *http.Request) {
+	// Enforce the query timeout while querying backends
+	ctx, cancel := context.WithDeadline(r.Context(), time.Now().Add(q.cfg.Search.QueryTimeout))
+	defer cancel()
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Querier.SearchTagValuesHandler")
+	defer span.Finish()
+
+	vars := mux.Vars(r)
+	tagName, ok := vars["tagName"]
+	if !ok {
+		http.Error(w, "please provide a tagName", http.StatusBadRequest)
+		return
+	}
+
+	_, err := deepql.ParseIdentifier(tagName)
+	if err != nil {
+		http.Error(w, errors.Wrap(err, "please provide a valid tagName").Error(), http.StatusBadRequest)
+		return
+	}
+
+	req := &deeppb.SearchTagValuesRequest{
+		TagName: tagName,
+	}
+
+	resp, err := q.SearchTagValuesV2(ctx, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	marshaller := &jsonpb.Marshaler{}
+	err = marshaller.Marshal(w, resp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
+}

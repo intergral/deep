@@ -18,8 +18,8 @@ import (
 	"github.com/golang/protobuf/proto" //nolint:all //deprecated
 	"github.com/intergral/deep/modules/querier"
 	"github.com/intergral/deep/pkg/api"
+	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/model/trace"
-	"github.com/intergral/deep/pkg/tempopb"
 	"github.com/opentracing/opentracing-go"
 	"github.com/weaveworks/common/user"
 )
@@ -29,7 +29,7 @@ const (
 	maxQueryShards = 256
 )
 
-func newTraceByIDSharder(queryShards, maxFailedBlocks int, sloCfg SLOConfig, logger log.Logger) Middleware {
+func newSnapshotByIDSharder(queryShards, maxFailedBlocks int, sloCfg SLOConfig, logger log.Logger) Middleware {
 	return MiddlewareFunc(func(next http.RoundTripper) http.RoundTripper {
 		return shardQuery{
 			next:            next,
@@ -132,7 +132,7 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 			// marshal into a trace to combine.
 			// todo: better define responsibilities between middleware. the parent middleware in frontend.go actually sets the header
 			//  which forces the body here to be a proto encoded tempopb.Trace{}
-			traceResp := &tempopb.TraceByIDResponse{}
+			traceResp := &deeppb.SnapshotByIDResponse{}
 			err = proto.Unmarshal(buff, traceResp)
 			if err != nil {
 				_ = level.Error(s.logger).Log("msg", "error unmarshalling response", "url", innerR.RequestURI, "err", err, "body", string(buff))
@@ -186,9 +186,9 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 		}, nil
 	}
 
-	buff, err := proto.Marshal(&tempopb.TraceByIDResponse{
-		Trace: nil,
-		Metrics: &tempopb.TraceByIDMetrics{
+	buff, err := proto.Marshal(&deeppb.SnapshotByIDResponse{
+		Snapshot: nil,
+		Metrics: &deeppb.SnapshotByIDMetrics{
 			FailedBlocks: totalFailedBlocks,
 		},
 	})

@@ -21,10 +21,9 @@ type MultiBlockIterator[T iteratable] struct {
 	combine   combineFn[T]
 }
 
-func newMultiblockIterator[T iteratable](bookmarks []*bookmark[T], combine combineFn[T]) *MultiBlockIterator[T] {
+func newMultiblockIterator[T iteratable](bookmarks []*bookmark[T]) *MultiBlockIterator[T] {
 	return &MultiBlockIterator[T]{
 		bookmarks: bookmarks,
-		combine:   combine,
 	}
 }
 
@@ -34,8 +33,8 @@ func (m *MultiBlockIterator[T]) Next(ctx context.Context) (common.ID, T, error) 
 	}
 
 	var (
-		lowestID        common.ID
-		lowestBookmarks []*bookmark[T]
+		lowestID       common.ID
+		lowestBookmark *bookmark[T]
 	)
 
 	// find lowest ID of the new object
@@ -50,41 +49,24 @@ func (m *MultiBlockIterator[T]) Next(ctx context.Context) (common.ID, T, error) 
 
 		comparison := bytes.Compare(id, lowestID)
 
-		if comparison == 0 {
-			lowestBookmarks = append(lowestBookmarks, b)
-		} else if len(lowestID) == 0 || comparison == -1 {
+		if len(lowestID) == 0 || comparison == -1 {
 			lowestID = id
-
-			// reset and reuse
-			lowestBookmarks = lowestBookmarks[:0]
-			lowestBookmarks = append(lowestBookmarks, b)
+			lowestBookmark = b
 		}
 	}
 
-	// now get the lowest objects from our bookmarks
-	lowestObjects := make([]T, 0, len(lowestBookmarks))
-	for _, b := range lowestBookmarks {
-		_, obj, err := b.current(ctx)
-		if err != nil && err != io.EOF {
-			return nil, nil, err
-		}
-		if obj == nil {
-			// this should never happen. id was non-nil above
-			return nil, nil, errors.New("unexpected nil object from lowest bookmark")
-		}
-		lowestObjects = append(lowestObjects, obj)
+	_, obj, err := lowestBookmark.current(ctx)
+	if err != nil && err != io.EOF {
+		return nil, nil, err
+	}
+	if obj == nil {
+		// this should never happen. id was non-nil above
+		return nil, nil, errors.New("unexpected nil object from lowest bookmark")
 	}
 
-	lowestObject, err := m.combine(lowestObjects)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "combining")
-	}
+	lowestBookmark.clear()
 
-	for _, b := range lowestBookmarks {
-		b.clear()
-	}
-
-	return lowestID, lowestObject, nil
+	return lowestID, obj, nil
 }
 
 func (m *MultiBlockIterator[T]) Close() {

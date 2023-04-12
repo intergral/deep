@@ -73,9 +73,7 @@ func TestMultiBlockIterator(t *testing.T) {
 			bookmarks = append(bookmarks, newBookmark[*uint8](iter))
 		}
 
-		mbi := newMultiblockIterator(bookmarks, func(i []*uint8) (*uint8, error) {
-			return i[0], nil
-		})
+		mbi := newMultiblockIterator(bookmarks)
 		defer mbi.Close()
 
 		ctx := context.Background()
