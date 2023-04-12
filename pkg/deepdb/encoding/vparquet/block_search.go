@@ -119,11 +119,7 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 			continue
 		}
 
-		if k == LabelRootServiceName || k == LabelRootSpanName {
-			traceIters = append(traceIters, makeIter(column, pq.NewSubstringPredicate(v), ""))
-		} else {
-			resourceIters = append(resourceIters, makeIter(column, pq.NewSubstringPredicate(v), ""))
-		}
+		resourceIters = append(resourceIters, makeIter(column, pq.NewSubstringPredicate(v), ""))
 	}
 
 	// Generic attribute conditions?
@@ -140,26 +136,27 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 			vals = append(vals, v)
 		}
 
-		keyPred := pq.NewStringInPredicate(keys)
-		valPred := pq.NewStringInPredicate(vals)
+		//keyPred := pq.NewStringInPredicate(keys)
+		//valPred := pq.NewStringInPredicate(vals)
 
 		// This iterator combines the results from the resource
 		// and span searches, and checks if all conditions were satisfied
 		// on each ResourceSpans.  This is a single-pass over the attribute columns.
-		j := pq.NewUnionIterator(DefinitionLevelResourceSpans, []pq.Iterator{
-			// This iterator finds all keys/values at the resource level
-			pq.NewJoinIterator(DefinitionLevelResourceAttrs, []pq.Iterator{
-				makeIter(FieldResourceAttrKey, keyPred, "keys"),
-				makeIter(FieldResourceAttrVal, valPred, "values"),
-			}, nil),
-			// This iterator finds all keys/values at the span level
-			pq.NewJoinIterator(DefinitionLevelResourceSpansILSSpanAttrs, []pq.Iterator{
-				makeIter(FieldAttrKey, keyPred, "keys"),
-				makeIter(FieldAttrVal, valPred, "values"),
-			}, nil),
-		}, pq.NewKeyValueGroupPredicate(keys, vals))
+		// todo this
+		//j := pq.NewUnionIterator(DefinitionLevelResourceSpans, []pq.Iterator{
+		//	// This iterator finds all keys/values at the resource level
+		//	pq.NewJoinIterator(DefinitionLevelResourceAttrs, []pq.Iterator{
+		//		makeIter(FieldResourceAttrKey, keyPred, "keys"),
+		//		makeIter(FieldResourceAttrVal, valPred, "values"),
+		//	}, nil),
+		//	// This iterator finds all keys/values at the span level
+		//	pq.NewJoinIterator(DefinitionLevelResourceSpansILSSpanAttrs, []pq.Iterator{
+		//		makeIter(FieldAttrKey, keyPred, "keys"),
+		//		makeIter(FieldAttrVal, valPred, "values"),
+		//	}, nil),
+		//}, pq.NewKeyValueGroupPredicate(keys, vals))
 
-		resourceIters = append(resourceIters, j)
+		//resourceIters = append(resourceIters, j)
 	}
 
 	// Multiple resource-level filters get joined and wrapped
@@ -168,7 +165,7 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 		traceIters = append(traceIters, resourceIters[0])
 	}
 	if len(resourceIters) > 1 {
-		traceIters = append(traceIters, pq.NewJoinIterator(DefinitionLevelTrace, resourceIters, nil))
+		traceIters = append(traceIters, pq.NewJoinIterator(DefinitionLevelSnapshot, resourceIters, nil))
 	}
 
 	// Duration filtering?
@@ -213,7 +210,7 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 
 	default:
 		// Join all conditions
-		return pq.NewJoinIterator(DefinitionLevelTrace, traceIters, nil)
+		return pq.NewJoinIterator(DefinitionLevelSnapshot, traceIters, nil)
 	}
 }
 
@@ -275,7 +272,7 @@ func rawToResults(ctx context.Context, pf *parquet.File, rgs []parquet.RowGroup,
 	makeIter := makeIterFunc(ctx, rgs, pf)
 
 	results := []*deeppb.SnapshotSearchMetadata{}
-	iter2 := pq.NewJoinIterator(DefinitionLevelTrace, []pq.Iterator{
+	iter2 := pq.NewJoinIterator(DefinitionLevelSnapshot, []pq.Iterator{
 		&rowNumberIterator{rowNumbers: rowNumbers},
 		makeIter("TraceID", nil, "TraceID"),
 		makeIter("RootServiceName", nil, "RootServiceName"),

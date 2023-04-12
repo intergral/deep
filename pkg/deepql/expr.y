@@ -247,7 +247,6 @@ static:
 
 intrinsicField:
     IDURATION      { $$ = NewIntrinsic(IntrinsicDuration)   }
-  | NAME           { $$ = NewIntrinsic(IntrinsicName)       }
   ;
 
 attributeField:

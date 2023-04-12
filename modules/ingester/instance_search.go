@@ -304,6 +304,22 @@ func (i *instance) SearchTagValues(ctx context.Context, tagName string) (*deeppb
 	}, nil
 }
 
+type ComparableTagValue struct {
+	Type  string
+	Value string
+}
+
+func (ctv ComparableTagValue) size() int {
+	return len(ctv.Type) + len(ctv.Value)
+}
+
+func (ctv ComparableTagValue) asTagValue() *deeppb.TagValue {
+	return &deeppb.TagValue{
+		Type:  ctv.Type,
+		Value: ctv.Value,
+	}
+}
+
 func (i *instance) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagValuesRequest) (*deeppb.SearchTagValuesV2Response, error) {
 	userID, err := user.ExtractOrgID(ctx)
 	if err != nil {
@@ -316,7 +332,7 @@ func (i *instance) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagV
 	}
 
 	limit := i.limiter.limits.MaxBytesPerTagValuesQuery(userID)
-	distinctValues := util.NewDistinctValueCollector[*deeppb.TagValue](limit, func(v *deeppb.TagValue) int { return len(v.Type) + len(v.Value) })
+	distinctValues := util.NewDistinctValueCollector[ComparableTagValue](limit, func(v ComparableTagValue) int { return v.size() })
 
 	cb := func(v deepql.Static) bool {
 		tv := deeppb.TagValue{}
@@ -343,10 +359,10 @@ func (i *instance) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagV
 			tv.Value = v.String()
 		}
 
-		return distinctValues.Collect(&tv)
+		return distinctValues.Collect(ComparableTagValue{Type: tv.Type, Value: tv.Value})
 	}
 
-	search := func(s common.Searcher, dv *util.DistinctValueCollector[*deeppb.TagValue]) error {
+	search := func(s common.Searcher, dv *util.DistinctValueCollector[ComparableTagValue]) error {
 		if s == nil || dv.Exceeded() {
 			return nil
 		}
@@ -387,7 +403,7 @@ func (i *instance) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagV
 
 	for _, v := range distinctValues.Values() {
 		v2 := v
-		resp.TagValues = append(resp.TagValues, v2)
+		resp.TagValues = append(resp.TagValues, v2.asTagValue())
 	}
 
 	return resp, nil

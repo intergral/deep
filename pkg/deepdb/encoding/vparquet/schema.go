@@ -12,9 +12,6 @@ import (
 
 // Label names for conversion b/n Proto <> Parquet
 const (
-	LabelRootSpanName    = "root.name"
-	LabelRootServiceName = "root.service.name"
-
 	LabelServiceName = "service.name"
 	LabelCluster     = "cluster"
 	LabelNamespace   = "namespace"
@@ -29,38 +26,36 @@ const (
 
 // These definition levels match the schema below
 const (
-	DefinitionLevelTrace                     = 0
-	DefinitionLevelResourceSpans             = 1
-	DefinitionLevelResourceAttrs             = 2
-	DefinitionLevelResourceSpansILSSpan      = 3
-	DefinitionLevelResourceSpansILSSpanAttrs = 4
+	DefinitionLevelSnapshot      = 0
+	DefinitionLevelResourceAttrs = 1
+	DefinitionLevelSnapshotAttrs = 1
 
-	FieldResourceAttrKey       = "rs.Resource.Attrs.Key"
-	FieldResourceAttrVal       = "rs.Resource.Attrs.Value"
-	FieldResourceAttrValInt    = "rs.Resource.Attrs.ValueInt"
-	FieldResourceAttrValDouble = "rs.Resource.Attrs.ValueDouble"
-	FieldResourceAttrValBool   = "rs.Resource.Attrs.ValueBool"
+	FieldResourceAttrKey       = "rs.Attrs.Key"
+	FieldResourceAttrVal       = "rs.Attrs.Value"
+	FieldResourceAttrValInt    = "rs.Attrs.ValueInt"
+	FieldResourceAttrValDouble = "rs.Attrs.ValueDouble"
+	FieldResourceAttrValBool   = "rs.Attrs.ValueBool"
 
-	FieldAttrKey       = "rs.Attributes.Key"
-	FieldAttrVal       = "rs.Attributes.Value"
-	FieldAttrValInt    = "rs.Attributes.ValueInt"
-	FieldAttrValDouble = "rs.Attributes.ValueDouble"
-	FieldAttrValBool   = "rs.Attributes.ValueBool"
+	FieldAttrKey       = "attr.Key"
+	FieldAttrVal       = "attr.Value"
+	FieldAttrValInt    = "attr.ValueInt"
+	FieldAttrValDouble = "attr.ValueDouble"
+	FieldAttrValBool   = "attr.ValueBool"
 )
 
 var (
 	jsonMarshaler = new(jsonpb.Marshaler)
 
 	labelMappings = map[string]string{
-		LabelServiceName:      "rs.Resource.ServiceName",
-		LabelCluster:          "rs.Resource.Cluster",
-		LabelNamespace:        "rs.Resource.Namespace",
-		LabelPod:              "rs.Resource.Pod",
-		LabelContainer:        "rs.Resource.Container",
-		LabelK8sClusterName:   "rs.Resource.K8sClusterName",
-		LabelK8sNamespaceName: "rs.Resource.K8sNamespaceName",
-		LabelK8sPodName:       "rs.Resource.K8sPodName",
-		LabelK8sContainerName: "rs.Resource.K8sContainerName",
+		LabelServiceName:      "rs.ServiceName",
+		LabelCluster:          "rs.Cluster",
+		LabelNamespace:        "rs.Namespace",
+		LabelPod:              "rs.Pod",
+		LabelContainer:        "rs.Container",
+		LabelK8sClusterName:   "rs.K8sClusterName",
+		LabelK8sNamespaceName: "rs.K8sNamespaceName",
+		LabelK8sPodName:       "rs.K8sPodName",
+		LabelK8sContainerName: "rs.K8sContainerName",
 	}
 )
 

@@ -45,7 +45,6 @@ type Intrinsic int
 const (
 	IntrinsicNone Intrinsic = iota
 	IntrinsicDuration
-	IntrinsicName
 )
 
 func (i Intrinsic) String() string {
@@ -54,8 +53,6 @@ func (i Intrinsic) String() string {
 		return "none"
 	case IntrinsicDuration:
 		return "duration"
-	case IntrinsicName:
-		return "name"
 	}
 
 	return fmt.Sprintf("intrinsic(%d)", i)
@@ -66,8 +63,6 @@ func intrinsicFromString(s string) Intrinsic {
 	switch s {
 	case "duration":
 		return IntrinsicDuration
-	case "name":
-		return IntrinsicName
 	}
 
 	return IntrinsicNone
@@ -101,8 +96,6 @@ func (a Attribute) impliedType() StaticType {
 	switch a.Intrinsic {
 	case IntrinsicDuration:
 		return TypeDuration
-	case IntrinsicName:
-		return TypeString
 	}
 
 	return TypeAttribute

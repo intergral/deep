@@ -27,10 +27,6 @@ var translateTagToAttribute = map[string]deepql.Attribute{
 	LabelK8sContainerName: deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelK8sContainerName),
 }
 
-var nondeepqlAttributes = map[string]string{
-	LabelRootServiceName: columnPathServiceName,
-}
-
 func (b *backendBlock) SearchTags(ctx context.Context, cb common.TagCallback, opts common.SearchOptions) error {
 	span, derivedCtx := opentracing.StartSpanFromContext(ctx, "parquet.backendBlock.SearchTags",
 		opentracing.Tags{
@@ -192,7 +188,7 @@ func (b *backendBlock) SearchTagValuesV2(ctx context.Context, tag deepql.Attribu
 }
 
 func searchTagValues(ctx context.Context, tag deepql.Attribute, cb common.TagCallbackV2, pf *parquet.File) error {
-	// Special handling for intrinsics
+	// Special handling for intrinsics - currently we only have a duration intrinsic which is not a tag so skip it
 	if tag.Intrinsic != deepql.IntrinsicNone {
 		//lookup := intrinsicColumnLookups[tag.Intrinsic]
 		//if lookup.columnPath != "" {
@@ -204,23 +200,14 @@ func searchTagValues(ctx context.Context, tag deepql.Attribute, cb common.TagCal
 		return nil
 	}
 
-	// Special handling for weird non-deepql things
-	if columnPath := nondeepqlAttributes[tag.Name]; columnPath != "" {
-		err := searchSpecialTagValues(ctx, columnPath, pf, cb)
-		if err != nil {
-			return fmt.Errorf("unexpected error searching special tags: %s %w", columnPath, err)
-		}
-		return nil
-	}
-
 	// Search dedicated attribute column if one exists and is a compatible scope.
-	//column := wellKnownColumnLookups[tag.Name]
-	//if column.columnPath != "" && (tag.Scope == column.level || tag.Scope == deepql.AttributeScopeNone) {
-	//	err := searchSpecialTagValues(ctx, column.columnPath, pf, cb)
-	//	if err != nil {
-	//		return fmt.Errorf("unexpected error searching special tags: %w", err)
-	//	}
-	//}
+	column := wellKnownColumnLookups[tag.Name]
+	if column.columnPath != "" && (tag.Scope == column.level || tag.Scope == deepql.AttributeScopeNone) {
+		err := searchSpecialTagValues(ctx, column.columnPath, pf, cb)
+		if err != nil {
+			return fmt.Errorf("unexpected error searching special tags: %w", err)
+		}
+	}
 
 	// Finally also search generic key/values
 	err := searchStandardTagValues(ctx, tag, pf, cb)
@@ -253,7 +240,7 @@ func searchStandardTagValues(ctx context.Context, tag deepql.Attribute, pf *parq
 	}
 
 	if tag.Scope == deepql.AttributeScopeNone || tag.Scope == deepql.AttributeScopeSnapshot {
-		err := searchKeyValues(DefinitionLevelResourceSpansILSSpanAttrs,
+		err := searchKeyValues(DefinitionLevelSnapshotAttrs,
 			FieldAttrKey,
 			FieldAttrVal,
 			FieldAttrValInt,
