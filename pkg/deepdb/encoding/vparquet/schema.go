@@ -97,9 +97,10 @@ type TracePointConfig struct {
 }
 
 type VariableID struct {
-	ID        string   `parquet:",snappy,dict"`
-	Name      string   `parquet:",snappy,dict"`
-	Modifiers []string `parquet:""`
+	ID           string   `parquet:",snappy,dict"`
+	Name         string   `parquet:",snappy,dict"`
+	OriginalName *string  `parquet:",snappy,optional"`
+	Modifiers    []string `parquet:""`
 }
 
 type Variable struct {
@@ -322,9 +323,10 @@ func convertChildren(children []*deep_tp.VariableID) []VariableID {
 
 func convertVariableId(child *deep_tp.VariableID) VariableID {
 	return VariableID{
-		ID:        child.ID,
-		Name:      child.Name,
-		Modifiers: child.Modifiers,
+		ID:           child.ID,
+		Name:         child.Name,
+		OriginalName: child.OriginalName,
+		Modifiers:    child.Modifiers,
 	}
 }
 
@@ -512,8 +514,9 @@ func parquetConvertChildren(children []VariableID) []*deep_tp.VariableID {
 
 func parquetConvertVariableID(child VariableID) *deep_tp.VariableID {
 	return &deep_tp.VariableID{
-		ID:        child.ID,
-		Name:      child.Name,
-		Modifiers: child.Modifiers,
+		ID:           child.ID,
+		Name:         child.Name,
+		OriginalName: child.OriginalName,
+		Modifiers:    child.Modifiers,
 	}
 }

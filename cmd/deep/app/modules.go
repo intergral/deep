@@ -212,7 +212,6 @@ func (t *App) initIngester() (services.Service, error) {
 	}
 	t.ingester = newIngester
 
-	// todo fix this
 	deeppb.RegisterIngesterServiceServer(t.Server.GRPC, t.ingester)
 	deeppb.RegisterQuerierServiceServer(t.Server.GRPC, t.ingester)
 	t.Server.HTTP.Path("/flush").Handler(http.HandlerFunc(t.ingester.FlushHandler))
