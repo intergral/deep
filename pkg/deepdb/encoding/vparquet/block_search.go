@@ -187,14 +187,8 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 		// Here's how we detect the trace overlaps the time window:
 
 		// Trace start <= req.End
-		startFilter := pq.NewIntBetweenPredicate(0, time.Unix(int64(req.End), 0).UnixNano())
-		traceIters = append(traceIters, makeIter("StartTimeUnixNano", startFilter, "StartTime"))
-
-		// Trace end >= req.Start, only if column exists
-		if pq.HasColumn(pf, "EndTimeUnixNano") {
-			endFilter := pq.NewIntBetweenPredicate(time.Unix(int64(req.Start), 0).UnixNano(), math.MaxInt64)
-			traceIters = append(traceIters, makeIter("EndTimeUnixNano", endFilter, ""))
-		}
+		startFilter := pq.NewIntBetweenPredicate(time.Unix(int64(req.Start), 0).UnixNano(), time.Unix(int64(req.End), 0).UnixNano())
+		traceIters = append(traceIters, makeIter("TsNanos", startFilter, "TsNanos"))
 	}
 
 	switch len(traceIters) {
@@ -202,7 +196,7 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 	case 0:
 		// Empty request, in this case every trace matches so we can
 		// simply iterate any column.
-		return makeIter("TraceID", nil, "")
+		return makeIter("ID", nil, "")
 
 	case 1:
 		// There is only 1 iterator already, no need to wrap it up
@@ -274,11 +268,12 @@ func rawToResults(ctx context.Context, pf *parquet.File, rgs []parquet.RowGroup,
 	results := []*deeppb.SnapshotSearchMetadata{}
 	iter2 := pq.NewJoinIterator(DefinitionLevelSnapshot, []pq.Iterator{
 		&rowNumberIterator{rowNumbers: rowNumbers},
-		makeIter("TraceID", nil, "TraceID"),
-		makeIter("RootServiceName", nil, "RootServiceName"),
-		makeIter("RootSpanName", nil, "RootSpanName"),
-		makeIter("StartTimeUnixNano", nil, "StartTimeUnixNano"),
+		makeIter("ID", nil, "ID"),
+		makeIter("rs.ServiceName", nil, "ServiceName"),
+		makeIter("TsNanos", nil, "TsNanos"),
 		makeIter("DurationNanos", nil, "DurationNanos"),
+		makeIter("tp.Path", nil, "FilePath"),
+		makeIter("tp.LineNumber", nil, "LineNo"),
 	}, nil)
 	defer iter2.Close()
 
@@ -293,12 +288,12 @@ func rawToResults(ctx context.Context, pf *parquet.File, rgs []parquet.RowGroup,
 
 		matchMap := match.ToMap()
 		result := &deeppb.SnapshotSearchMetadata{
-			SnapshotID:        util.TraceIDToHexString(matchMap["SnapshotID"][0].Bytes()),
+			SnapshotID:        util.TraceIDToHexString(matchMap["ID"][0].Bytes()),
 			ServiceName:       matchMap["ServiceName"][0].String(),
 			FilePath:          matchMap["FilePath"][0].String(),
 			LineNo:            matchMap["LineNo"][0].Uint32(),
-			StartTimeUnixNano: matchMap["StartTimeUnixNano"][0].Uint64(),
-			DurationNano:      matchMap["DurationNanos"][0].Uint32(),
+			StartTimeUnixNano: matchMap["TsNanos"][0].Uint64(),
+			DurationNano:      matchMap["DurationNanos"][0].Uint64(),
 		}
 		results = append(results, result)
 	}

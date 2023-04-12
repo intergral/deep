@@ -267,7 +267,7 @@ func (t *App) initQuerier() (services.Service, error) {
 	)
 
 	tracesHandler := middleware.Wrap(http.HandlerFunc(t.querier.SnapshotByIdHandler))
-	t.Server.HTTP.Handle(path.Join(api.PathPrefixQuerier, addHTTPAPIPrefix(&t.cfg, api.PathTraces)), tracesHandler)
+	t.Server.HTTP.Handle(path.Join(api.PathPrefixQuerier, addHTTPAPIPrefix(&t.cfg, api.PathSnapshots)), tracesHandler)
 
 	searchHandler := t.HTTPAuthMiddleware.Wrap(http.HandlerFunc(t.querier.SearchHandler))
 	t.Server.HTTP.Handle(path.Join(api.PathPrefixQuerier, addHTTPAPIPrefix(&t.cfg, api.PathSearch)), searchHandler)
@@ -305,14 +305,14 @@ func (t *App) initQueryFrontend() (services.Service, error) {
 		httpGzipMiddleware(),
 	)
 
-	traceByIDHandler := middleware.Wrap(queryFrontend.TraceByID)
+	traceByIDHandler := middleware.Wrap(queryFrontend.SnapshotByID)
 	searchHandler := middleware.Wrap(queryFrontend.Search)
 
 	// register grpc server for queriers to connect to
 	frontend_v1pb.RegisterFrontendServer(t.Server.GRPC, t.frontend)
 
 	// http trace by id endpoint
-	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathTraces), traceByIDHandler)
+	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathSnapshots), traceByIDHandler)
 
 	// http search endpoints
 	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathSearch), searchHandler)

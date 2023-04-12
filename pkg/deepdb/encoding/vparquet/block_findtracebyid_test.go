@@ -82,7 +82,7 @@ func TestBackendBlockFindTraceByID(t *testing.T) {
 
 		gotProto, err := b.FindSnapshotByID(ctx, snap.ID, common.DefaultSearchOptions())
 		require.NoError(t, err)
-		require.Equal(t, wantProto.Id, gotProto.Id)
+		require.Equal(t, wantProto.ID, gotProto.ID)
 		require.Equal(t, wantProto.Resource[0].Value.GetStringValue(), "s")
 		require.Equal(t, wantProto.Attributes[0].Value.GetStringValue(), "bar")
 	}

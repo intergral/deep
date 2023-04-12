@@ -5,6 +5,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	deep_util "github.com/intergral/deep/pkg/util"
+	"strconv"
 	"time"
 
 	"github.com/opentracing/opentracing-go"
@@ -82,7 +83,7 @@ func (p *Processor) aggregateMetrics(req *tp.Snapshot) {
 }
 
 func (p *Processor) aggregateMetricsForSpan(svcName string, snapshot *tp.Snapshot) {
-	latencySeconds := float64(snapshot.GetNanosDuration()) / float64(time.Second.Nanoseconds())
+	latencySeconds := float64(snapshot.GetDurationNanos()) / float64(time.Second.Nanoseconds())
 
 	labelValues := make([]string, 0, 4+len(p.Cfg.Dimensions))
 	// important: the order of labelValues must correspond to the order of labels / intrinsic dimensions
@@ -93,7 +94,7 @@ func (p *Processor) aggregateMetricsForSpan(svcName string, snapshot *tp.Snapsho
 		labelValues = append(labelValues, snapshot.GetTracepoint().GetPath())
 	}
 	if p.Cfg.IntrinsicDimensions.LineNo {
-		labelValues = append(labelValues, string(snapshot.GetTracepoint().LineNo))
+		labelValues = append(labelValues, strconv.Itoa(int(snapshot.GetTracepoint().LineNumber)))
 	}
 
 	for _, d := range p.Cfg.Dimensions {

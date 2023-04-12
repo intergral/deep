@@ -53,7 +53,7 @@ message SnapshotSearchMetadata {
   string filePath = 3;
   uint32 lineNo = 4;
   uint64 startTimeUnixNano = 5;
-  uint32 durationNano = 6;
+  uint64 durationNano = 6;
 }
 
 message SearchMetrics {

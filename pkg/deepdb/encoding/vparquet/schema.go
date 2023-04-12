@@ -89,11 +89,11 @@ type Resource struct {
 }
 
 type TracePointConfig struct {
-	ID      string            `parquet:",snappy,dict"`
-	Path    string            `parquet:",snappy,dict"`
-	LineNo  int32             `parquet:",delta"`
-	Args    map[string]string `parquet:""`
-	Watches []string          `parquet:""`
+	ID         string            `parquet:",snappy,dict"`
+	Path       string            `parquet:",snappy,dict"`
+	LineNumber uint32            `parquet:",delta"`
+	Args       map[string]string `parquet:""`
+	Watches    []string          `parquet:""`
 }
 
 type VariableID struct {
@@ -113,13 +113,13 @@ type Variable struct {
 type StackFrame struct {
 	FileName               string       `parquet:",snappy,dict"`
 	MethodName             string       `parquet:",snappy,dict"`
-	LineNumber             int32        `parquet:",delta"`
+	LineNumber             uint32       `parquet:",delta"`
 	ClassName              *string      `parquet:",snappy,optional,dict"`
 	IsAsync                bool         `parquet:""`
-	ColumnNumber           *int32       `parquet:",snappy,optional"`
+	ColumnNumber           *uint32      `parquet:",snappy,optional"`
 	TranspiledFileName     *string      `parquet:",snappy,optional,dict"`
-	TranspiledLineNumber   *int32       `parquet:",snappy,optional"`
-	TranspiledColumnNumber *int32       `parquet:",snappy,optional"`
+	TranspiledLineNumber   *uint32      `parquet:",snappy,optional"`
+	TranspiledColumnNumber *uint32      `parquet:",snappy,optional"`
 	Variables              []VariableID `parquet:""`
 	AppFrame               bool         `parquet:""`
 }
@@ -135,11 +135,11 @@ type Snapshot struct {
 	IDText        string              `parquet:",snappy"`
 	Tracepoint    TracePointConfig    `parquet:"tp"`
 	VarLookup     map[string]Variable `parquet:""`
-	Ts            int64               `parquet:",delta"`
+	TsNanos       uint64              `parquet:",delta"`
 	Frames        []StackFrame        `parquet:""`
 	Watches       []WatchResult       `parquet:""`
 	Attributes    []Attribute         `parquet:"attr"`
-	NanosDuration int64               `parquet:",delta"`
+	DurationNanos uint64              `parquet:",delta"`
 	Resource      Resource            `parquet:"rs"`
 }
 
@@ -182,7 +182,8 @@ func snapshotToParquet(id common.ID, snapshot *deep_tp.Snapshot, sp *Snapshot) *
 
 	sp.Tracepoint = convertTracepoint(snapshot.Tracepoint)
 	sp.VarLookup = convertLookup(snapshot.VarLookup)
-	sp.Ts = snapshot.Ts
+	sp.TsNanos = snapshot.TsNanos
+	sp.DurationNanos = snapshot.DurationNanos
 
 	sp.Frames = convertFrames(snapshot.Frames)
 	sp.Watches = convertWatches(snapshot.Watches)
@@ -329,11 +330,11 @@ func convertVariableId(child *deep_tp.VariableID) VariableID {
 
 func convertTracepoint(tracepoint *deep_tp.TracePointConfig) TracePointConfig {
 	return TracePointConfig{
-		ID:      tracepoint.ID,
-		Path:    tracepoint.Path,
-		LineNo:  tracepoint.LineNo,
-		Args:    tracepoint.Args,
-		Watches: tracepoint.Watches,
+		ID:         tracepoint.ID,
+		Path:       tracepoint.Path,
+		LineNumber: tracepoint.LineNumber,
+		Args:       tracepoint.Args,
+		Watches:    tracepoint.Watches,
 	}
 }
 
@@ -352,18 +353,18 @@ func parquetToDeepSnapshot(snap *Snapshot) *deep_tp.Snapshot {
 	return &deep_tp.Snapshot{
 		ID: snap.ID,
 		Tracepoint: &deep_tp.TracePointConfig{
-			ID:      snap.Tracepoint.ID,
-			Path:    snap.Tracepoint.Path,
-			LineNo:  snap.Tracepoint.LineNo,
-			Args:    snap.Tracepoint.Args,
-			Watches: snap.Tracepoint.Watches,
+			ID:         snap.Tracepoint.ID,
+			Path:       snap.Tracepoint.Path,
+			LineNumber: snap.Tracepoint.LineNumber,
+			Args:       snap.Tracepoint.Args,
+			Watches:    snap.Tracepoint.Watches,
 		},
 		VarLookup:     parquetConvertVariables(snap.VarLookup),
-		Ts:            snap.Ts,
+		TsNanos:       snap.TsNanos,
 		Frames:        parquetConvertFrames(snap.Frames),
 		Watches:       parquetConvertWatches(snap.Watches),
 		Attributes:    parquetConvertAttributes(snap.Attributes),
-		NanosDuration: snap.NanosDuration,
+		DurationNanos: snap.DurationNanos,
 		Resource:      parquetConvertResource(snap.Resource),
 	}
 }

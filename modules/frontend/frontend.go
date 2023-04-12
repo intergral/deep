@@ -27,14 +27,14 @@ import (
 )
 
 const (
-	traceByIDOp = "traces"
-	searchOp    = "search"
+	snapshotByIDOp = "snapshots"
+	searchOp       = "search"
 )
 
 type QueryFrontend struct {
-	TraceByID, Search http.Handler
-	logger            log.Logger
-	store             storage.Store
+	SnapshotByID, Search http.Handler
+	logger               log.Logger
+	store                storage.Store
 }
 
 // New returns a new QueryFrontend
@@ -65,20 +65,19 @@ func New(cfg Config, next http.RoundTripper, o *overrides.Overrides, store stora
 
 	retryWare := newRetryWare(cfg.MaxRetries, registerer)
 
-	// tracebyid middleware
 	traceByIDMiddleware := MergeMiddlewares(newTraceByIDMiddleware(cfg, logger), retryWare)
 	searchMiddleware := MergeMiddlewares(newSearchMiddleware(cfg, o, store, logger), retryWare)
 
-	traceByIDCounter := queriesPerTenant.MustCurryWith(prometheus.Labels{"op": traceByIDOp})
+	snapshotByIDCounter := queriesPerTenant.MustCurryWith(prometheus.Labels{"op": snapshotByIDOp})
 	searchCounter := queriesPerTenant.MustCurryWith(prometheus.Labels{"op": searchOp})
 
-	traces := traceByIDMiddleware.Wrap(next)
+	snapshots := traceByIDMiddleware.Wrap(next)
 	search := searchMiddleware.Wrap(next)
 	return &QueryFrontend{
-		TraceByID: newHandler(traces, traceByIDCounter, logger),
-		Search:    newHandler(search, searchCounter, logger),
-		logger:    logger,
-		store:     store,
+		SnapshotByID: newHandler(snapshots, snapshotByIDCounter, logger),
+		Search:       newHandler(search, searchCounter, logger),
+		logger:       logger,
+		store:        store,
 	}, nil
 }
 
@@ -97,7 +96,7 @@ func newTraceByIDMiddleware(cfg Config, logger log.Logger) Middleware {
 
 		return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
 			// validate traceID
-			_, err := api.ParseTraceID(r)
+			_, err := api.ParseSnapshotID(r)
 			if err != nil {
 				return &http.Response{
 					StatusCode: http.StatusBadRequest,

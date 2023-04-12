@@ -266,7 +266,7 @@ func (i *instance) preprocessSpans(req *deeppb.PushSnapshotRequest) {
 	spanCount := 0
 	expiredSpanCount := 0
 	timeNow := time.Now()
-	if req.Snapshot.Ts >= timeNow.Add(-i.cfg.MetricsIngestionSlack).UnixMilli() && req.Snapshot.Ts <= timeNow.Add(i.cfg.MetricsIngestionSlack).UnixMilli() {
+	if int64(req.Snapshot.TsNanos) >= timeNow.Add(-i.cfg.MetricsIngestionSlack).UnixNano() && int64(req.Snapshot.TsNanos) <= timeNow.Add(i.cfg.MetricsIngestionSlack).UnixNano() {
 		spanCount++
 	} else {
 		expiredSpanCount++

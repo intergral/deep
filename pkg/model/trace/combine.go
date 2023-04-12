@@ -40,6 +40,7 @@ type Combiner struct {
 	result   *deep_tp.Snapshot
 	spans    map[token]struct{}
 	combined bool
+	called   int
 }
 
 func NewCombiner() *Combiner {
@@ -57,6 +58,7 @@ func (c *Combiner) ConsumeWithFinal(tr *deep_tp.Snapshot, final bool) (spanCount
 	c.result = tr
 
 	c.combined = true
+	c.called++
 	return
 }
 

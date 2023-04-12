@@ -40,7 +40,7 @@ type SnapshotResult struct {
 	FilePath           string
 	LineNo             uint32
 	StartTimeUnixNanos uint64
-	DurationNanos      uint32
+	DurationNanos      uint64
 }
 
 func (s *SnapshotResult) clone() *SnapshotResult {

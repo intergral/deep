@@ -143,10 +143,10 @@ func (d *Distributor) Poll(ctx context.Context, pollRequest *pb.PollRequest) (*p
 	}
 
 	return &pb.PollResponse{
-		Ts:          time.Now().UnixMilli(),
+		TsNanos:     uint64(time.Now().UnixNano()),
 		CurrentHash: "123",
 		Response: []*tp.TracePointConfig{{
-			ID: "17", Path: "/simple-app/simple_test.py", LineNo: 31,
+			ID: "17", Path: "/simple-app/simple_test.py", LineNumber: 31,
 			Args:    map[string]string{"some": "thing", "fire_count": "-1", "fire_period": "10000"},
 			Watches: []string{"len(uuid)", "uuid", "self.char_counter"},
 		}},
@@ -381,12 +381,12 @@ func logSnapshotWithAllAttributes(snapshot *deeppb_tp.Snapshot, logger log.Logge
 			deep_util.StringifyAnyValue(a.GetValue()))
 	}
 
-	latencySeconds := float64(snapshot.GetNanosDuration()) / float64(time.Second.Nanoseconds())
+	latencySeconds := float64(snapshot.GetDurationNanos()) / float64(time.Second.Nanoseconds())
 
 	logger = log.With(
 		logger,
 		"path", snapshot.GetTracepoint().GetPath(),
-		"line_no", snapshot.GetTracepoint().GetLineNo(),
+		"line_no", snapshot.GetTracepoint().GetLineNumber(),
 		"span_duration_seconds", latencySeconds,
 	)
 
@@ -431,7 +431,7 @@ func (*Distributor) Check(_ context.Context, _ *grpc_health_v1.HealthCheckReques
 
 func (d *Distributor) sendToIngester(ctx context.Context, userID string, keys []uint32, snapshot *deeppb_tp.Snapshot) error {
 	// Marshal to bytes once
-	bytes, err := d.snapshotEncoder.PrepareForWrite(snapshot, uint32(snapshot.Ts))
+	bytes, err := d.snapshotEncoder.PrepareForWrite(snapshot, uint32(snapshot.TsNanos))
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal PushRequest")
 	}

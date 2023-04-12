@@ -56,13 +56,13 @@ func (cmd *listObjectsCmd) Run(ctx *globalOptions) error {
 	rows, err := parquet.Read[vparquet.Snapshot](pf, int64(meta.Size))
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"IDText", "Ts", "Path", "LineNo", "Resources", "Attributes"})
+	table.SetHeader([]string{"IDText", "Ts", "Duration", "Path", "LineNo", "Resources", "Attributes"})
 
 	for _, row := range rows {
 		recourseAsJson, _ := json.Marshal(row.Resource)
 		attributesAsJson, _ := json.Marshal(row.Attributes)
 		unix := time.UnixMilli(row.Ts)
-		table.Append([]string{row.IDText, unix.String(), row.Tracepoint.Path, strconv.Itoa(int(row.Tracepoint.LineNo)), string(recourseAsJson), string(attributesAsJson)})
+		table.Append([]string{row.IDText, unix.String(), strconv.Itoa(int(row.NanosDuration)), row.Tracepoint.Path, strconv.Itoa(int(row.Tracepoint.LineNo)), string(recourseAsJson), string(attributesAsJson)})
 	}
 
 	table.Render()

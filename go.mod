@@ -16,7 +16,7 @@ require (
 	github.com/cristalhq/hedgedhttp v0.7.0
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/drone/envsubst v1.0.3
-	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/dustin/go-humanize v1.0.0
 	github.com/facette/natsort v0.0.0-20181210072756-2cd4dd1e2dcb
 	github.com/go-kit/log v0.2.1
 	github.com/go-logfmt/logfmt v0.5.1
@@ -35,7 +35,7 @@ require (
 	github.com/klauspost/compress v1.15.9
 	github.com/minio/minio-go/v7 v7.0.23
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
-	github.com/olekukonko/tablewriter v0.0.5 // indirect
+	github.com/olekukonko/tablewriter v0.0.5
 	github.com/opentracing-contrib/go-grpc v0.0.0-20210225150812-73cb765af46e // indirect
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
@@ -82,7 +82,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/googleapis/gax-go/v2 v2.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
-	github.com/intergral/go-deep-proto v0.0.8
+	github.com/intergral/go-deep-proto v0.0.11
 	golang.org/x/exp v0.0.0-20221002003631-540bb7301a08
 )
 

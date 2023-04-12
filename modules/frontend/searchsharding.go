@@ -46,7 +46,7 @@ var (
 		Help:      "Total Queries within SLO per tenant",
 	}, []string{"tenant", "op"})
 
-	sloTraceByIDCounter = sloQueriesPerTenant.MustCurryWith(prometheus.Labels{"op": traceByIDOp})
+	sloTraceByIDCounter = sloQueriesPerTenant.MustCurryWith(prometheus.Labels{"op": snapshotByIDOp})
 	sloSearchCounter    = sloQueriesPerTenant.MustCurryWith(prometheus.Labels{"op": searchOp})
 )
 

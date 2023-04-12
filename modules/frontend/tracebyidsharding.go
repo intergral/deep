@@ -6,7 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	"github.com/intergral/deep/pkg/model/snapshot"
 	"io"
 	"net/http"
 	"strings"
@@ -19,7 +19,6 @@ import (
 	"github.com/intergral/deep/modules/querier"
 	"github.com/intergral/deep/pkg/api"
 	"github.com/intergral/deep/pkg/deeppb"
-	"github.com/intergral/deep/pkg/model/trace"
 	"github.com/opentracing/opentracing-go"
 	"github.com/weaveworks/common/user"
 )
@@ -80,15 +79,19 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 
 	var overallError error
 	var totalFailedBlocks uint32
-	combiner := trace.NewCombiner()
-	combiner.Consume(&deep_tp.Snapshot{}) // The query path returns a non-nil result even if no inputs (which is different than other paths which return nil for no inputs)
+	handler := snapshot.NewResultHandler()
 	statusCode := http.StatusNotFound
-	statusMsg := "trace not found"
+	statusMsg := "snapshot not found"
+
+	//todo: We want the first result from below, i think there is a better way to do this
 
 	for _, req := range reqs {
 		wg.Add(1)
 		go func(innerR *http.Request) {
 			defer wg.Done()
+			if handler.IsComplete() {
+				return
+			}
 
 			resp, err := s.next.RoundTrip(innerR)
 
@@ -98,7 +101,7 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 				overallError = err
 			}
 
-			if shouldQuit(r.Context(), statusCode, overallError) {
+			if handler.IsComplete() || shouldQuit(r.Context(), statusCode, overallError) {
 				return
 			}
 
@@ -132,16 +135,16 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 			// marshal into a trace to combine.
 			// todo: better define responsibilities between middleware. the parent middleware in frontend.go actually sets the header
 			//  which forces the body here to be a proto encoded tempopb.Trace{}
-			traceResp := &deeppb.SnapshotByIDResponse{}
-			err = proto.Unmarshal(buff, traceResp)
+			snapshotResponse := &deeppb.SnapshotByIDResponse{}
+			err = proto.Unmarshal(buff, snapshotResponse)
 			if err != nil {
 				_ = level.Error(s.logger).Log("msg", "error unmarshalling response", "url", innerR.RequestURI, "err", err, "body", string(buff))
 				overallError = err
 				return
 			}
 
-			if traceResp.Metrics != nil {
-				totalFailedBlocks += traceResp.Metrics.FailedBlocks
+			if snapshotResponse.Metrics != nil {
+				totalFailedBlocks += snapshotResponse.Metrics.FailedBlocks
 				if totalFailedBlocks > s.maxFailedBlocks {
 					overallError = fmt.Errorf("too many failed block queries %d (max %d)", totalFailedBlocks, s.maxFailedBlocks)
 					return
@@ -155,7 +158,11 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 
 			// happy path
 			statusCode = http.StatusOK
-			combiner.Consume(nil)
+			err = handler.Complete(snapshotResponse.Snapshot)
+			if err != nil {
+				overallError = fmt.Errorf("too many results found")
+				return
+			}
 		}(req)
 	}
 	wg.Wait()
@@ -170,8 +177,8 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 		_ = level.Warn(s.logger).Log("msg", "some blocks failed. returning success due to tolerate_failed_blocks", "failed", totalFailedBlocks, "tolerate_failed_blocks", s.maxFailedBlocks)
 	}
 
-	overallTrace, _ := combiner.Result()
-	if overallTrace == nil || statusCode != http.StatusOK {
+	foundSnapshot := handler.Result()
+	if foundSnapshot == nil || statusCode != http.StatusOK {
 		// translate non-404s into 500s. if, for instance, we get a 400 back from an internal component
 		// it means that we created a bad request. 400 should not be propagated back to the user b/c
 		// the bad request was due to a bug on our side, so return 500 instead.
@@ -187,7 +194,7 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 	}
 
 	buff, err := proto.Marshal(&deeppb.SnapshotByIDResponse{
-		Snapshot: nil,
+		Snapshot: foundSnapshot,
 		Metrics: &deeppb.SnapshotByIDMetrics{
 			FailedBlocks: totalFailedBlocks,
 		},
