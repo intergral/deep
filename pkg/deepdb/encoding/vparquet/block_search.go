@@ -136,27 +136,26 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 			vals = append(vals, v)
 		}
 
-		//keyPred := pq.NewStringInPredicate(keys)
-		//valPred := pq.NewStringInPredicate(vals)
+		keyPred := pq.NewStringInPredicate(keys)
+		valPred := pq.NewStringInPredicate(vals)
 
 		// This iterator combines the results from the resource
 		// and span searches, and checks if all conditions were satisfied
 		// on each ResourceSpans.  This is a single-pass over the attribute columns.
-		// todo this
-		//j := pq.NewUnionIterator(DefinitionLevelResourceSpans, []pq.Iterator{
-		//	// This iterator finds all keys/values at the resource level
-		//	pq.NewJoinIterator(DefinitionLevelResourceAttrs, []pq.Iterator{
-		//		makeIter(FieldResourceAttrKey, keyPred, "keys"),
-		//		makeIter(FieldResourceAttrVal, valPred, "values"),
-		//	}, nil),
-		//	// This iterator finds all keys/values at the span level
-		//	pq.NewJoinIterator(DefinitionLevelResourceSpansILSSpanAttrs, []pq.Iterator{
-		//		makeIter(FieldAttrKey, keyPred, "keys"),
-		//		makeIter(FieldAttrVal, valPred, "values"),
-		//	}, nil),
-		//}, pq.NewKeyValueGroupPredicate(keys, vals))
+		j := pq.NewUnionIterator(DefinitionLevelSnapshot, []pq.Iterator{
+			//	// This iterator finds all keys/values at the resource level
+			pq.NewJoinIterator(DefinitionLevelResourceAttrs, []pq.Iterator{
+				makeIter(FieldResourceAttrKey, keyPred, "keys"),
+				makeIter(FieldResourceAttrVal, valPred, "values"),
+			}, nil),
+			//	// This iterator finds all keys/values at the snapshot level
+			pq.NewJoinIterator(DefinitionLevelSnapshotAttrs, []pq.Iterator{
+				makeIter(FieldAttrKey, keyPred, "keys"),
+				makeIter(FieldAttrVal, valPred, "values"),
+			}, nil),
+		}, pq.NewKeyValueGroupPredicate(keys, vals))
 
-		//resourceIters = append(resourceIters, j)
+		resourceIters = append(resourceIters, j)
 	}
 
 	// Multiple resource-level filters get joined and wrapped
