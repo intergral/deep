@@ -19,7 +19,7 @@ datasources:
   orgId: 1
   url: http://tempo:3200
   basicAuth: false
-  isDefault: true
+  isDefault: false
   version: 1
   editable: false
   apiVersion: 1
@@ -28,19 +28,14 @@ datasources:
     httpMethod: GET
     serviceMap:
       datasourceUid: prometheus
-
-#- name: Deep
-#  type: deep
-#  access: proxy
-#  orgId: 1
-#  url: http://deep:43315
-#  basicAuth: false
-#  isDefault: true
-#  version: 1
-#  editable: false
-#  apiVersion: 1
-#  uid: deep
-#  jsonData:
-#    httpMethod: GET
-#    serviceMap:
-#      datasourceUid: prometheus
+- name: Deep
+  type: intergral-deep-datasource
+  access: proxy
+  orgId: 1
+  url: http://deep:3300
+  basicAuth: false
+  isDefault: true
+  version: 1
+  editable: false
+  apiVersion: 1
+  uid: deep
