@@ -35,6 +35,10 @@ type globalOptions struct {
 	ConfigFile string `type:"path" short:"c" help:"Path to tempo config file"`
 }
 
+type frontendOptions struct {
+	Endpoint string `help:"The url to send data to" default:"localhost:43315"`
+}
+
 type backendOptions struct {
 	Backend string `help:"backend to connect to (s3/gcs/local/azure), optional, overrides backend in config file" enum:",s3,gcs,local,azure"`
 	Bucket  string `help:"bucket (or path on local backend) to scan, optional, overrides bucket in config file"`
@@ -52,6 +56,10 @@ var cli struct {
 		Column  listColumnCmd  `cmd:"" help:"List values in a given column"`
 		Objects listObjectsCmd `cmd:"" help:"List values in a block"`
 	} `cmd:""`
+
+	Generate struct {
+		Snapshot generateSnapshotCmd `cmd:"snapshot" aliases:"snap" help:"Can generate a snapshot and send to configured endpoint"`
+	} `cmd:"generate" aliases:"gen"`
 }
 
 func main() {
