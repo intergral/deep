@@ -262,11 +262,18 @@ func convertWatches(watches []*deep_tp.WatchResult) []WatchResult {
 }
 
 func convertWatch(watch *deep_tp.WatchResult) WatchResult {
-	variableId := convertVariableId(watch.GetGoodResult())
+	goodResult := watch.GetGoodResult()
+	if goodResult != nil {
+		variableId := convertVariableId(goodResult)
+		return WatchResult{
+			Expression: watch.Expression,
+			GoodResult: &variableId,
+		}
+	}
+
 	result := watch.GetErrorResult()
 	return WatchResult{
 		Expression:  watch.Expression,
-		GoodResult:  &variableId,
 		ErrorResult: &result,
 	}
 }
@@ -280,18 +287,26 @@ func convertFrames(frames []*deep_tp.StackFrame) []StackFrame {
 }
 
 func convertFrame(frame *deep_tp.StackFrame) StackFrame {
+	var isAsync = false
+	if frame.IsAsync != nil {
+		isAsync = *frame.IsAsync
+	}
+	var appFrame = false
+	if frame.AppFrame != nil {
+		appFrame = *frame.AppFrame
+	}
 	return StackFrame{
 		FileName:               frame.FileName,
 		MethodName:             frame.MethodName,
 		LineNumber:             frame.LineNumber,
 		ClassName:              frame.ClassName,
-		IsAsync:                *frame.IsAsync,
+		IsAsync:                isAsync,
 		ColumnNumber:           frame.ColumnNumber,
 		TranspiledFileName:     frame.TranspiledFileName,
 		TranspiledLineNumber:   frame.TranspiledLineNumber,
 		TranspiledColumnNumber: frame.TranspiledColumnNumber,
 		Variables:              convertChildren(frame.Variables),
-		AppFrame:               *frame.AppFrame,
+		AppFrame:               appFrame,
 	}
 }
 
@@ -304,12 +319,16 @@ func convertLookup(lookup map[string]*deep_tp.Variable) map[string]Variable {
 }
 
 func convertVariable(variable *deep_tp.Variable) Variable {
+	var truncated = false
+	if variable.Truncated != nil {
+		truncated = *variable.Truncated
+	}
 	return Variable{
 		Type:      variable.Type,
 		Value:     variable.Value,
 		Hash:      variable.Hash,
 		Children:  convertChildren(variable.Children),
-		Truncated: *variable.Truncated,
+		Truncated: truncated,
 	}
 }
 
@@ -471,18 +490,27 @@ func parquetConvertFrames(frames []StackFrame) []*deep_tp.StackFrame {
 }
 
 func parquetConvertFrame(frame StackFrame) *deep_tp.StackFrame {
+	trueBool := true
+	var isAsync *bool = nil
+	if frame.IsAsync {
+		isAsync = &trueBool
+	}
+	var appFrame *bool = nil
+	if frame.AppFrame {
+		appFrame = &trueBool
+	}
 	return &deep_tp.StackFrame{
 		FileName:               frame.FileName,
 		MethodName:             frame.MethodName,
 		LineNumber:             frame.LineNumber,
 		ClassName:              frame.ClassName,
-		IsAsync:                &frame.IsAsync,
+		IsAsync:                isAsync,
 		ColumnNumber:           frame.ColumnNumber,
 		TranspiledFileName:     frame.TranspiledFileName,
 		TranspiledLineNumber:   frame.TranspiledLineNumber,
 		TranspiledColumnNumber: frame.TranspiledColumnNumber,
 		Variables:              parquetConvertChildren(frame.Variables),
-		AppFrame:               &frame.AppFrame,
+		AppFrame:               appFrame,
 	}
 }
 
@@ -495,12 +523,17 @@ func parquetConvertVariables(lookup map[string]Variable) map[string]*deep_tp.Var
 }
 
 func parquetConvertVariable(variable Variable) *deep_tp.Variable {
+	var truncated *bool = nil
+	if variable.Truncated {
+		trueBool := true
+		truncated = &trueBool
+	}
 	return &deep_tp.Variable{
 		Type:      variable.Type,
 		Value:     variable.Value,
 		Hash:      variable.Hash,
 		Children:  parquetConvertChildren(variable.Children),
-		Truncated: &variable.Truncated,
+		Truncated: truncated,
 	}
 }
 
