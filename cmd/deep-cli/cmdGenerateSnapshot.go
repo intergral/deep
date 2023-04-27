@@ -25,29 +25,31 @@ import (
 	deep_common "github.com/intergral/go-deep-proto/common/v1"
 	deep "github.com/intergral/go-deep-proto/tracepoint/v1"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"reflect"
 	"strconv"
 	"time"
 )
 
 type generateSnapshotCmd struct {
-	frontendOptions
+	GRCPClient
 
-	Test       bool `help:"Create a known set of test snapshots" default:"False"`
-	Count      int  `help:"The number snapshots to generate" default:"1"`
-	connection *grpc.ClientConn
+	Test  bool `help:"Create a known set of test snapshots" default:"False"`
+	Count int  `help:"The number snapshots to generate" default:"1"`
 
 	vars []*deep.Variable
 }
 
 type generateOptions struct {
 	attrs           map[string]string
+	resource        map[string]string
+	allResource     bool
 	allAttrs        bool
 	allVarTypes     bool
 	asyncFrame      bool
 	transpiledFrame bool
 	columnFrame     bool
+	noVars          bool
+	serviceName     string
 }
 
 func (cmd *generateSnapshotCmd) Run(opts *globalOptions) error {
@@ -55,9 +57,12 @@ func (cmd *generateSnapshotCmd) Run(opts *globalOptions) error {
 		return cmd.generateTestSnapshots()
 	}
 	client := cmd.connectGrpc()
+	defer func(connection *grpc.ClientConn) {
+		_ = connection.Close()
+	}(cmd.connection)
+
 	for i := 0; i < cmd.Count; i++ {
 		snap := cmd.generateSnapshot(i, generateOptions{attrs: map[string]string{"test_id": "good_snap"}})
-		snap = cmd.closeSnap(snap)
 		fmt.Printf("%+v\n", snap)
 		_, _ = client.Send(context.TODO(), snap)
 	}
@@ -66,7 +71,7 @@ func (cmd *generateSnapshotCmd) Run(opts *globalOptions) error {
 
 func (cmd *generateSnapshotCmd) generateSnapshot(index int, options generateOptions) *deep.Snapshot {
 	point := cmd.generateTracePoint(index)
-	return &deep.Snapshot{
+	snap := &deep.Snapshot{
 		ID:            makeSnapshotID(),
 		Tracepoint:    point,
 		VarLookup:     nil,
@@ -75,8 +80,13 @@ func (cmd *generateSnapshotCmd) generateSnapshot(index int, options generateOpti
 		Watches:       cmd.generateWatchResults(),
 		Attributes:    cmd.generateAttributes(point, options),
 		DurationNanos: 1010101,
-		Resource:      cmd.generateResource(),
+		Resource:      cmd.generateResource(options),
 	}
+	if !options.noVars {
+		snap.VarLookup = cmd.generateVarLookup()
+	}
+	cmd.vars = make([]*deep.Variable, 0)
+	return snap
 }
 
 func (cmd *generateSnapshotCmd) generateTracePoint(index int) *deep.TracePointConfig {
@@ -217,15 +227,85 @@ func (cmd *generateSnapshotCmd) generateFrames(index int, options generateOption
 	return frames
 }
 
-func (cmd *generateSnapshotCmd) generateResource() []*deep_common.KeyValue {
-	return []*deep_common.KeyValue{
+func (cmd *generateSnapshotCmd) generateResource(options generateOptions) []*deep_common.KeyValue {
+	var serviceName = "deep-cli"
+	if options.serviceName != "" {
+		serviceName = options.serviceName
+	}
+
+	values := []*deep_common.KeyValue{
 		{
 			Key: "service.name",
 			Value: &deep_common.AnyValue{Value: &deep_common.AnyValue_StringValue{
-				StringValue: "deep-cli",
+				StringValue: serviceName,
 			}},
 		},
 	}
+
+	if options.allResource {
+		allTypes := []*deep_common.KeyValue{
+			{
+				Key:   "str_type",
+				Value: &deep_common.AnyValue{Value: &deep_common.AnyValue_StringValue{StringValue: "StringValue"}},
+			},
+			{
+				Key:   "int_type",
+				Value: &deep_common.AnyValue{Value: &deep_common.AnyValue_IntValue{IntValue: 101}},
+			},
+			{
+				Key:   "double_type",
+				Value: &deep_common.AnyValue{Value: &deep_common.AnyValue_DoubleValue{DoubleValue: 3.14}},
+			},
+			{
+				Key:   "bool_type",
+				Value: &deep_common.AnyValue{Value: &deep_common.AnyValue_BoolValue{BoolValue: false}},
+			},
+			{
+				Key: "arr_type",
+				Value: &deep_common.AnyValue{Value: &deep_common.AnyValue_ArrayValue{ArrayValue: &deep_common.ArrayValue{
+					Values: []*deep_common.AnyValue{
+						{Value: &deep_common.AnyValue_StringValue{StringValue: "StringValue"}},
+						{Value: &deep_common.AnyValue_IntValue{IntValue: 101}},
+						{Value: &deep_common.AnyValue_DoubleValue{DoubleValue: 3.14}},
+						{Value: &deep_common.AnyValue_BoolValue{BoolValue: false}},
+						{Value: &deep_common.AnyValue_BytesValue{BytesValue: []byte("some bytes")}},
+					},
+				}}},
+			},
+			{
+				Key: "kv_type",
+				Value: &deep_common.AnyValue{Value: &deep_common.AnyValue_KvlistValue{KvlistValue: &deep_common.KeyValueList{Values: []*deep_common.KeyValue{
+					{
+						Key:   "str_type",
+						Value: &deep_common.AnyValue{Value: &deep_common.AnyValue_StringValue{StringValue: "StringValue"}},
+					},
+					{
+						Key:   "int_type",
+						Value: &deep_common.AnyValue{Value: &deep_common.AnyValue_IntValue{IntValue: 101}},
+					},
+					{
+						Key:   "double_type",
+						Value: &deep_common.AnyValue{Value: &deep_common.AnyValue_DoubleValue{DoubleValue: 3.14}},
+					},
+					{
+						Key:   "bool_type",
+						Value: &deep_common.AnyValue{Value: &deep_common.AnyValue_BoolValue{BoolValue: false}},
+					},
+				}}}},
+			},
+		}
+		values = append(values, allTypes...)
+	}
+
+	if options.resource != nil {
+		for k, v := range options.resource {
+			values = append(values, &deep_common.KeyValue{
+				Key:   k,
+				Value: &deep_common.AnyValue{Value: &deep_common.AnyValue_StringValue{StringValue: v}},
+			})
+		}
+	}
+	return values
 }
 
 func (cmd *generateSnapshotCmd) generateAttributes(tp *deep.TracePointConfig, options generateOptions) []*deep_common.KeyValue {
@@ -311,18 +391,6 @@ func (cmd *generateSnapshotCmd) generateAttributes(tp *deep.TracePointConfig, op
 	return keyValues
 }
 
-func (cmd *generateSnapshotCmd) connectGrpc() deep.SnapshotServiceClient {
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	dial, err := grpc.Dial(cmd.Endpoint, opts...)
-	if err != nil {
-		panic(err)
-	}
-	cmd.connection = dial
-
-	return deep.NewSnapshotServiceClient(dial)
-}
-
 func (cmd *generateSnapshotCmd) generateWatchResults() []*deep.WatchResult {
 	return []*deep.WatchResult{
 		{
@@ -371,12 +439,6 @@ func (cmd *generateSnapshotCmd) makeSimpleVariable(name string, value interface{
 	return cmd.makeVariableWithType(name, valStr, typeOf.Name(), []string{}, false)
 }
 
-func (cmd *generateSnapshotCmd) closeSnap(snap *deep.Snapshot) *deep.Snapshot {
-	snap.VarLookup = cmd.generateVarLookup()
-	cmd.vars = make([]*deep.Variable, 0)
-	return snap
-}
-
 func (cmd *generateSnapshotCmd) generateVarLookup() map[string]*deep.Variable {
 	var varLookup = make(map[string]*deep.Variable, len(cmd.vars))
 
@@ -390,29 +452,32 @@ func (cmd *generateSnapshotCmd) generateVarLookup() map[string]*deep.Variable {
 func (cmd *generateSnapshotCmd) generateTestSnapshots() error {
 
 	client := cmd.connectGrpc()
+	defer func(connection *grpc.ClientConn) {
+		_ = connection.Close()
+	}(cmd.connection)
+
 	// Create snapshot with no var lookup
-	snapshotNoVars := cmd.generateSnapshot(0, generateOptions{attrs: map[string]string{"test_id": "no_vars"}})
-	cmd.vars = make([]*deep.Variable, 0)
+	snapshotNoVars := cmd.generateSnapshot(0, generateOptions{attrs: map[string]string{"test_id": "no_vars"}, noVars: true})
 	_, _ = client.Send(context.TODO(), snapshotNoVars)
 
 	// create good snapshot
 	snapshot := cmd.generateSnapshot(0, generateOptions{attrs: map[string]string{"test_id": "good_snap"}})
-	snapshot = cmd.closeSnap(snapshot)
 	_, _ = client.Send(context.TODO(), snapshot)
+
+	// create resource snapshot
+	resourceSnap := cmd.generateSnapshot(0, generateOptions{attrs: map[string]string{"test_id": "resource_snap"}, allResource: true})
+	_, _ = client.Send(context.TODO(), resourceSnap)
 
 	// create var test snap
 	varTest := cmd.generateSnapshot(0, generateOptions{attrs: map[string]string{"test_id": "var_test"}, allVarTypes: true})
-	varTest = cmd.closeSnap(varTest)
 	_, _ = client.Send(context.TODO(), varTest)
 
 	// create frame test snap
 	frameTest := cmd.generateSnapshot(0, generateOptions{attrs: map[string]string{"test_id": "frame_test"}, asyncFrame: true, columnFrame: true, transpiledFrame: true})
-	frameTest = cmd.closeSnap(frameTest)
 	_, _ = client.Send(context.TODO(), frameTest)
 
 	// create all tags snapshot
 	tagsSnapshot := cmd.generateSnapshot(0, generateOptions{attrs: map[string]string{"test_id": "all_tags"}, allAttrs: true})
-	tagsSnapshot = cmd.closeSnap(tagsSnapshot)
 	_, _ = client.Send(context.TODO(), tagsSnapshot)
 
 	return nil

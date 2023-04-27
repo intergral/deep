@@ -59,6 +59,7 @@ var cli struct {
 
 	Generate struct {
 		Snapshot generateSnapshotCmd `cmd:"snapshot" aliases:"snap" help:"Can generate a snapshot and send to configured endpoint"`
+		Tags     generateTagsCmd     `cmd:"tags" help:"Generate basic snapshots with a variety of tags"`
 	} `cmd:"generate" aliases:"gen"`
 }
 

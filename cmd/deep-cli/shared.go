@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	deep "github.com/intergral/go-deep-proto/tracepoint/v1"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"sort"
 	"strconv"
 	"time"
@@ -129,4 +132,22 @@ func printAsJSON(value interface{}) error {
 
 	fmt.Println(string(traceJSON))
 	return nil
+}
+
+type GRCPClient struct {
+	frontendOptions
+
+	connection *grpc.ClientConn
+}
+
+func (client *GRCPClient) connectGrpc() deep.SnapshotServiceClient {
+	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	dial, err := grpc.Dial(client.Endpoint, opts...)
+	if err != nil {
+		panic(err)
+	}
+	client.connection = dial
+
+	return deep.NewSnapshotServiceClient(dial)
 }
