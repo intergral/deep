@@ -60,6 +60,11 @@ const (
 	PathEcho            = "/api/echo"
 	PathUsageStats      = "/status/usage-stats"
 
+	PathPrefixTracepoints = "/tracepoints"
+
+	PathTracepoints      = "/api/tracepoints"
+	PathDeleteTracepoint = "/api/tracepoints/{tpID}"
+
 	PathSearchTagValuesV2 = "/api/v2/search/tag/{tagName}/values"
 
 	QueryModeKey       = "mode"

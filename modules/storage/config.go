@@ -28,7 +28,8 @@ const (
 
 // Config is the Tempo storage configuration
 type Config struct {
-	Trace deepdb.Config `yaml:"trace"`
+	Trace      deepdb.Config `yaml:"trace"`
+	Tracepoint deepdb.Config `yaml:"tracepoint"`
 }
 
 // RegisterFlagsAndApplyDefaults registers the flags.

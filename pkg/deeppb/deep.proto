@@ -1,5 +1,7 @@
 syntax = "proto3";
 import "tracepoint/v1/tracepoint.proto";
+import "poll/v1/poll.proto";
+import "resource/v1/resource.proto";
 
 package deeppb;
 
@@ -128,3 +130,33 @@ message PushBytesRequest {
 }
 
 message PushBytesResponse {}
+
+service TracepointConfigService {
+  rpc LoadTracepoints(LoadTracepointRequest) returns (LoadTracepointResponse) {};
+  rpc CreateTracepoint(CreateTracepointRequest) returns (CreateTracepointResponse) {};
+  rpc DeleteTracepoint(DeleteTracepointRequest) returns (DeleteTracepointResponse) {};
+}
+
+message LoadTracepointRequest {
+    optional deeppb.poll.v1.PollRequest Request  = 1;
+}
+
+message LoadTracepointResponse {
+  deeppb.poll.v1.PollResponse Response = 1;
+}
+
+message CreateTracepointRequest {
+  deeppb.tracepoint.v1.TracePointConfig Tracepoint = 1;
+}
+
+message CreateTracepointResponse {
+
+}
+
+message DeleteTracepointRequest {
+  string TracepointID = 1;
+}
+
+message DeleteTracepointResponse {
+
+}

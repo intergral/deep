@@ -27,6 +27,7 @@ import (
 	"github.com/intergral/deep/modules/ingester"
 	"github.com/intergral/deep/modules/overrides"
 	"github.com/intergral/deep/modules/querier"
+	"github.com/intergral/deep/modules/tracepoint"
 	"github.com/intergral/deep/pkg/deepdb"
 	"github.com/intergral/deep/pkg/usagestats"
 	"github.com/intergral/deep/pkg/util"
@@ -61,6 +62,7 @@ type Config struct {
 	Frontend        frontend.Config         `yaml:"query_frontend,omitempty"`
 	Compactor       compactor.Config        `yaml:"compactor,omitempty"`
 	Ingester        ingester.Config         `yaml:"ingester,omitempty"`
+	Tracepoint      tracepoint.Config       `yaml:"tracepoint,omitempty"`
 	Generator       generator.Config        `yaml:"metrics_generator,omitempty"`
 	StorageConfig   storage.Config          `yaml:"storage,omitempty"`
 	LimitsConfig    overrides.Limits        `yaml:"overrides,omitempty"`
@@ -135,6 +137,8 @@ func (c *Config) RegisterFlagsAndApplyDefaults(prefix string, f *flag.FlagSet) {
 	c.Compactor.RegisterFlagsAndApplyDefaults(util.PrefixConfig(prefix, "compactor"), f)
 	c.StorageConfig.RegisterFlagsAndApplyDefaults(util.PrefixConfig(prefix, "storage"), f)
 	c.UsageReport.RegisterFlagsAndApplyDefaults(util.PrefixConfig(prefix, "reporting"), f)
+
+	c.Tracepoint.RegisterFlagsAndApplyDefaults(util.PrefixConfig(prefix, "tracepoint"), f)
 }
 
 // MultitenancyIsEnabled checks if multitenancy is enabled

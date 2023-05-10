@@ -35,6 +35,9 @@ import (
 	"github.com/intergral/deep/modules/overrides"
 	"github.com/intergral/deep/modules/querier"
 	deep_storage "github.com/intergral/deep/modules/storage"
+	"github.com/intergral/deep/modules/tracepoint"
+	tpapi "github.com/intergral/deep/modules/tracepoint/api"
+	"github.com/intergral/deep/modules/tracepoint/client"
 	"github.com/intergral/deep/pkg/api"
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/backend/azure"
@@ -61,12 +64,16 @@ import (
 // The various modules that make up deep.
 const (
 	Ring                 string = "ring"
+	TPRing               string = "tp-ring"
 	MetricsGeneratorRing string = "metrics-generator-ring"
 	Overrides            string = "overrides"
 	Server               string = "server"
 	InternalServer       string = "internal-server"
 	Distributor          string = "distributor"
 	Ingester             string = "ingester"
+	TracepointClient     string = "tracepoint-client"
+	Tracepoint           string = "tracepoint"
+	TracepointAPI        string = "tracepoint-api"
 	MetricsGenerator     string = "metrics-generator"
 	Querier              string = "querier"
 	QueryFrontend        string = "query-frontend"
@@ -147,15 +154,27 @@ func (t *App) initInternalServer() (services.Service, error) {
 }
 
 func (t *App) initRing() (services.Service, error) {
-	ring, err := deep_ring.New(t.cfg.Ingester.LifecyclerConfig.RingConfig, "ingester", t.cfg.Ingester.OverrideRingKey, prometheus.DefaultRegisterer)
+	newRing, err := deep_ring.New(t.cfg.Ingester.LifecyclerConfig.RingConfig, "ingester", t.cfg.Ingester.OverrideRingKey, prometheus.DefaultRegisterer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ring %w", err)
 	}
-	t.ring = ring
+	t.ring = newRing
 
 	t.Server.HTTP.Handle("/ingester/ring", t.ring)
 
 	return t.ring, nil
+}
+
+func (t *App) initTPRing() (services.Service, error) {
+	newRing, err := deep_ring.New(t.cfg.Tracepoint.LifecyclerConfig.RingConfig, "tracepoints", t.cfg.Tracepoint.OverrideRingKey, prometheus.DefaultRegisterer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ring %w", err)
+	}
+	t.tpRing = newRing
+
+	t.Server.HTTP.Handle("/tracepoint/ring", t.tpRing)
+
+	return t.tpRing, nil
 }
 
 func (t *App) initGeneratorRing() (services.Service, error) {
@@ -188,7 +207,7 @@ func (t *App) initOverrides() (services.Service, error) {
 
 func (t *App) initDistributor() (services.Service, error) {
 	// todo: make ingester client a module instead of passing the config everywhere
-	newDistributor, err := distributor.New(t.cfg.Distributor, t.cfg.IngesterClient, t.ring, t.cfg.GeneratorClient, t.generatorRing, t.overrides, log.Logger, t.cfg.Server.LogLevel, prometheus.DefaultRegisterer)
+	newDistributor, err := distributor.New(t.cfg.Distributor, t.tpClient, t.cfg.IngesterClient, t.ring, t.cfg.GeneratorClient, t.generatorRing, t.overrides, log.Logger, t.cfg.Server.LogLevel, prometheus.DefaultRegisterer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create distributor %w", err)
 	}
@@ -202,6 +221,46 @@ func (t *App) initDistributor() (services.Service, error) {
 	tp.RegisterSnapshotServiceServer(t.Server.GRPC, t.distributor.SnapshotReceiver)
 
 	return t.distributor, nil
+}
+
+func (t *App) initTracepointClient() (services.Service, error) {
+	tpClient, err := client.New(t.cfg.Tracepoint.Client, t.tpRing, log.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tracepoint ring client %w", err)
+	}
+
+	t.tpClient = tpClient
+	return t.tpClient, nil
+}
+
+func (t *App) initTracepoint() (services.Service, error) {
+	t.cfg.Tracepoint.LifecyclerConfig.ListenPort = t.cfg.Server.GRPCListenPort
+	newTracepointService, err := tracepoint.New(t.cfg.Tracepoint, t.cfg.StorageConfig, prometheus.DefaultRegisterer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tracepoint config service: %w", err)
+	}
+	t.tracepointService = newTracepointService
+
+	deeppb.RegisterTracepointConfigServiceServer(t.Server.GRPC, t.tracepointService)
+
+	return t.tracepointService, nil
+}
+
+func (t *App) initTracepointAPI() (services.Service, error) {
+	tracepointAPI, err := tpapi.NewTracepointAPI(t.cfg.Tracepoint.API, t.tpClient, log.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tracepoint API %w", err)
+	}
+
+	t.tracepointAPI = tracepointAPI
+
+	loadHandler := t.HTTPAuthMiddleware.Wrap(http.HandlerFunc(t.tracepointAPI.LoadTracepointHandler))
+	t.Server.HTTP.Handle(path.Join(api.PathPrefixTracepoints, addHTTPAPIPrefix(&t.cfg, api.PathTracepoints)), loadHandler)
+
+	deleteHandler := t.HTTPAuthMiddleware.Wrap(http.HandlerFunc(t.tracepointAPI.DeleteTracepointHandler))
+	t.Server.HTTP.Handle(path.Join(api.PathPrefixTracepoints, addHTTPAPIPrefix(&t.cfg, api.PathDeleteTracepoint)), deleteHandler)
+
+	return t.tracepointAPI, nil
 }
 
 func (t *App) initIngester() (services.Service, error) {
@@ -385,6 +444,8 @@ func (t *App) initMemberlistKV() (services.Service, error) {
 	t.cfg.Distributor.DistributorRing.KVStore.MemberlistKV = t.MemberlistKV.GetMemberlistKV
 	t.cfg.Compactor.ShardingRing.KVStore.MemberlistKV = t.MemberlistKV.GetMemberlistKV
 
+	t.cfg.Tracepoint.LifecyclerConfig.RingConfig.KVStore.MemberlistKV = t.MemberlistKV.GetMemberlistKV
+
 	t.Server.HTTP.Handle("/memberlist", t.MemberlistKV)
 
 	return t.MemberlistKV, nil
@@ -439,10 +500,14 @@ func (t *App) setupModuleManager() error {
 	mm.RegisterModule(InternalServer, t.initInternalServer, modules.UserInvisibleModule)
 	mm.RegisterModule(MemberlistKV, t.initMemberlistKV, modules.UserInvisibleModule)
 	mm.RegisterModule(Ring, t.initRing, modules.UserInvisibleModule)
+	mm.RegisterModule(TPRing, t.initTPRing, modules.UserInvisibleModule)
 	mm.RegisterModule(MetricsGeneratorRing, t.initGeneratorRing, modules.UserInvisibleModule)
 	mm.RegisterModule(Overrides, t.initOverrides, modules.UserInvisibleModule)
 	mm.RegisterModule(Distributor, t.initDistributor)
 	mm.RegisterModule(Ingester, t.initIngester)
+	mm.RegisterModule(TracepointClient, t.initTracepointClient)
+	mm.RegisterModule(Tracepoint, t.initTracepoint)
+	mm.RegisterModule(TracepointAPI, t.initTracepointAPI)
 	mm.RegisterModule(Querier, t.initQuerier)
 	mm.RegisterModule(QueryFrontend, t.initQueryFrontend)
 	mm.RegisterModule(Compactor, t.initCompactor)
@@ -459,13 +524,17 @@ func (t *App) setupModuleManager() error {
 		MemberlistKV:         {Server},
 		QueryFrontend:        {Store, Server, Overrides, UsageReport},
 		Ring:                 {Server, MemberlistKV},
+		TPRing:               {Server, MemberlistKV},
 		MetricsGeneratorRing: {Server, MemberlistKV},
-		Distributor:          {Ring, Server, Overrides, UsageReport, MetricsGeneratorRing},
+		Distributor:          {Ring, Server, Overrides, UsageReport, MetricsGeneratorRing, TracepointClient},
 		Ingester:             {Store, Server, Overrides, MemberlistKV, UsageReport},
+		TracepointClient:     {TPRing},
+		Tracepoint:           {Store, Server, Overrides, MemberlistKV, UsageReport, TracepointClient},
+		TracepointAPI:        {Server, TracepointClient},
 		MetricsGenerator:     {Server, Overrides, MemberlistKV, UsageReport},
 		Querier:              {Store, Ring, Overrides, UsageReport},
 		Compactor:            {Store, Server, Overrides, MemberlistKV, UsageReport},
-		SingleBinary:         {Compactor, QueryFrontend, Querier, Ingester, Distributor, MetricsGenerator},
+		SingleBinary:         {Compactor, QueryFrontend, Querier, Tracepoint, TracepointAPI, Ingester, Distributor, MetricsGenerator},
 		ScalableSingleBinary: {SingleBinary},
 		UsageReport:          {MemberlistKV},
 	}

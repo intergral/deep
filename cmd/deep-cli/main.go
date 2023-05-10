@@ -39,6 +39,10 @@ type frontendOptions struct {
 	Endpoint string `help:"The url to send data to" default:"localhost:43315"`
 }
 
+type apiOptions struct {
+	Endpoint string `help:"The url to use for the api" default:"localhost:3300"`
+}
+
 type backendOptions struct {
 	Backend string `help:"backend to connect to (s3/gcs/local/azure), optional, overrides backend in config file" enum:",s3,gcs,local,azure"`
 	Bucket  string `help:"bucket (or path on local backend) to scan, optional, overrides bucket in config file"`
@@ -52,15 +56,21 @@ var cli struct {
 	globalOptions
 
 	List struct {
-		Blocks  listBlocksCmd  `cmd:"" help:"List information about all blocks in a bucket"`
-		Column  listColumnCmd  `cmd:"" help:"List values in a given column"`
-		Objects listObjectsCmd `cmd:"" help:"List values in a block"`
+		Blocks      listBlocksCmd     `cmd:"" help:"List information about all blocks in a bucket"`
+		Column      listColumnCmd     `cmd:"" help:"List values in a given column"`
+		Objects     listObjectsCmd    `cmd:"" help:"List values in a block"`
+		Tracepoints listTracepointCmd `cmd:"" help:"List configured tracepoints"`
 	} `cmd:""`
 
 	Generate struct {
-		Snapshot generateSnapshotCmd `cmd:"snapshot" aliases:"snap" help:"Can generate a snapshot and send to configured endpoint"`
-		Tags     generateTagsCmd     `cmd:"tags" help:"Generate basic snapshots with a variety of tags"`
+		Snapshot   generateSnapshotCmd `cmd:"snapshot" aliases:"snap" help:"Can generate a snapshot and send to configured endpoint"`
+		Tags       generateTagsCmd     `cmd:"tags" help:"Generate basic snapshots with a variety of tags"`
+		Tracepoint cmdCreateTracepoint `cmd:"tp" help:"Generate a new tracepoint"`
 	} `cmd:"generate" aliases:"gen"`
+
+	Delete struct {
+		Tracepoint cmdDeleteTracepoint `cmd:"tp" help:"Delete a tracepoint"`
+	} `cmd:"delete"`
 }
 
 func main() {

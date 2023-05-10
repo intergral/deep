@@ -1,0 +1,37 @@
+/*
+ * Copyright (C) 2023  Intergral GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package types
+
+import (
+	"context"
+	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
+	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+)
+
+type TPBlock interface {
+	ForResource(resource []*cp.KeyValue) ([]*deeptp.TracePointConfig, error)
+	OrgId() string
+	Tps() []*deeptp.TracePointConfig
+	Flushed()
+	AddTracepoint(config *deeptp.TracePointConfig)
+}
+
+type TPBackend interface {
+	Flush(ctx context.Context, block TPBlock) error
+	LoadBlock(ctx context.Context, orgId string) (TPBlock, error)
+}

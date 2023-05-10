@@ -31,6 +31,10 @@ metrics_generator:
 use_otel_tracer: true
 
 storage:
+  tracepoint:
+    backend: local
+    local:
+      path: /tmp/deep/tracepoint
   trace:
     backend: local                     # backend configuration to use
     wal:

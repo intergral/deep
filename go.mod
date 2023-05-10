@@ -82,7 +82,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/googleapis/gax-go/v2 v2.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
-	github.com/intergral/go-deep-proto v0.0.12
+	github.com/intergral/go-deep-proto v0.0.13
 	golang.org/x/exp v0.0.0-20221002003631-540bb7301a08
 )
 

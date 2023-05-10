@@ -27,6 +27,9 @@ import (
 	"github.com/intergral/deep/modules/overrides"
 	"github.com/intergral/deep/modules/querier"
 	"github.com/intergral/deep/modules/storage"
+	"github.com/intergral/deep/modules/tracepoint"
+	tpapi "github.com/intergral/deep/modules/tracepoint/api"
+	"github.com/intergral/deep/modules/tracepoint/client"
 	"github.com/intergral/deep/pkg/usagestats"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/intergral/deep/pkg/util/log"
@@ -94,6 +97,12 @@ type App struct {
 	ModuleManager *modules.Manager
 	serviceMap    map[string]services.Service
 	deps          map[string][]string
+
+	// tracepoint config services
+	tpClient          *client.TPClient
+	tpRing            *ring.Ring
+	tracepointService *tracepoint.TPService
+	tracepointAPI     *tpapi.TracepointAPI
 }
 
 // New makes a new app.

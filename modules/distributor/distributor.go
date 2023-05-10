@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/intergral/deep/modules/distributor/snapshotreciever"
+	"github.com/intergral/deep/modules/tracepoint/client"
 	pb "github.com/intergral/go-deep-proto/poll/v1"
 	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
 	"google.golang.org/grpc/status"
@@ -32,6 +33,7 @@ import (
 	ingester_client "github.com/intergral/deep/modules/ingester/client"
 	"github.com/intergral/deep/modules/overrides"
 	"github.com/intergral/deep/pkg/deeppb"
+	deeppb_poll "github.com/intergral/deep/pkg/deeppb/poll/v1"
 	deeppb_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/model"
 	deep_util "github.com/intergral/deep/pkg/util"
@@ -133,29 +135,41 @@ type Distributor struct {
 	logger log.Logger
 
 	SnapshotReceiver tp.SnapshotServiceServer
+	tpClient         *client.TPClient
 }
 
 func (d *Distributor) Poll(ctx context.Context, pollRequest *pb.PollRequest) (*pb.PollResponse, error) {
-	print("Called long poll")
-	var responseType = pb.ResponseType_UPDATE
-	if pollRequest.CurrentHash == "123" {
-		responseType = pb.ResponseType_NO_CHANGE
+	// todo is this really needed?
+	// Convert to bytes and back. This is unfortunate for efficiency, but it works
+	// around to allow deep agent to be installed in deep service
+	convert, err := proto.Marshal(pollRequest)
+	if err != nil {
+		return nil, err
 	}
 
-	return &pb.PollResponse{
-		TsNanos:     uint64(time.Now().UnixNano()),
-		CurrentHash: "123",
-		Response: []*tp.TracePointConfig{{
-			ID: "17", Path: "/simple-app/simple_test.py", LineNumber: 31,
-			Args:    map[string]string{"some": "thing", "fire_count": "-1", "fire_period": "10000"},
-			Watches: []string{"len(uuid)", "uuid", "self.char_counter"},
-		}},
-		ResponseType: responseType,
-	}, nil
+	// deeppb_tp.Snapshot is wire-compatible with go-deep-proto
+	req := &deeppb_poll.PollRequest{}
+	err = proto.Unmarshal(convert, req)
+	if err != nil {
+		return nil, err
+	}
+
+	request := &deeppb.LoadTracepointRequest{Request: req}
+
+	tracepoints, err := d.tpClient.LoadTracepoints(ctx, request)
+
+	response := tracepoints.GetResponse()
+
+	marshal, err := proto.Marshal(response)
+
+	resp := &pb.PollResponse{}
+	err = proto.Unmarshal(marshal, resp)
+
+	return resp, nil
 }
 
 // New a distributor creates.
-func New(cfg Config, clientCfg ingester_client.Config, ingestersRing ring.ReadRing, generatorClientCfg generator_client.Config, generatorsRing ring.ReadRing, o *overrides.Overrides, logger log.Logger, loggingLevel logging.Level, reg prometheus.Registerer) (*Distributor, error) {
+func New(cfg Config, tpClient *client.TPClient, clientCfg ingester_client.Config, ingestersRing ring.ReadRing, generatorClientCfg generator_client.Config, generatorsRing ring.ReadRing, o *overrides.Overrides, logger log.Logger, loggingLevel logging.Level, reg prometheus.Registerer) (*Distributor, error) {
 	factory := cfg.factory
 	if factory == nil {
 		factory = func(addr string) (ring_client.PoolClient, error) {
@@ -209,6 +223,7 @@ func New(cfg Config, clientCfg ingester_client.Config, ingestersRing ring.ReadRi
 		overrides:            o,
 		snapshotEncoder:      model.MustNewSegmentDecoder(model.CurrentEncoding),
 		logger:               logger,
+		tpClient:             tpClient,
 	}
 
 	d.generatorsPool = ring_client.NewPool(

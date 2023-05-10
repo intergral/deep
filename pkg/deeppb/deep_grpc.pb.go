@@ -455,3 +455,162 @@ var IngesterService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "deep.proto",
 }
+
+// TracepointConfigServiceClient is the client API for TracepointConfigService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type TracepointConfigServiceClient interface {
+	LoadTracepoints(ctx context.Context, in *LoadTracepointRequest, opts ...grpc.CallOption) (*LoadTracepointResponse, error)
+	CreateTracepoint(ctx context.Context, in *CreateTracepointRequest, opts ...grpc.CallOption) (*CreateTracepointResponse, error)
+	DeleteTracepoint(ctx context.Context, in *DeleteTracepointRequest, opts ...grpc.CallOption) (*DeleteTracepointResponse, error)
+}
+
+type tracepointConfigServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewTracepointConfigServiceClient(cc grpc.ClientConnInterface) TracepointConfigServiceClient {
+	return &tracepointConfigServiceClient{cc}
+}
+
+func (c *tracepointConfigServiceClient) LoadTracepoints(ctx context.Context, in *LoadTracepointRequest, opts ...grpc.CallOption) (*LoadTracepointResponse, error) {
+	out := new(LoadTracepointResponse)
+	err := c.cc.Invoke(ctx, "/deeppb.TracepointConfigService/LoadTracepoints", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tracepointConfigServiceClient) CreateTracepoint(ctx context.Context, in *CreateTracepointRequest, opts ...grpc.CallOption) (*CreateTracepointResponse, error) {
+	out := new(CreateTracepointResponse)
+	err := c.cc.Invoke(ctx, "/deeppb.TracepointConfigService/CreateTracepoint", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tracepointConfigServiceClient) DeleteTracepoint(ctx context.Context, in *DeleteTracepointRequest, opts ...grpc.CallOption) (*DeleteTracepointResponse, error) {
+	out := new(DeleteTracepointResponse)
+	err := c.cc.Invoke(ctx, "/deeppb.TracepointConfigService/DeleteTracepoint", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TracepointConfigServiceServer is the server API for TracepointConfigService service.
+// All implementations must embed UnimplementedTracepointConfigServiceServer
+// for forward compatibility
+type TracepointConfigServiceServer interface {
+	LoadTracepoints(context.Context, *LoadTracepointRequest) (*LoadTracepointResponse, error)
+	CreateTracepoint(context.Context, *CreateTracepointRequest) (*CreateTracepointResponse, error)
+	DeleteTracepoint(context.Context, *DeleteTracepointRequest) (*DeleteTracepointResponse, error)
+	mustEmbedUnimplementedTracepointConfigServiceServer()
+}
+
+// UnimplementedTracepointConfigServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedTracepointConfigServiceServer struct {
+}
+
+func (UnimplementedTracepointConfigServiceServer) LoadTracepoints(context.Context, *LoadTracepointRequest) (*LoadTracepointResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LoadTracepoints not implemented")
+}
+func (UnimplementedTracepointConfigServiceServer) CreateTracepoint(context.Context, *CreateTracepointRequest) (*CreateTracepointResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateTracepoint not implemented")
+}
+func (UnimplementedTracepointConfigServiceServer) DeleteTracepoint(context.Context, *DeleteTracepointRequest) (*DeleteTracepointResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteTracepoint not implemented")
+}
+func (UnimplementedTracepointConfigServiceServer) mustEmbedUnimplementedTracepointConfigServiceServer() {
+}
+
+// UnsafeTracepointConfigServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to TracepointConfigServiceServer will
+// result in compilation errors.
+type UnsafeTracepointConfigServiceServer interface {
+	mustEmbedUnimplementedTracepointConfigServiceServer()
+}
+
+func RegisterTracepointConfigServiceServer(s grpc.ServiceRegistrar, srv TracepointConfigServiceServer) {
+	s.RegisterService(&TracepointConfigService_ServiceDesc, srv)
+}
+
+func _TracepointConfigService_LoadTracepoints_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoadTracepointRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TracepointConfigServiceServer).LoadTracepoints(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/deeppb.TracepointConfigService/LoadTracepoints",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TracepointConfigServiceServer).LoadTracepoints(ctx, req.(*LoadTracepointRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TracepointConfigService_CreateTracepoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateTracepointRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TracepointConfigServiceServer).CreateTracepoint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/deeppb.TracepointConfigService/CreateTracepoint",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TracepointConfigServiceServer).CreateTracepoint(ctx, req.(*CreateTracepointRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TracepointConfigService_DeleteTracepoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteTracepointRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TracepointConfigServiceServer).DeleteTracepoint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/deeppb.TracepointConfigService/DeleteTracepoint",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TracepointConfigServiceServer).DeleteTracepoint(ctx, req.(*DeleteTracepointRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// TracepointConfigService_ServiceDesc is the grpc.ServiceDesc for TracepointConfigService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var TracepointConfigService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "deeppb.TracepointConfigService",
+	HandlerType: (*TracepointConfigServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "LoadTracepoints",
+			Handler:    _TracepointConfigService_LoadTracepoints_Handler,
+		},
+		{
+			MethodName: "CreateTracepoint",
+			Handler:    _TracepointConfigService_CreateTracepoint_Handler,
+		},
+		{
+			MethodName: "DeleteTracepoint",
+			Handler:    _TracepointConfigService_DeleteTracepoint_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "deep.proto",
+}
