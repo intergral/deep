@@ -57,8 +57,31 @@ func (t *tpBlock) AddTracepoint(tp *deep_tp.TracePointConfig) {
 	t.tps = append(t.tps, tp)
 }
 
+func (t *tpBlock) DeleteTracepoint(tpID string) {
+	var tpToRemoveIndex = -1
+	for i, config := range t.tps {
+		if config.ID == tpID {
+			tpToRemoveIndex = i
+			break
+		}
+	}
+
+	if tpToRemoveIndex == -1 {
+		//todo return error?
+		return
+	}
+
+	t.tps = t.remove(t.tps, tpToRemoveIndex)
+}
+
 func (t *tpBlock) matches(tp *deep_tp.TracePointConfig, resource []*cp.KeyValue) bool {
 	return ResourceMatches(tp, resource)
+}
+
+func (t *tpBlock) remove(tps []*deep_tp.TracePointConfig, i int) []*deep_tp.TracePointConfig {
+	tps[i] = tps[len(tps)-1]
+	tps[len(tps)-1] = nil
+	return tps[:len(tps)-1]
 }
 
 func ResourceMatches(tp *deep_tp.TracePointConfig, resource []*cp.KeyValue) bool {

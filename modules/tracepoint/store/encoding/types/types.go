@@ -29,6 +29,7 @@ type TPBlock interface {
 	Tps() []*deeptp.TracePointConfig
 	Flushed()
 	AddTracepoint(config *deeptp.TracePointConfig)
+	DeleteTracepoint(id string)
 }
 
 type TPBackend interface {

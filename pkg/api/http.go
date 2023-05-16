@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	URLParamSnapshotID = "snapshotID"
+	URLParamSnapshotID   = "snapshotID"
+	URLParamTracepointID = "tpID"
 	// search
 	urlParamQuery       = "q"
 	urlParamTags        = "tags"

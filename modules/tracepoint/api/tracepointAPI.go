@@ -19,11 +19,12 @@ package api
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
 	"github.com/go-kit/log"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/grafana/dskit/services"
 	"github.com/intergral/deep/modules/tracepoint/client"
 	"github.com/intergral/deep/pkg/api"
@@ -35,6 +36,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -76,7 +78,7 @@ func NewTracepointAPI(cfg Config, tpClient *client.TPClient, log log.Logger) (*T
 }
 
 func (ta *TracepointAPI) LoadTracepointHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
+	if strings.ToLower(r.Method) == "post" {
 		ta.CreateTracepointHandler(w, r)
 		return
 	}
@@ -96,7 +98,7 @@ func (ta *TracepointAPI) LoadTracepointHandler(w http.ResponseWriter, r *http.Re
 
 	if r.Header.Get(api.HeaderAccept) == api.HeaderAcceptProtobuf {
 		span.SetTag("contentType", api.HeaderAcceptProtobuf)
-		b, err := proto.Marshal(tracepoints)
+		b, err := proto.Marshal(tracepoints.Response)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -112,7 +114,7 @@ func (ta *TracepointAPI) LoadTracepointHandler(w http.ResponseWriter, r *http.Re
 
 	span.SetTag("contentType", api.HeaderAcceptJSON)
 	marshaller := &jsonpb.Marshaler{}
-	err = marshaller.Marshal(w, tracepoints)
+	err = marshaller.Marshal(w, tracepoints.Response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -242,7 +244,7 @@ func (ta *TracepointAPI) parseCreateRequest(r *http.Request) (*deeppb.CreateTrac
 	}(r.Body)
 
 	var bodyTp deeppb.CreateTracepointRequest
-	err := json.NewDecoder(r.Body).Decode(&bodyTp)
+	err := jsonpb.Unmarshal(r.Body, &bodyTp)
 	if err != nil {
 		return nil, err
 	}
@@ -253,5 +255,11 @@ func (ta *TracepointAPI) parseCreateRequest(r *http.Request) (*deeppb.CreateTrac
 }
 
 func (ta *TracepointAPI) parseDeleteRequest(r *http.Request) (*deeppb.DeleteTracepointRequest, error) {
-	return &deeppb.DeleteTracepointRequest{TracepointID: r.URL.Query().Get("tpID")}, nil
+	vars := mux.Vars(r)
+	tpID, ok := vars[api.URLParamTracepointID]
+	if !ok {
+		return nil, fmt.Errorf("please provide a tracepoint ID")
+	}
+
+	return &deeppb.DeleteTracepointRequest{TracepointID: tpID}, nil
 }

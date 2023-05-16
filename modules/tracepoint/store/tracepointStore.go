@@ -126,6 +126,7 @@ func (os *orgStore) DeleteTracepoint(tpID string) error {
 	for _, store := range os.userStores {
 		_ = store.DeleteTracepoint(tpID)
 	}
+	os.block.DeleteTracepoint(tpID)
 	return nil
 }
 
@@ -182,7 +183,7 @@ type resourceStore struct {
 func (us *resourceStore) ProcessRequest(req *deeppb.LoadTracepointRequest) (*deeppb.LoadTracepointResponse, error) {
 	// we are now in the scalable nodes for the tracepoints. here we need to load from disk/mem
 	var responseType = pb.ResponseType_UPDATE
-	if req.Request.CurrentHash == us.currentHash {
+	if req.Request.CurrentHash != "" && req.Request.CurrentHash == us.currentHash {
 		responseType = pb.ResponseType_NO_CHANGE
 	}
 
@@ -201,12 +202,17 @@ func (us *resourceStore) AddTracepoint(tp *tp.TracePointConfig) error {
 }
 
 func (us *resourceStore) DeleteTracepoint(tpID string) error {
-	var tpToRemoveIndex int
+	var tpToRemoveIndex = -1
 	for i, config := range us.tps {
 		if config.ID == tpID {
 			tpToRemoveIndex = i
 			break
 		}
+	}
+
+	if tpToRemoveIndex == -1 {
+		//todo return error?
+		return nil
 	}
 
 	us.tps = us.remove(us.tps, tpToRemoveIndex)
