@@ -32,26 +32,23 @@ Setting this option to `1` is helpful to debug errors during the start-up phase.
 3. Now start up the stack.
 
 ```console
-docker-compose up -d
+docker compose up -d
 ```
 
 At this point, the following containers should be running.
 
 ```console
-docker-compose ps
+docker compose ps
 ```
 ```
        Name                     Command               State                            Ports                         
 ---------------------------------------------------------------------------------------------------------------------
 debug_grafana_1      /run.sh                          Up      0.0.0.0:3000->3000/tcp,:::3000->3000/tcp               
-debug_k6-tracing_1   /k6-tracing run /example-s ...   Up                                                             
+debug_test_app_1     python src/simple-a...           Up                                                             
 debug_prometheus_1   /bin/prometheus --config.f ...   Up      0.0.0.0:9090->9090/tcp,:::9090->9090/tcp               
-debug_deep_1         /entrypoint-debug.sh -conf ...   Up      0.0.0.0:14268->14268/tcp,:::14268->14268/tcp,          
-                                                              0.0.0.0:2345->2345/tcp,:::2345->2345/tcp,              
-                                                              0.0.0.0:3200->3200/tcp,:::3200->3200/tcp,              
-                                                              0.0.0.0:4317->4317/tcp,:::4317->4317/tcp,              
-                                                              0.0.0.0:4318->4318/tcp,:::4318->4318/tcp,              
-                                                              0.0.0.0:9411->9411/tcp,:::9411->9411/tcp 
+debug_deep_1         /entrypoint-debug.sh -conf ...   Up      0.0.0.0:43315->43315/tcp,:::43315->43315/tcp          
+                                                              0.0.0.0:2345->2345/tcp,:::2345->2345/tcp              
+                                                              0.0.0.0:3300->3300/tcp,:::3300->3300/tcp
 ```
 
 4. The deep container exposes delves debugging server at port `2345` and it is now possible to 

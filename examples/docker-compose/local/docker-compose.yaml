@@ -1,22 +1,8 @@
 version: "3"
 services:
-  tempo:
-    image: grafana/tempo:latest
-    command: [ "-config.file=/etc/tempo.yaml" ]
-    volumes:
-      - ../shared/tempo.yaml:/etc/tempo.yaml
-      - ./tempo-data:/tmp/tempo
-    environment:
-      - OTEL_EXPORTER_JAEGER_ENDPOINT=http://tempo:14268/api/traces
-    ports:
-      - "14268:14268"  # jaeger ingest
-      - "3200:3200"   # tempo
-      - "4317:4317"  # otlp grpc
-      - "4318:4318"  # otlp http
-      - "9411:9411"   # zipkin
 
   deep:
-    image: deep/deep:latest
+    image: intergral/deep:latest
     command: [ "-config.file=/etc/deep.yaml" ]
     volumes:
       - ../shared/deep.yaml:/etc/deep.yaml
@@ -50,8 +36,7 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=true
       - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
     ports:
-      - "3100:3000"
-
+      - "3000:3000"
 
   test_app:
     image: ghcr.io/intergral/deep-python-client:simple-app

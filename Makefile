@@ -48,13 +48,11 @@ deep-cli:
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component exe
-	docker build -t deep/$(COMPONENT) --build-arg=TARGETARCH=$(GOARCH) -f ./cmd/$(COMPONENT)/Dockerfile .
-	docker tag deep/$(COMPONENT) $(COMPONENT)
+	docker build -t intergral/$(COMPONENT) --build-arg=TARGETARCH=$(GOARCH) -f ./cmd/$(COMPONENT)/Dockerfile .
 
 .PHONY: docker-component-debug
 docker-component-debug: check-component exe-debug
-	docker build -t deep/$(COMPONENT)-debug --build-arg=TARGETARCH=$(GOARCH) -f ./cmd/$(COMPONENT)/Dockerfile_debug .
-	docker tag deep/$(COMPONENT)-debug $(COMPONENT)-debug
+	docker build -t intergral/$(COMPONENT)-debug --build-arg=TARGETARCH=$(GOARCH) -f ./cmd/$(COMPONENT)/Dockerfile_debug .
 
 .PHONY: docker-deep
 docker-deep:
@@ -185,3 +183,8 @@ vendor-check: gen-proto update-mod gen-deepql
 update-mod:
 	go mod vendor
 	go mod tidy -e
+
+
+.PHONY: docs
+docs:
+	mkdocs build -f ./docs/mkdocs.yml

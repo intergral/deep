@@ -12,8 +12,8 @@ conditions, as well as introduce me dynamic monitoring points into your applicat
 
 ## Getting Started
 
-- [Deployment Examples](./example)
-    - [Docker Compose](./example/docker-compose)
+- [Deployment Examples](./examples/README.md)
+    - [Docker Compose](./examples/docker-compose/README.md)
 
 ## Acknowledgements
 
