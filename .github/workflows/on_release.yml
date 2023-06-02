@@ -7,7 +7,7 @@ on:
 env:
   VERSION: ${{ github.ref_name }}
 
-build:
+jobs:
   docker:
     runs-on: ubuntu-latest
 
