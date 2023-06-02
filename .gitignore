@@ -11,3 +11,4 @@
 private-key.key
 /vendor
 /pkg/.patched-proto
+y.output

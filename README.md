@@ -21,4 +21,4 @@ DEEP is a fork of [Grafana Tempo](https://github.com/grafana/tempo), that has be
 
 ## License
 
-Grafana Tempo is distributed under [AGPL-3.0-only](LICENSE). For Apache-2.0 exceptions, see [LICENSING.md](LICENSING.md).
+DEEP is distributed under [AGPL-3.0-only](LICENSE). For Apache-2.0 exceptions, see [LICENSING.md](LICENSING.md).
