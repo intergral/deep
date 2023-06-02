@@ -14,6 +14,53 @@ ifeq ($(BUILD_DEBUG), 1)
 	GO_OPT+= -gcflags="all=-N -l"
 endif
 
+# More exclusions can be added similar with: -not -path './testbed/*'
+ALL_SRC := $(shell find . -name '*.go' \
+								-not -path './tools*/*' \
+								-not -path './vendor*/*' \
+                                -type f | sort)
+
+# ALL_PKGS is used with 'go cover'
+ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
+
+## Tests
+
+GOTEST_OPT?= -race -timeout 20m -count=1 -v
+GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -cover
+GOTEST=gotestsum --format=testname --
+
+.PHONY: test
+test:
+	$(GOTEST) $(GOTEST_OPT) $(ALL_PKGS)
+
+# Not used in CI, tests are split in pkg, tempodb, tempodb-wal and others in CI jobs
+.PHONY: test-with-cover
+test-with-cover:
+	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(ALL_PKGS)
+
+# tests in pkg
+.PHONY: test-with-cover-pkg
+test-with-cover-pkg: 	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(shell go list $(sort $(dir $(shell find . -name '*.go' -path './pkg*/*' -type f | sort))))
+
+# tests in tempodb (excluding tempodb/wal)
+.PHONY: test-with-cover-tempodb
+test-with-cover-tempodb: 	GOMEMLIMIT=6GiB $(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(shell go list $(sort $(dir $(shell find . -name '*.go'  -not -path './tempodb/wal*/*' -path './tempodb*/*' -type f | sort))))
+
+# tests in tempodb/wal
+.PHONY: test-with-cover-tempodb-wal
+test-with-cover-tempodb-wal: 	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(shell go list $(sort $(dir $(shell find . -name '*.go' -path './tempodb/wal*/*' -type f | sort))))
+
+# all other tests (excluding pkg & tempodb)
+.PHONY: test-with-cover-others
+test-with-cover-others:
+	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(shell go list $(sort $(dir $(OTHERS_SRC))))
+
+
+# test-all/bench use a docker image so build it first to make sure we're up to date
+.PHONY: test-all
+test-all: test-with-cover test-e2e
+
+
 ### Build
 
 .PHONY: deep

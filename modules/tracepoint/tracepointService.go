@@ -8,6 +8,7 @@ import (
 	"github.com/intergral/deep/modules/storage"
 	"github.com/intergral/deep/modules/tracepoint/store"
 	"github.com/intergral/deep/pkg/deeppb"
+	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
 	"github.com/intergral/deep/pkg/util/log"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -88,7 +89,12 @@ func (ts *TPService) LoadTracepoints(ctx context.Context, req *deeppb.LoadTracep
 		return nil, errors.Wrap(err, "error extracting org id in Tracepoint.LoadTracepoints")
 	}
 
-	tpStore, err := ts.store.ForResource(ctx, orgId, req.Request.Resource.Attributes)
+	attributes := make([]*cp.KeyValue, 0)
+	if req.Request.Resource != nil {
+		attributes = req.Request.Resource.Attributes
+	}
+
+	tpStore, err := ts.store.ForResource(ctx, orgId, attributes)
 	if err != nil {
 		return nil, err
 	}

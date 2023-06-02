@@ -24,7 +24,7 @@ func TestProcessorConfig_copyWithOverrides(t *testing.T) {
 			serviceGraphsDimensions:        []string{"namespace"},
 			spanMetricsHistogramBuckets:    []float64{1, 2, 3},
 			spanMetricsDimensions:          []string{"cluster", "namespace"},
-			spanMetricsIntrinsicDimensions: map[string]bool{"status_code": true},
+			spanMetricsIntrinsicDimensions: map[string]bool{"line_no": true},
 		}
 
 		copied, err := original.copyWithOverrides(o, "tenant")
@@ -40,7 +40,7 @@ func TestProcessorConfig_copyWithOverrides(t *testing.T) {
 		// assert overrides were applied
 		assert.Equal(t, []float64{1, 2, 3}, copied.SpanMetrics.HistogramBuckets)
 		assert.Equal(t, []string{"cluster", "namespace"}, copied.SpanMetrics.Dimensions)
-		assert.Equal(t, spanmetrics.IntrinsicDimensions{Service: true}, copied.SpanMetrics.IntrinsicDimensions)
+		assert.Equal(t, spanmetrics.IntrinsicDimensions{Service: true, LineNo: true}, copied.SpanMetrics.IntrinsicDimensions)
 	})
 
 	t.Run("empty overrides", func(t *testing.T) {

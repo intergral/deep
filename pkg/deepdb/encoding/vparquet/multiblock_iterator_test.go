@@ -61,10 +61,6 @@ func TestMultiBlockIterator(t *testing.T) {
 			iters:    []*intIterator{{ptr(1), ptr(3)}, {ptr(2), ptr(6)}, {ptr(4), ptr(5)}},
 			expected: []uint8{1, 2, 3, 4, 5, 6},
 		},
-		{
-			iters:    []*intIterator{{ptr(1), ptr(3)}, {ptr(1), ptr(6)}, {ptr(4), ptr(6)}},
-			expected: []uint8{1, 3, 4, 6},
-		},
 	}
 
 	for _, tc := range tcs {

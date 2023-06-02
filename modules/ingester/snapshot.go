@@ -30,10 +30,10 @@ func newLiveSnapshot(id []byte, maxBytes int) *liveSnapshot {
 	}
 }
 
-func (t *liveSnapshot) Push(_ context.Context, instanceID string, trace []byte) error {
+func (t *liveSnapshot) Push(_ context.Context, instanceID string, snapshot []byte) error {
 	t.lastAppend = time.Now()
 	if t.maxBytes != 0 {
-		reqSize := len(trace)
+		reqSize := len(snapshot)
 		if t.currentBytes+reqSize > t.maxBytes {
 			return newSnapshotTooLargeError(t.snapshotId, instanceID, t.maxBytes, reqSize)
 		}
@@ -41,11 +41,11 @@ func (t *liveSnapshot) Push(_ context.Context, instanceID string, trace []byte) 
 		t.currentBytes += reqSize
 	}
 
-	start, err := t.decoder.FastRange(trace)
+	start, err := t.decoder.FastRange(snapshot)
 	if err != nil {
 		return fmt.Errorf("failed to get range while adding segment: %w", err)
 	}
-	t.bytes = trace
+	t.bytes = snapshot
 	t.start = start
 
 	return nil

@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTraceStartEndTime(t *testing.T) {
+func TestSnapshotStartEndTime(t *testing.T) {
 	s := model.MustNewSegmentDecoder(model.CurrentEncoding)
 
 	tr := newLiveSnapshot(nil, 0)
@@ -25,14 +25,6 @@ func TestTraceStartEndTime(t *testing.T) {
 
 	// overwrite start
 	buff, err = s.PrepareForWrite(&deep_tp.Snapshot{}, 5)
-	require.NoError(t, err)
-	err = tr.Push(context.Background(), "test", buff)
-	require.NoError(t, err)
-
-	assert.Equal(t, uint32(5), tr.start)
-
-	// overwrite end
-	buff, err = s.PrepareForWrite(&deep_tp.Snapshot{}, 15)
 	require.NoError(t, err)
 	err = tr.Push(context.Background(), "test", buff)
 	require.NoError(t, err)

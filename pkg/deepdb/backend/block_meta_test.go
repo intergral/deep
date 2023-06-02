@@ -83,13 +83,12 @@ func TestBlockMetaObjectAdded(t *testing.T) {
 		b := &BlockMeta{}
 
 		for i := 0; i < len(tc.ids); i++ {
-			b.ObjectAdded(tc.ids[i], tc.starts[i], tc.ends[i])
+			b.ObjectAdded(tc.ids[i], tc.starts[i])
 		}
 
 		assert.Equal(t, tc.expectedMaxID, b.MaxID)
 		assert.Equal(t, tc.expectedMinID, b.MinID)
 		assert.Equal(t, tc.expectedStart, b.StartTime)
-		assert.Equal(t, tc.expectedEnd, b.EndTime)
 		assert.Equal(t, tc.expectedObjects, b.TotalObjects)
 	}
 }

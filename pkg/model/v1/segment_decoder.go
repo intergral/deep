@@ -66,7 +66,7 @@ func marshalWithStart(pb proto.Message, start uint32) ([]byte, error) {
 }
 
 func stripStart(buff []byte) ([]byte, uint32, error) {
-	if len(buff) < 8 {
+	if len(buff) < 4 {
 		return nil, 0, errors.New("buffer too short to have start/end")
 	}
 
