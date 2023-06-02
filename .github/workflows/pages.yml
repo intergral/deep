@@ -30,7 +30,8 @@ jobs:
       - run: make docs
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
-        path: docs/_site
+        with:
+          path: docs/_site
 
   deploy:
     needs: build
