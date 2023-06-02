@@ -188,3 +188,7 @@ update-mod:
 .PHONY: docs
 docs:
 	mkdocs build -f ./docs/mkdocs.yml
+
+.PHONY: docs-serve
+docs-serve:
+	mkdocs serve -f ./docs/mkdocs.yml

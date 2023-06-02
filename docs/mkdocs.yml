@@ -5,3 +5,8 @@ repo_name: Deep
 repo_url: https://github.com/intergral/deep
 
 site_dir: _site
+
+copyright: Intergral GmbH 2023
+
+theme:
+  name: material

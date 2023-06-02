@@ -10,8 +10,8 @@ on [GitHub](https://github.com/intergra/deep)
 
 To use deep you need to deploy the service, there are a few options for this:
 
-- [Local as a docker compose stack](/deploy/local.md)
-- [Using AWS EKS](/deploy/aws-eks.md)
+- [Local as a docker compose stack](./deploy/local.md)
+- [Using AWS EKS](./deploy/aws-eks.md)
 
 Once the service is deployed you will need to setup a client and connect Grafana to the service.
 

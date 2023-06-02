@@ -26,7 +26,7 @@ jobs:
           path: .cache
           restore-keys: |
             mkdocs-material-
-      - run: pip install mkdocs-material mkdocstrings-python .
+      - run: pip install mkdocs-material .
       - run: make docs
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
