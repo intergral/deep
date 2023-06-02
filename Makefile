@@ -24,7 +24,6 @@ ALL_SRC := $(shell find . -name '*.go' \
 ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
 
 ## Tests
-
 GOTEST_OPT?= -race -timeout 20m -count=1 -v
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -cover
 GOTEST=gotestsum --format=testname --
@@ -33,33 +32,9 @@ GOTEST=gotestsum --format=testname --
 test:
 	$(GOTEST) $(GOTEST_OPT) $(ALL_PKGS)
 
-# Not used in CI, tests are split in pkg, tempodb, tempodb-wal and others in CI jobs
 .PHONY: test-with-cover
 test-with-cover:
 	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(ALL_PKGS)
-
-# tests in pkg
-.PHONY: test-with-cover-pkg
-test-with-cover-pkg: 	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(shell go list $(sort $(dir $(shell find . -name '*.go' -path './pkg*/*' -type f | sort))))
-
-# tests in tempodb (excluding tempodb/wal)
-.PHONY: test-with-cover-tempodb
-test-with-cover-tempodb: 	GOMEMLIMIT=6GiB $(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(shell go list $(sort $(dir $(shell find . -name '*.go'  -not -path './tempodb/wal*/*' -path './tempodb*/*' -type f | sort))))
-
-# tests in tempodb/wal
-.PHONY: test-with-cover-tempodb-wal
-test-with-cover-tempodb-wal: 	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(shell go list $(sort $(dir $(shell find . -name '*.go' -path './tempodb/wal*/*' -type f | sort))))
-
-# all other tests (excluding pkg & tempodb)
-.PHONY: test-with-cover-others
-test-with-cover-others:
-	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(shell go list $(sort $(dir $(OTHERS_SRC))))
-
-
-# test-all/bench use a docker image so build it first to make sure we're up to date
-.PHONY: test-all
-test-all: test-with-cover test-e2e
-
 
 ### Build
 
@@ -199,3 +174,14 @@ gen-deepql:
 .PHONY: gen-deepql-local
 gen-deepql-local:
 	goyacc -o pkg/deepql/expr.y.go pkg/deepql/expr.y
+
+### Check vendored and generated files are up to date
+.PHONY: vendor-check
+vendor-check: gen-proto update-mod gen-deepql
+	git diff --exit-code -- **/go.sum **/go.mod vendor/ pkg/deeppb/ pkg/deepql/
+
+### Tidy dependencies for tempo and tempo-serverless modules
+.PHONY: update-mod
+update-mod:
+	go mod vendor
+	go mod tidy -e
