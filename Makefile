@@ -54,6 +54,9 @@ docker-component: check-component exe
 docker-component-debug: check-component exe-debug
 	docker build -t intergral/$(COMPONENT)-debug --build-arg=TARGETARCH=$(GOARCH) -f ./cmd/$(COMPONENT)/Dockerfile_debug .
 
+.PHONY: docker-deep-ci
+docker-deep-ci: update-mod docker-deep
+
 .PHONY: docker-deep
 docker-deep:
 	COMPONENT=deep $(MAKE) docker-component
