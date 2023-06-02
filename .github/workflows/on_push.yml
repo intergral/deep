@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Test
-        runs: make test-with-cover
+        run: make test-with-cover
 
   build:
     name: Build
