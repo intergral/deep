@@ -1,0 +1,54 @@
+server:
+  http_listen_port: 3300
+  grpc_listen_port: 43315
+
+distributor:
+  receivers:
+    deep:
+  log_received_snapshots:
+    enabled: true
+    include_all_attributes: true
+
+ingester:
+  max_block_duration: 5m               # cut the headblock when this much time passes. this is being set for demo purposes and should probably be left alone normally
+
+compactor:
+  compaction:
+    block_retention: 1h                # overall Tempo trace retention. set for demo purposes
+
+metrics_generator:
+  registry:
+    external_labels:
+      source: deep
+      cluster: docker-compose
+  storage:
+    path: /tmp/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
+
+storage:
+  tracepoint:
+    backend: s3
+    s3:
+      bucket: deep                    # how to store data in s3
+      endpoint: minio:9000
+      access_key: deep
+      secret_key: supersecret
+      insecure: true
+  trace:
+    backend: s3                        # backend configuration to use
+    wal:
+      path: /tmp/deep/wal             # where to store the the wal locally
+    s3:
+      bucket: deep                    # how to store data in s3
+      endpoint: minio:9000
+      access_key: deep
+      secret_key: supersecret
+      insecure: true
+      # For using AWS, select the appropriate regional endpoint and region
+      # endpoint: s3.dualstack.us-west-2.amazonaws.com
+      # region: us-west-2
+
+overrides:
+  metrics_generator_processors: []
