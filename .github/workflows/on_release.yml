@@ -2,7 +2,7 @@ name: Release
 
 on:
   release:
-    types: [ published ]
+    types: [ created ]
 
 env:
   VERSION: ${{ github.ref_name }}
@@ -25,12 +25,21 @@ jobs:
       - name: Build
         run: make deep
 
-      - uses: xresloader/upload-to-github-release@v1
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.3.2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Upload release binary
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         with:
-          file: "./bin/linux/deep-amd64"
-          update_latest_release: true
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ./bin/linux/deep-amd64
+          asset_name: Linux amd64
+          asset_content_type: application/octet-stream
 
   docker:
     runs-on: ubuntu-latest
