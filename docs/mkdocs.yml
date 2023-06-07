@@ -10,7 +10,11 @@ copyright: Intergral GmbH 2023
 
 theme:
   name: material
+  features:
+    - content.code.copy
 
+#extra_css:
+#  - styles/styles.css
 
 markdown_extensions:
   - pymdownx.highlight:
@@ -20,3 +24,6 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+
+plugins:
+  - glightbox:
