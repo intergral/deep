@@ -29,8 +29,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          file: "bin/dist/deep-amd64"
-          update_latest_release: $VERSION
+          file: "./bin/linux/deep-amd64"
+          release_id: $VERSION
 
   docker:
     runs-on: ubuntu-latest
