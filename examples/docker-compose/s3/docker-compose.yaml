@@ -30,9 +30,6 @@ services:
     image: ghcr.io/intergral/deep-python-client:simple-app
     environment:
       - DEEP_SERVICE_SECURE=False
-      - DEEP_LOGGING_CONF=/etc/client_logging.conf
-    volumes:
-      - ../shared/client_logging.conf:/etc/client_logging.conf
     depends_on:
       - deep
 
