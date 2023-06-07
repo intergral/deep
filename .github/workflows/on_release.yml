@@ -8,6 +8,27 @@ env:
   VERSION: ${{ github.ref_name }}
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.20
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20.x
+
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Build
+        run: make deep
+
+      - uses: xresloader/upload-to-github-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          file: "bin/dist/deep-amd64"
+          update_latest_release: $VERSION
+
   docker:
     runs-on: ubuntu-latest
 

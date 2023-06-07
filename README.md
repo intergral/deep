@@ -1,3 +1,5 @@
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/intergral/deep)
+[![Build & Test](https://github.com/intergral/deep/actions/workflows/on_push.yml/badge.svg)](https://github.com/intergral/deep/actions/workflows/on_push.yml)
 # DEEP
 
 DEEP is an open source, easy-to-use and high-scale distributed dynamic monitoring backend. DEEP is cost-efficient,
