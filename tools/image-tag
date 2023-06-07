@@ -17,6 +17,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+# if the version environment variable is set then use that
+# this is set in CI as the tag/release name
+if [  "$VERSION" != "" ]
+then
+  echo $VERSION
+  exit 0
+fi
+
 set -o errexit
 set -o nounset
 set -o pipefail
