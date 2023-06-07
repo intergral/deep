@@ -1,7 +1,7 @@
 # AWS EKS
 
 To deploy DEEP as a Pod in EKS there is a provided example of
-a [deployment](../../../examples/kubernetes/aws-eks-deployment) file that contains the service, deployment and config.
+a [deployment](https://github.com/intergral/deep/tree/master/examples/kubernetes/aws-eks-deployment) file that contains the service, deployment and config.
 
 ## Configure
 
