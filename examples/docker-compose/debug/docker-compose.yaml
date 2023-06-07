@@ -2,7 +2,7 @@ version: "3"
 services:
 
   deep:
-    image: deep/deep-debug:latest
+    image: intergral/deep-debug:latest
     command: [ "-config.file=/etc/deep.yaml" ]
     volumes:
       - ../shared/deep.yaml:/etc/deep.yaml

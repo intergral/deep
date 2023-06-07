@@ -1,0 +1,107 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: deep
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: deep
+  name: deep
+  namespace: deep
+spec:
+  selector:
+    matchLabels:
+      service: deep
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        service: deep
+    spec:
+      containers:
+        - image: intergral/deep
+          name: deep
+          ports:
+            - containerPort: 3300
+            - containerPort: 43315
+          command: ["/deep", "-config.file=/etc/deep/deep.yaml"]
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/deep
+      volumes:
+        - name: config-volume
+          configMap:
+            name: deep-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: deep-config
+  namespace: deep
+data:
+  deep.yaml: |
+    server:
+      http_listen_port: 3300
+      grpc_listen_port: 43315
+  
+    distributor:
+      receivers:
+        deep:
+    
+    ingester:
+      max_block_duration: 5m               # cut the headblock when this much time passes. this is being set for demo purposes and should probably be left alone normally
+    
+    compactor:
+      compaction:
+        block_retention: 1h                # overall Deep snapshot retention. set for demo purposes
+    
+    metrics_generator:
+      registry:
+        external_labels:
+          source: deep
+          cluster: docker-compose
+      storage:
+        path: /tmp/deep/generator/wal
+        remote_write:
+          - url: http://prometheus:9090/api/v1/write
+            send_exemplars: true
+    
+    storage:
+      tracepoint:
+        backend: s3
+        s3:
+          bucket: <name-of-bucket>          # The name of the bucket to use
+          access_key: <AWS-Access-Key>      # The AWS Access key for the IAM role that has permission for the bucket
+          secret_key: <AWS-Secret-Key>      # The AWS Secret key for the IAM role that has permission for the bucket
+          region: <AWS-Region-Name>         # The AWS region name e.g. eu-west-1
+          endpoint: <AWS-S3-Endpoint>       # The URL endpoint for S3. e.g. s3.dualstack.eu-west-1.amazonaws.com 
+      trace:
+        backend: s3                     
+        wal:
+          path: /tmp/deep/wal             
+        s3:
+          bucket: <name-of-bucket>          # The name of the bucket to use
+          access_key: <AWS-Access-Key>      # The AWS Access key for the IAM role that has permission for the bucket
+          secret_key: <AWS-Secret-Key>      # The AWS Secret key for the IAM role that has permission for the bucket
+          region: <AWS-Region-Name>         # The AWS region name e.g. eu-west-1
+          endpoint: <AWS-S3-Endpoint>       # The URL endpoint for S3. e.g. s3.dualstack.eu-west-1.amazonaws.com
+    
+    overrides:
+      metrics_generator_processors: [] # enables metrics generator
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: deep
+  namespace: deep
+spec:
+  selector:
+    service: deep
+  type: LoadBalancer
+  ports:
+    - port: 3300
+      name: http
+    - port: 43315
+      name: grpc

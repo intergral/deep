@@ -1,14 +1,10 @@
 server:
   http_listen_port: 3300
   grpc_listen_port: 43315
-  log_level: debug
 
 distributor:
   receivers:
     deep:
-  log_received_snapshots:
-    enabled: true
-    include_all_attributes: true
 
 ingester:
   max_block_duration: 5m               # cut the headblock when this much time passes. this is being set for demo purposes and should probably be left alone normally
@@ -28,8 +24,6 @@ metrics_generator:
       - url: http://prometheus:9090/api/v1/write
         send_exemplars: true
 
-use_otel_tracer: true
-
 storage:
   tracepoint:
     backend: local
@@ -43,4 +37,4 @@ storage:
       path: /tmp/deep/blocks
 
 overrides:
-  metrics_generator_processors: [span-metrics] # enables metrics generator
+  metrics_generator_processors: [] # enables metrics generator

@@ -9,9 +9,21 @@ distributor:
 ingester:
   max_block_duration: 5m
 
+memberlist:
+  abort_if_cluster_join_fails: false
+  bind_port: 7946
+  join_members:
+    - ingester-0:7946
+    - ingester-1:7946
+    - ingester-2:7946
+
 compactor:
   compaction:
     block_retention: 1h
+
+querier:
+  frontend_worker:
+    frontend_address: query-frontend:43315
 
 metrics_generator:
   registry:
@@ -19,7 +31,7 @@ metrics_generator:
       source: deep
       cluster: docker-compose
   storage:
-    path: /tmp/tempo/generator/wal
+    path: /tmp/deep/generator/wal
     remote_write:
       - url: http://prometheus:9090/api/v1/write
         send_exemplars: true
@@ -34,18 +46,17 @@ storage:
       secret_key: supersecret
       insecure: true
   trace:
-    backend: s3                        # backend configuration to use
-    wal:
-      path: /tmp/deep/wal             # where to store the the wal locally
+    backend: s3
     s3:
-      bucket: deep                    # how to store data in s3
+      bucket: deep
       endpoint: minio:9000
       access_key: deep
       secret_key: supersecret
       insecure: true
-      # For using AWS, select the appropriate regional endpoint and region
-      # endpoint: s3.dualstack.us-west-2.amazonaws.com
-      # region: us-west-2
+    wal:
+      path: /tmp/deep/wal             # where to store the the wal locally
+    local:
+      path: /tmp/deep/blocks
 
 overrides:
-  metrics_generator_processors: []
+  metrics_generator_processors: [ ]
