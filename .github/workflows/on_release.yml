@@ -19,6 +19,9 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
+      - name: Vendor
+        run: go mod vendor
+
       - name: Build
         run: make deep
 
