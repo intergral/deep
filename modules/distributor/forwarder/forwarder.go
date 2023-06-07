@@ -50,7 +50,7 @@ func (l List) ForwardTraces(ctx context.Context, traces ptrace.Traces) error {
 }
 
 func (l List) ForwardSnapshot(ctx context.Context, snapshot *tp.Snapshot) error {
-	print("ForwardSnapshot")
+	// todo complete this
 	return nil
 }
 
