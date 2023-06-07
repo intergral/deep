@@ -38,8 +38,8 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Setup gotestsum
-        run: go install gotest.tools/gotestsum@latest
+      - name: Vendor
+        run: go mod vendor
 
       - name: Build Deep
         run: make deep
@@ -58,9 +58,6 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@v3
-
-      - name: Setup gotestsum
-        run: go install gotest.tools/gotestsum@latest
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
