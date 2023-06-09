@@ -26,8 +26,8 @@ jobs:
           path: .cache
           restore-keys: |
             mkdocs-material-
-      - run: pip install mkdocs-material
-      - run: make docs
+      - run: pip install mkdocs-material mkdocs-glightbox
+      - run: mkdocs build -f ./docs/mkdocs.yml
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
