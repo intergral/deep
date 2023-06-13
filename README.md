@@ -5,7 +5,7 @@
 
 # Deep - dynamic instrumention engine for runtime logs, metrics, traces and snapshots
 
-Deep is an open source, easy-to-use and high-scale distributed dynamic instrumentation engine that can dynamically add logs, metrics, traces and snapshots your applications at runtime. Deep is cost-efficient, requiring only object storage to operate, and is deeply integrated with Grafana, Prometheus, Grafana Loki and Grafana Tempo.
+Deep is an open source, easy-to-use and high-scale distributed dynamic instrumentation engine that can dynamically add logs, metrics, traces and snapshots to your applications at runtime. Deep is cost-efficient, requiring only object storage to operate, and is deeply integrated with Grafana, Prometheus, Grafana Loki and Grafana Tempo.
 
 Deep ingests snapshots and buffers them and then writes them to Azure, GCS, S3 or local disk. As such it is robust, cheap and easy to operate!
 
