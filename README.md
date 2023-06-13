@@ -1,7 +1,9 @@
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/intergral/deep)
 [![Build & Test](https://github.com/intergral/deep/actions/workflows/on_push.yml/badge.svg)](https://github.com/intergral/deep/actions/workflows/on_push.yml)
 
-![DEEP](docs/docs/images/logo/logo.svg)
+<p align="center">
+<img src="docs/docs/images/logo/logo.svg" alt="DEEP" width="200"/>
+</p>
 
 # Deep: Dynamic Application Instrumentation for Observability
 
