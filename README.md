@@ -1,7 +1,7 @@
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/intergral/deep)
 [![Build & Test](https://github.com/intergral/deep/actions/workflows/on_push.yml/badge.svg)](https://github.com/intergral/deep/actions/workflows/on_push.yml)
 
-![image](https://github.com/intergral/deep/assets/10787304/33fbd546-1153-433a-9f34-f1f0dd14c5b5)
+![deep-logo-trim-300x300](https://github.com/intergral/deep/assets/10787304/fef96fad-e29c-4dfc-ab8e-4d8b279a7d1c)
 
 # Deep: Dynamic Application Instrumentation for Observability
 
