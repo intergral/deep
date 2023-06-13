@@ -9,12 +9,14 @@ site_dir: _site
 copyright: Intergral GmbH 2023
 
 theme:
+  logo: images/logo/icon.png
+  favicon: images/logo/icon.svg
   name: material
   features:
     - content.code.copy
 
-#extra_css:
-#  - styles/styles.css
+extra_css:
+  - styles/styles.css
 
 markdown_extensions:
   - pymdownx.highlight:

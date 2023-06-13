@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  - Copyright (C) 2023  Intergral GmbH
+  -
+  - This program is free software: you can redistribute it and/or modify
+  - it under the terms of the GNU Affero General Public License as published by
+  - the Free Software Foundation, either version 3 of the License, or
+  - (at your option) any later version.
+  -
+  - This program is distributed in the hope that it will be useful,
+  - but WITHOUT ANY WARRANTY; without even the implied warranty of
+  - MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  - GNU Affero General Public License for more details.
+  -
+  - You should have received a copy of the GNU Affero General Public License
+  - along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   id="svg11"
+   xml:space="preserve"
+   enable-background="new 0 0 200 200"
+   viewBox="0 0 200 200"
+   y="0px"
+   x="0px"
+   version="1.1"><metadata
+     id="metadata15"><rdf:RDF><cc:Work
+         rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" /></cc:Work></rdf:RDF></metadata><defs
+     id="defs239513" /><linearGradient
+     spreadMethod="pad"
+     y2="30%"
+     x2="-10%"
+     y1="120%"
+     x1="30%"
+     id="3d_gradient2-logo-dea14503-2fd8-4e00-b1b5-bc5cc1a3e15b"><stop
+       id="stop239490"
+       stop-opacity="1"
+       stop-color="#ffffff"
+       offset="0%" /><stop
+       id="stop239492"
+       stop-opacity="1"
+       stop-color="#000000"
+       offset="100%" /></linearGradient><linearGradient
+     gradientTransform="rotate(-30)"
+     spreadMethod="pad"
+     y2="30%"
+     x2="-10%"
+     y1="120%"
+     x1="30%"
+     id="3d_gradient3-logo-dea14503-2fd8-4e00-b1b5-bc5cc1a3e15b"><stop
+       id="stop239495"
+       stop-opacity="1"
+       stop-color="#ffffff"
+       offset="0%" /><stop
+       id="stop239497"
+       stop-opacity="1"
+       stop-color="#cccccc"
+       offset="50%" /><stop
+       id="stop239499"
+       stop-opacity="1"
+       stop-color="#000000"
+       offset="100%" /></linearGradient><path
+     stroke-miterlimit="2"
+     d="m 150.41379,100 c 0,-35.986179 -22.71938,-58.042225 -59.534739,-58.042225 H 60.531258 c -5.970058,0 -10.945106,4.975048 -10.945106,10.945106 v 94.194239 c 0,5.97006 4.975048,10.94511 10.945106,10.94511 6.135893,0 11.110941,-4.97505 11.110941,-10.94511 V 63.184647 h 19.236852 c 24.875239,0 37.644529,12.76929 37.644529,36.815353 0,9.61843 -2.81919,18.07601 -7.79424,24.2119 l -3.8142,4.31171 c -4.64338,4.64338 -4.47755,10.94511 -1.16085,14.92515 3.98004,4.64337 10.94511,5.14088 15.58849,1.32668 C 143.61456,134.32783 150.41379,117.41267 150.41379,100 Z m -67.826485,47.09712 c 0,5.97006 4.975048,10.94511 10.945105,10.94511 6.135893,0 11.11094,-4.97505 11.11094,-10.94511 0,-6.13589 -4.975047,-11.11094 -11.11094,-11.11094 -5.970057,0 -10.945105,4.97505 -10.945105,11.11094 z"
+     style="font-style:normal;font-weight:400;font-size:72px;line-height:1;font-family:'Brandmark Dots 1 Color';font-variant-ligatures:normal;text-align:center;text-anchor:middle;fill:#f57314;stroke:#f57314;stroke-width:3.91554713;stroke-linejoin:miter;stroke-miterlimit:2"
+     id="path239526" /></svg>
