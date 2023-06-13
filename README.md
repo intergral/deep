@@ -79,7 +79,7 @@ Here is a quick summary of the features and supported options:
  - :x: DeepQL: Initial steps are complete, but it is not available yet.
  - Language Support:
    - :heavy_check_mark: [Java](https://github.com/intergral/deep-java-client) - The agent is available and released as version 1.0.0
-   - :heavy_check_mark: [Python]https://github.com/intergral/deep-python-client - The Agent is available and released as version 1.0.0
+   - :heavy_check_mark: [Python](https://github.com/intergral/deep-python-client) - The Agent is available and released as version 1.0.0
    - Other languages (Ruby, Go, Node, .Net) are planned but not started.
 
 If you have any suggestions, or preferences on languages then please let us know via Github Issues.
