@@ -3,6 +3,7 @@ site_url: https://intergral.github.com/deep/
 
 repo_name: Deep
 repo_url: https://github.com/intergral/deep
+edit_uri: edit/master/docs/docs
 
 site_dir: _site
 
@@ -14,6 +15,7 @@ theme:
   name: material
   features:
     - content.code.copy
+    - content.action.edit
 
 extra_css:
   - styles/styles.css
@@ -29,3 +31,5 @@ markdown_extensions:
 
 plugins:
   - glightbox:
+  - mkdocs_gitlinks:
+      show_docs: true

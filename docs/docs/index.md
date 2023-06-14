@@ -4,7 +4,7 @@ DEEP is a Dynamic Exploration Evaluation Protocol, that allow the gathering of a
 needed.
 
 NOTE: This project is in early beta. Feedback is welcome please submit an issue
-on [GitHub](https://github.com/intergra/deep)
+on [GitHub](https://github.com/intergral/deep/issues)
 
 ## Usage
 
@@ -19,8 +19,8 @@ Once the service is deployed you will need to setup a client and connect Grafana
 
 To connect grafana to DEEP you will need to install the deep plugins.
 
-- [Datasource Plugin](https://github.com/intergral/grafana-deep-datasource)
-- [Panel Plugin](https://github.com/intergral/grafana-deep-panel)
+- [github](intergral/grafana-deep-datasource)
+- [github](intergral/grafana-deep-panel)
 
 These plugins are planned for release, pending review from Grafana.
 
@@ -29,6 +29,6 @@ These plugins are planned for release, pending review from Grafana.
 To set up the client you will need to pick the appropriate language and follow the instructions for that client. The
 available clients are:
 
-- [Python Client](https://github.com/intergral/deep-python-client)
-- [Java Client](https://github.com/intergral/deep-java-client)
-- [ColdFusion Client](https://github.com/intergral/deep-java-client)
+- [github](intergral/deep-python-client)
+- [github](intergral/deep-java-client)
+- [github](intergral/deep-java-client)
