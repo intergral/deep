@@ -4,19 +4,19 @@ syntax = "proto3";
 // in order to not break backward compatibility.
 package frontend;
 
-option go_package = "frontendv1pb";
+option go_package = "github.com/intergral/deep/modules/frontend/v1/frontendv1pb";
 
-import "gogoproto/gogo.proto";
-import "github.com/weaveworks/common/httpgrpc/httpgrpc.proto";
-import "modules/querier/stats/stats.proto";
-
-option (gogoproto.marshaler_all) = true;
-option (gogoproto.unmarshaler_all) = true;
+import "querier/stats/stats.proto";
 
 service Frontend {
   // After calling this method, client enters a loop, in which it waits for
   // a "FrontendToClient" message and replies with single "ClientToFrontend" message.
   rpc Process(stream ClientToFrontend) returns (stream FrontendToClient) {};
+
+  // After calling this method, client enters a loop, in which it waits for
+  // a "FrontendToClient" message and replies with single "ClientToFrontend" message.
+  // This version differs from the above as this is called from the tracepoint service
+  rpc ProcessTracepoint(stream ClientToFrontend) returns (stream FrontendToClient) {};
 
   // The client notifies the query-frontend that it started a graceful shutdown.
   rpc NotifyClientShutdown(NotifyClientShutdownRequest) returns (NotifyClientShutdownResponse);
@@ -28,7 +28,7 @@ enum Type {
 }
 
 message FrontendToClient {
-  httpgrpc.HTTPRequest httpRequest = 1;
+  HTTPRequest httpRequest = 1;
   Type type = 2;
 
   // Whether query statistics tracking should be enabled. The response will include
@@ -37,7 +37,7 @@ message FrontendToClient {
 }
 
 message ClientToFrontend {
-  httpgrpc.HTTPResponse httpResponse = 1;
+  HTTPResponse httpResponse = 1;
   string clientID = 2;
   stats.Stats stats = 3;
 }
@@ -47,3 +47,22 @@ message NotifyClientShutdownRequest {
 }
 
 message NotifyClientShutdownResponse {}
+
+
+message HTTPRequest {
+  string method = 1;
+  string url = 2;
+  repeated Header headers = 3;
+  bytes body = 4;
+}
+
+message HTTPResponse {
+  int32 Code = 1;
+  repeated Header headers = 2;
+  bytes body = 3;
+}
+
+message Header {
+  string key = 1;
+  repeated string values = 2;
+}

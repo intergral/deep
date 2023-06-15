@@ -39,7 +39,7 @@ services:
       - "3000:3000"
 
   test_app:
-    image: ghcr.io/intergral/deep-python-client:simple-app
+    image: intergral/deep-python:latest
     environment:
       - DEEP_SERVICE_SECURE=False
     depends_on:

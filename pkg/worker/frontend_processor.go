@@ -20,18 +20,16 @@ package worker
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"time"
-
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
+	"github.com/golang/protobuf/proto"
 	"github.com/grafana/dskit/backoff"
-	"github.com/weaveworks/common/httpgrpc"
-	"google.golang.org/grpc"
-
 	"github.com/intergral/deep/modules/frontend/v1/frontendv1pb"
 	"github.com/intergral/deep/modules/querier/stats"
-	querier_stats "github.com/intergral/deep/modules/querier/stats"
+	"github.com/weaveworks/common/httpgrpc"
+	"google.golang.org/grpc"
+	"net/http"
+	"time"
 )
 
 var (
@@ -41,12 +39,13 @@ var (
 	}
 )
 
-func newFrontendProcessor(cfg Config, handler RequestHandler, log log.Logger) processor {
+func NewFrontendProcessor(cfg Config, handler RequestHandler, log log.Logger, prcFunc ProcessorFunction) Processor {
 	return &frontendProcessor{
 		log:            log,
 		handler:        handler,
 		maxMessageSize: cfg.GRPCClientConfig.MaxSendMsgSize,
 		querierID:      cfg.QuerierID,
+		prcFunc:        prcFunc,
 	}
 }
 
@@ -56,45 +55,43 @@ type frontendProcessor struct {
 	maxMessageSize int
 	querierID      string
 
-	log log.Logger
+	log     log.Logger
+	prcFunc func(frontendv1pb.FrontendClient, context.Context) (frontendv1pb.Frontend_ProcessClient, error)
 }
 
-// notifyShutdown implements processor.
-func (fp *frontendProcessor) notifyShutdown(ctx context.Context, conn *grpc.ClientConn, address string) {
+func (fp frontendProcessor) ProcessQueriesOnSingleStream(ctx context.Context, conn *grpc.ClientConn, address string) {
 	client := frontendv1pb.NewFrontendClient(conn)
 
-	req := &frontendv1pb.NotifyClientShutdownRequest{ClientID: fp.querierID}
-	if _, err := client.NotifyClientShutdown(ctx, req); err != nil {
-		// Since we're shutting down there's nothing we can do except logging it.
-		level.Warn(fp.log).Log("msg", "failed to notify querier shutdown to query-frontend", "address", address, "err", err)
-	}
-}
-
-// runOne loops, trying to establish a stream to the frontend to begin request processing.
-func (fp *frontendProcessor) processQueriesOnSingleStream(ctx context.Context, conn *grpc.ClientConn, address string) {
-	client := frontendv1pb.NewFrontendClient(conn)
-
-	backoff := backoff.New(ctx, processorBackoffConfig)
-	for backoff.Ongoing() {
-		c, err := client.Process(ctx)
+	procBackoff := backoff.New(ctx, processorBackoffConfig)
+	for procBackoff.Ongoing() {
+		c, err := fp.prcFunc(client, ctx)
 		if err != nil {
 			level.Error(fp.log).Log("msg", "error contacting frontend", "address", address, "err", err)
-			backoff.Wait()
+			procBackoff.Wait()
 			continue
 		}
 
 		if err := fp.process(c); err != nil {
 			level.Error(fp.log).Log("msg", "error processing requests", "address", address, "err", err)
-			backoff.Wait()
+			procBackoff.Wait()
 			continue
 		}
 
-		backoff.Reset()
+		procBackoff.Reset()
 	}
 }
 
-// process loops processing requests on an established stream.
-func (fp *frontendProcessor) process(c frontendv1pb.Frontend_ProcessClient) error {
+func (fp frontendProcessor) NotifyShutdown(ctx context.Context, conn *grpc.ClientConn, address string) {
+	client := frontendv1pb.NewFrontendClient(conn)
+
+	req := &frontendv1pb.NotifyClientShutdownRequest{ClientID: fp.querierID}
+	if _, err := client.NotifyClientShutdown(ctx, req); err != nil {
+		// Since we're shutting down there's nothing we can do except logging it.
+		level.Warn(fp.log).Log("msg", "failed to notify tracepoint shutdown to query-frontend", "address", address, "err", err)
+	}
+}
+
+func (fp frontendProcessor) process(c frontendv1pb.Frontend_ProcessTracepointClient) error {
 	// Build a child context so we can cancel a query when the stream is closed.
 	ctx, cancel := context.WithCancel(c.Context())
 	defer cancel()
@@ -112,7 +109,7 @@ func (fp *frontendProcessor) process(c frontendv1pb.Frontend_ProcessClient) erro
 			// and cancel the query.  We don't actually handle queries in parallel
 			// here, as we're running in lock step with the server - each Recv is
 			// paired with a Send.
-			go fp.runRequest(ctx, request.HttpRequest, request.StatsEnabled, func(response *httpgrpc.HTTPResponse, stats *stats.Stats) error {
+			go fp.runRequest(ctx, request.HttpRequest, request.StatsEnabled, func(response *frontendv1pb.HTTPResponse, stats *stats.Stats) error {
 				return c.Send(&frontendv1pb.ClientToFrontend{
 					HttpResponse: response,
 					Stats:        stats,
@@ -131,18 +128,18 @@ func (fp *frontendProcessor) process(c frontendv1pb.Frontend_ProcessClient) erro
 	}
 }
 
-func (fp *frontendProcessor) runRequest(ctx context.Context, request *httpgrpc.HTTPRequest, statsEnabled bool, sendHTTPResponse func(response *httpgrpc.HTTPResponse, stats *stats.Stats) error) {
-	var stats *querier_stats.Stats
+func (fp frontendProcessor) runRequest(ctx context.Context, request *frontendv1pb.HTTPRequest, statsEnabled bool, sendHTTPResponse func(response *frontendv1pb.HTTPResponse, stats *stats.Stats) error) {
+	var querierStats *stats.Stats
 	if statsEnabled {
-		stats, ctx = querier_stats.ContextWithEmptyStats(ctx)
+		querierStats, ctx = stats.ContextWithEmptyStats(ctx)
 	}
 
-	response, err := fp.handler.Handle(ctx, request)
+	response, err := fp.handle(ctx, request)
 	if err != nil {
 		var ok bool
-		response, ok = httpgrpc.HTTPResponseFromError(err)
+		response, ok = fp.responseError(err)
 		if !ok {
-			response = &httpgrpc.HTTPResponse{
+			response = &frontendv1pb.HTTPResponse{
 				Code: http.StatusInternalServerError,
 				Body: []byte(err.Error()),
 			}
@@ -152,14 +149,41 @@ func (fp *frontendProcessor) runRequest(ctx context.Context, request *httpgrpc.H
 	// Ensure responses that are too big are not retried.
 	if len(response.Body) >= fp.maxMessageSize {
 		errMsg := fmt.Sprintf("response larger than the max (%d vs %d)", len(response.Body), fp.maxMessageSize)
-		response = &httpgrpc.HTTPResponse{
+		response = &frontendv1pb.HTTPResponse{
 			Code: http.StatusRequestEntityTooLarge,
 			Body: []byte(errMsg),
 		}
 		level.Error(fp.log).Log("msg", "error processing query", "err", errMsg)
 	}
 
-	if err := sendHTTPResponse(response, stats); err != nil {
+	if err := sendHTTPResponse(response, querierStats); err != nil {
 		level.Error(fp.log).Log("msg", "error processing requests", "err", err)
 	}
+}
+
+func (fp frontendProcessor) handle(ctx context.Context, request *frontendv1pb.HTTPRequest) (*frontendv1pb.HTTPResponse, error) {
+	handle, err := fp.handler.Handle(ctx, fp.toHttpGrpc(request))
+	return fp.fromHttpGrpc(handle), err
+}
+
+func (fp frontendProcessor) fromHttpGrpc(response *httpgrpc.HTTPResponse) *frontendv1pb.HTTPResponse {
+	marshal, _ := proto.Marshal(response)
+	ourResponse := &frontendv1pb.HTTPResponse{}
+	_ = proto.Unmarshal(marshal, ourResponse)
+	return ourResponse
+}
+
+func (fp frontendProcessor) toHttpGrpc(request *frontendv1pb.HTTPRequest) *httpgrpc.HTTPRequest {
+	marshal, _ := proto.Marshal(request)
+	req := &httpgrpc.HTTPRequest{}
+	_ = proto.Unmarshal(marshal, req)
+	return req
+}
+
+func (fp frontendProcessor) responseError(err error) (*frontendv1pb.HTTPResponse, bool) {
+	fromError, b := httpgrpc.HTTPResponseFromError(err)
+	if fromError == nil {
+		return nil, b
+	}
+	return fp.fromHttpGrpc(fromError), b
 }

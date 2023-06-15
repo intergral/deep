@@ -77,7 +77,6 @@ require (
 require (
 	github.com/Azure/go-autorest/autorest v0.11.28
 	github.com/alecthomas/kong v0.2.11
-	github.com/gogo/protobuf v1.3.2
 	github.com/googleapis/gax-go/v2 v2.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/intergral/go-deep-proto v1.0.0
@@ -121,6 +120,7 @@ require (
 	github.com/go-openapi/swag v0.21.1 // indirect
 	github.com/go-openapi/validate v0.22.0 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/gogo/status v1.1.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.2.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect

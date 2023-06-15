@@ -101,7 +101,7 @@ ifeq ($(UNAME), Darwin)
     SED_OPTS := ''
 endif
 DOCKER_PROTOBUF_IMAGE ?= otel/build-protobuf:0.14.0
-PROTOC = docker run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD} ${DOCKER_PROTOBUF_IMAGE} --proto_path=${PWD}
+PROTOC = docker run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD} ${DOCKER_PROTOBUF_IMAGE}
 PROTO_INTERMEDIATE_DIR = pkg/.patched-proto
 
 PROTOC_ARGS=--go_out=${PROTO_INTERMEDIATE_DIR}/out
@@ -125,6 +125,8 @@ gen-proto:
 	cd deep-proto && git pull origin master
 	mkdir -p $(PROTO_INTERMEDIATE_DIR)
 	mkdir -p $(PROTO_INTERMEDIATE_DIR)/out
+	mkdir -p $(PROTO_INTERMEDIATE_DIR)/stats
+	mkdir -p $(PROTO_INTERMEDIATE_DIR)/frontend
 	cp -R deep-proto/deepproto/proto/* $(PROTO_INTERMEDIATE_DIR)
 	cp pkg/deeppb/deep.proto $(PROTO_INTERMEDIATE_DIR)
 
@@ -146,17 +148,25 @@ gen-proto:
 	@echo --
 	@echo -- Gen proto --
 	@echo --
+	# Generate standard go proto from all files
 	$(foreach file, $(shell find ${PROTO_INTERMEDIATE_DIR} -name '*.proto'), ${PROTOC} --proto_path ${PROTO_INTERMEDIATE_DIR} ${PROTOC_ARGS} $(file);)
 
+	# Now generate grpc proto from specific files
 	${PROTOC} --proto_path ${PROTO_INTERMEDIATE_DIR} ${PROTOC_ARGS} ${GRPC_PROTOC_ARGS} ${PROTO_INTERMEDIATE_DIR}/poll/v1/poll.proto
 	${PROTOC} --proto_path ${PROTO_INTERMEDIATE_DIR} ${PROTOC_ARGS} ${GRPC_PROTOC_ARGS} ${PROTO_INTERMEDIATE_DIR}/tracepoint/v1/tracepoint.proto
-
 	${PROTOC} --proto_path ${PROTO_INTERMEDIATE_DIR} ${PROTOC_ARGS} ${GRPC_PROTOC_ARGS} ${PROTO_INTERMEDIATE_DIR}/deep.proto
+
+	# Generate stats proto
+	${PROTOC} --proto_path modules/querier/ --go_out=${PROTO_INTERMEDIATE_DIR}/stats --go-grpc_out=${PROTO_INTERMEDIATE_DIR}/stats modules/querier/stats/stats.proto
+	# Generate frontend proto
+	${PROTOC} -Imodules --proto_path modules/frontend/ --go_out=${PROTO_INTERMEDIATE_DIR}/frontend --go-grpc_out=${PROTO_INTERMEDIATE_DIR}/frontend modules/frontend/v1/frontendv1pb/frontend.proto
 
 	@echo --
 	@echo -- Move output --
 	@echo --
 	cp -r $(PROTO_INTERMEDIATE_DIR)/out/github.com/intergral/deep/pkg/deeppb/* pkg/deeppb
+	cp -r $(PROTO_INTERMEDIATE_DIR)/stats/github.com/intergral/deep/modules/querier/stats/* modules/querier/stats
+	cp -r $(PROTO_INTERMEDIATE_DIR)/frontend/github.com/intergral/deep/modules/frontend/v1/frontendv1pb/* modules/frontend/v1/frontendv1pb
 
 	@echo --
 	@echo -- Clean up --
@@ -179,7 +189,7 @@ gen-deepql-local:
 ### Check vendored and generated files are up to date
 .PHONY: vendor-check
 vendor-check: gen-proto update-mod gen-deepql
-	git diff --exit-code -- **/go.sum **/go.mod vendor/ pkg/deeppb/ pkg/deepql/
+	git diff --exit-code -- **/go.sum **/go.mod vendor/ pkg/deeppb/ pkg/deepql/ modules/querier/stats modules/frontend/v1/frontendv1pb
 
 ### Tidy dependencies for tempo and tempo-serverless modules
 .PHONY: update-mod

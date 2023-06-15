@@ -15,9 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 syntax = "proto3";
+// We import tracepoint and poll from the public deep proto that is used by the agents
+// we modify these via the build
 import "tracepoint/v1/tracepoint.proto";
 import "poll/v1/poll.proto";
-import "resource/v1/resource.proto";
 
 package deeppb;
 

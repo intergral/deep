@@ -20,17 +20,14 @@ package transport
 import (
 	"bytes"
 	"context"
+	frontend_v1pb "github.com/intergral/deep/modules/frontend/v1/frontendv1pb"
 	"io"
+	"io/ioutil"
 	"net/http"
-
-	"github.com/weaveworks/common/httpgrpc"
-	"github.com/weaveworks/common/httpgrpc/server"
 )
 
 // GrpcRoundTripper is similar to http.RoundTripper, but works with HTTP requests converted to protobuf messages.
-type GrpcRoundTripper interface {
-	RoundTripGRPC(context.Context, *httpgrpc.HTTPRequest) (*httpgrpc.HTTPResponse, error)
-}
+type GrpcRoundTripper func(context.Context, *frontend_v1pb.HTTPRequest) (*frontend_v1pb.HTTPResponse, error)
 
 func AdaptGrpcRoundTripperToHTTPRoundTripper(r GrpcRoundTripper) http.RoundTripper {
 	return &grpcRoundTripperAdapter{roundTripper: r}
@@ -38,7 +35,7 @@ func AdaptGrpcRoundTripperToHTTPRoundTripper(r GrpcRoundTripper) http.RoundTripp
 
 // This adapter wraps GrpcRoundTripper and converted it into http.RoundTripper
 type grpcRoundTripperAdapter struct {
-	roundTripper GrpcRoundTripper
+	roundTripper func(context.Context, *frontend_v1pb.HTTPRequest) (*frontend_v1pb.HTTPResponse, error)
 }
 
 type buffer struct {
@@ -51,12 +48,12 @@ func (b *buffer) Bytes() []byte {
 }
 
 func (a *grpcRoundTripperAdapter) RoundTrip(r *http.Request) (*http.Response, error) {
-	req, err := server.HTTPRequest(r)
+	req, err := HTTPRequest(r)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := a.roundTripper.RoundTripGRPC(r.Context(), req)
+	resp, err := a.roundTripper(r.Context(), req)
 	if err != nil {
 		return nil, err
 	}
@@ -71,4 +68,29 @@ func (a *grpcRoundTripperAdapter) RoundTrip(r *http.Request) (*http.Response, er
 		httpResp.Header[h.Key] = h.Values
 	}
 	return httpResp, nil
+}
+
+// HTTPRequest wraps an ordinary HTTPRequest with a gRPC one
+func HTTPRequest(r *http.Request) (*frontend_v1pb.HTTPRequest, error) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	return &frontend_v1pb.HTTPRequest{
+		Method:  r.Method,
+		Url:     r.RequestURI,
+		Body:    body,
+		Headers: fromHeader(r.Header),
+	}, nil
+}
+
+func fromHeader(hs http.Header) []*frontend_v1pb.Header {
+	result := make([]*frontend_v1pb.Header, 0, len(hs))
+	for k, vs := range hs {
+		result = append(result, &frontend_v1pb.Header{
+			Key:    k,
+			Values: vs,
+		})
+	}
+	return result
 }

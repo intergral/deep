@@ -18,11 +18,13 @@
 package api
 
 import (
+	"github.com/intergral/deep/modules/tracepoint/worker"
 	"time"
 )
 
 type Config struct {
-	LoadTracepoint RouteConfig `yaml:"load_tracepoint"`
+	LoadTracepoint RouteConfig           `yaml:"load_tracepoint"`
+	Worker         worker.TPWorkerConfig `yaml:"worker"`
 }
 
 type RouteConfig struct {

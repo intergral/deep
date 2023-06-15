@@ -20,6 +20,8 @@ package tracepoint
 import (
 	"context"
 	"fmt"
+	gkLog "github.com/go-kit/log"
+	"github.com/go-kit/log/level"
 	"github.com/grafana/dskit/ring"
 	"github.com/grafana/dskit/services"
 	"github.com/intergral/deep/modules/storage"
@@ -43,19 +45,22 @@ type TPService struct {
 	cfg        Config
 	lifecycler *ring.Lifecycler
 	store      *store.TPStore
+	log        gkLog.Logger
 }
 
 func (ts *TPService) Flush() {
-	//TODO implement me
-	return
+	err := ts.store.FlushAll(context.Background())
+	if err != nil {
+		level.Error(ts.log).Log("msg", "error flushing tracepoint store", "err", err)
+	}
 }
 
 func (ts *TPService) TransferOut(ctx context.Context) error {
-	//TODO implement me
-	return nil
+	return ring.ErrTransferDisabled
 }
 
-func New(cfg Config, storeConfig storage.Config, reg prometheus.Registerer) (*TPService, error) {
+// New will create a new TPService that handles reading and writing tracepoint changes to disk
+func New(cfg Config, storeConfig storage.Config, logger gkLog.Logger, reg prometheus.Registerer) (*TPService, error) {
 	newStore, err := store.NewStore(storeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create new tracepoint store %w", err)
@@ -64,6 +69,7 @@ func New(cfg Config, storeConfig storage.Config, reg prometheus.Registerer) (*TP
 	service := &TPService{
 		cfg:   cfg,
 		store: newStore,
+		log:   logger,
 	}
 
 	service.Service = services.NewBasicService(service.starting, service.running, service.stopping)
@@ -97,6 +103,7 @@ func (ts *TPService) running(ctx context.Context) error {
 }
 
 func (ts *TPService) stopping(_ error) error {
+	//todo - do we need to do anything here?
 	return nil
 }
 

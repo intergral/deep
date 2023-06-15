@@ -19,8 +19,12 @@ package tracepoint
 
 import (
 	"flag"
+	"github.com/grafana/dskit/backoff"
+	"github.com/grafana/dskit/grpcclient"
 	"github.com/intergral/deep/modules/tracepoint/api"
 	"github.com/intergral/deep/modules/tracepoint/client"
+	"github.com/intergral/deep/modules/tracepoint/worker"
+	pkg_worker "github.com/intergral/deep/pkg/worker"
 	"os"
 	"time"
 
@@ -73,4 +77,22 @@ func (cfg *Config) RegisterFlagsAndApplyDefaults(prefix string, f *flag.FlagSet)
 	cfg.Client.GRPCClientConfig.GRPCCompression = "snappy"
 
 	cfg.API.LoadTracepoint.Timeout = 1 * time.Minute
+	cfg.API.Worker = worker.TPWorkerConfig{
+		Config: pkg_worker.Config{
+			MatchMaxConcurrency:   true,
+			MaxConcurrentRequests: 20,
+			Parallelism:           2,
+			GRPCClientConfig: grpcclient.Config{
+				MaxRecvMsgSize:  100 << 20,
+				MaxSendMsgSize:  16 << 20,
+				GRPCCompression: "gzip",
+				BackoffConfig: backoff.Config{ // the max possible backoff should be lesser than QueryTimeout, with room for actual query response time
+					MinBackoff: 100 * time.Millisecond,
+					MaxBackoff: 1 * time.Second,
+					MaxRetries: 5,
+				},
+			},
+			DNSLookupPeriod: 10 * time.Second,
+		},
+	}
 }

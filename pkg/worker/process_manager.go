@@ -30,9 +30,9 @@ const (
 	notifyShutdownTimeout = 5 * time.Second
 )
 
-// Manages processor goroutines for single grpc connection.
-type processorManager struct {
-	p       processor
+// ProcessorManager Manages processor goroutines for single grpc connection.
+type ProcessorManager struct {
+	p       Processor
 	conn    *grpc.ClientConn
 	address string
 
@@ -47,8 +47,8 @@ type processorManager struct {
 	currentProcessors *atomic.Int32
 }
 
-func newProcessorManager(ctx context.Context, p processor, conn *grpc.ClientConn, address string) *processorManager {
-	return &processorManager{
+func NewProcessorManager(ctx context.Context, p Processor, conn *grpc.ClientConn, address string) *ProcessorManager {
+	return &ProcessorManager{
 		p:                 p,
 		ctx:               ctx,
 		conn:              conn,
@@ -57,15 +57,15 @@ func newProcessorManager(ctx context.Context, p processor, conn *grpc.ClientConn
 	}
 }
 
-func (pm *processorManager) stop() {
+func (pm *ProcessorManager) Stop() {
 	// Notify the remote query-frontend or query-scheduler we're shutting down.
 	// We use a new context to make sure it's not cancelled.
 	notifyCtx, cancel := context.WithTimeout(context.Background(), notifyShutdownTimeout)
 	defer cancel()
-	pm.p.notifyShutdown(notifyCtx, pm.conn, pm.address)
+	pm.p.NotifyShutdown(notifyCtx, pm.conn, pm.address)
 
 	// Stop all goroutines.
-	pm.concurrency(0)
+	pm.Concurrency(0)
 
 	// Wait until they finish.
 	pm.wg.Wait()
@@ -73,7 +73,7 @@ func (pm *processorManager) stop() {
 	_ = pm.conn.Close()
 }
 
-func (pm *processorManager) concurrency(n int) {
+func (pm *ProcessorManager) Concurrency(n int) {
 	pm.cancelsMu.Lock()
 	defer pm.cancelsMu.Unlock()
 
@@ -92,7 +92,7 @@ func (pm *processorManager) concurrency(n int) {
 			pm.currentProcessors.Inc()
 			defer pm.currentProcessors.Dec()
 
-			pm.p.processQueriesOnSingleStream(ctx, pm.conn, pm.address)
+			pm.p.ProcessQueriesOnSingleStream(ctx, pm.conn, pm.address)
 		}()
 	}
 

@@ -51,6 +51,7 @@ type OrgTPStore interface {
 	AddTracepoint(tracepoint *tp.TracePointConfig) error
 }
 
+// NewStore will create a new store to handle reading and writing to disk
 func NewStore(cfg storage.Config) (*TPStore, error) {
 	loadEncoding, err := encoding.LoadBackend(cfg)
 	if err != nil {
@@ -62,6 +63,17 @@ func NewStore(cfg storage.Config) (*TPStore, error) {
 	}, nil
 }
 
+func (s *TPStore) FlushAll(ctx context.Context) error {
+	for _, store := range s.orgStores {
+		err := s.Flush(ctx, store)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Flush will sync the in memory changes to disk
 func (s *TPStore) Flush(ctx context.Context, store OrgTPStore) error {
 	o := store.(*orgStore)
 	o.mu.Lock()
@@ -70,6 +82,8 @@ func (s *TPStore) Flush(ctx context.Context, store OrgTPStore) error {
 	return s.backend.Flush(ctx, o.block)
 }
 
+// ForResource will find or create a new in memory store for the defined resource
+// these stores are partitioned by org id
 func (s *TPStore) ForResource(ctx context.Context, id string, resource []*cp.KeyValue) (ResourceTPStore, error) {
 
 	org, err := s.ForOrg(ctx, id)
@@ -80,6 +94,8 @@ func (s *TPStore) ForResource(ctx context.Context, id string, resource []*cp.Key
 	return org.forResource(resource)
 }
 
+// ForOrg will find or create a in memory store for the given org id
+// this will load the org block from storage, if we do not already have a copy
 func (s *TPStore) ForOrg(ctx context.Context, id string) (OrgTPStore, error) {
 
 	if s.orgStores[id] != nil {
@@ -95,6 +111,8 @@ func (s *TPStore) ForOrg(ctx context.Context, id string) (OrgTPStore, error) {
 	return s.orgStores[id], nil
 }
 
+// orgStore is the link to the block in storage
+// this is what is read and written to storage when needed
 type orgStore struct {
 	id         string
 	userStores map[string]*resourceStore
@@ -102,6 +120,7 @@ type orgStore struct {
 	mu         sync.Mutex
 }
 
+// AddTracepoint will add a tracepoint to the org and any matching resource stores
 func (os *orgStore) AddTracepoint(tp *tp.TracePointConfig) error {
 	os.mu.Lock()
 	defer os.mu.Unlock()
@@ -120,6 +139,7 @@ func (os *orgStore) AddTracepoint(tp *tp.TracePointConfig) error {
 	return nil
 }
 
+// DeleteTracepoint will remove a tracepoint from the org and any matching resource stores
 func (os *orgStore) DeleteTracepoint(tpID string) error {
 	os.mu.Lock()
 	defer os.mu.Unlock()
@@ -130,6 +150,9 @@ func (os *orgStore) DeleteTracepoint(tpID string) error {
 	return nil
 }
 
+// forResource will create a representation of the tracepoints based on the resource.
+// this simple creates a sublist of the org tracepoints that have targeting that affect ths resource provided
+// the resourceStore is not persisted to disk
 func (os *orgStore) forResource(resource []*cp.KeyValue) (ResourceTPStore, error) {
 	key := os.keyForResource(os.id, resource)
 	if os.userStores[key] != nil {
@@ -172,6 +195,11 @@ func (os *orgStore) keyForResource(id string, resource []*cp.KeyValue) string {
 	return strconv.Itoa(int(h.Sum32()))
 }
 
+// resourceStore is the in memory filtered list of the resource config
+// e.g. this is the list of tracepoints that will affect a give client
+// these are updated when clients connect, or tracepoint configs change
+// they are not always kept in memory and will be recreated from storage
+// when needed
 type resourceStore struct {
 	orgId       string
 	tps         []*tp.TracePointConfig
@@ -180,9 +208,10 @@ type resourceStore struct {
 	os          *orgStore
 }
 
+// ProcessRequest will process a request to load the tracepoints for a resource
 func (us *resourceStore) ProcessRequest(req *deeppb.LoadTracepointRequest) (*deeppb.LoadTracepointResponse, error) {
-	// we are now in the scalable nodes for the tracepoints. here we need to load from disk/mem
 	var responseType = pb.ResponseType_UPDATE
+	// if the incoming hash is the same has the hash we have then there is no change between the client and us
 	if req.Request.CurrentHash != "" && req.Request.CurrentHash == us.currentHash {
 		responseType = pb.ResponseType_NO_CHANGE
 	}
@@ -195,12 +224,14 @@ func (us *resourceStore) ProcessRequest(req *deeppb.LoadTracepointRequest) (*dee
 	}}, nil
 }
 
+// AddTracepoint to this resource
 func (us *resourceStore) AddTracepoint(tp *tp.TracePointConfig) error {
 	us.tps = append(us.tps, tp)
 	us.rehash()
 	return nil
 }
 
+// DeleteTracepoint from this resource
 func (us *resourceStore) DeleteTracepoint(tpID string) error {
 	var tpToRemoveIndex = -1
 	for i, config := range us.tps {
@@ -220,6 +251,7 @@ func (us *resourceStore) DeleteTracepoint(tpID string) error {
 	return nil
 }
 
+// rehash the resource and set our currentHash
 func (us *resourceStore) rehash() {
 	h := fnv.New32()
 	for _, config := range us.tps {
@@ -228,8 +260,9 @@ func (us *resourceStore) rehash() {
 	us.currentHash = strconv.Itoa(int(h.Sum32()))
 }
 
-func (us *resourceStore) remove(s []*tp.TracePointConfig, i int) []*tp.TracePointConfig {
-	s[i] = s[len(s)-1]
-	s[len(s)-1] = nil
-	return s[:len(s)-1]
+// remove element at index from array then return the new array
+func (us *resourceStore) remove(array []*tp.TracePointConfig, index int) []*tp.TracePointConfig {
+	array[index] = array[len(array)-1]
+	array[len(array)-1] = nil
+	return array[:len(array)-1]
 }

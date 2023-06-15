@@ -66,13 +66,15 @@ type Limits interface {
 // for requests which failed.
 type Frontend struct {
 	services.Service
+	frontendv1pb.UnimplementedFrontendServer
 
 	cfg    Config
 	log    log.Logger
 	limits Limits
 
-	requestQueue *queue.RequestQueue
-	activeUsers  *util.ActiveUsersCleanupService
+	requestQueue   *queue.RequestQueue
+	tpRequestQueue *queue.RequestQueue
+	activeUsers    *util.ActiveUsersCleanupService
 
 	// Subservices manager.
 	subservices        *services.Manager
@@ -83,6 +85,12 @@ type Frontend struct {
 	discardedRequests *prometheus.CounterVec
 	numClients        prometheus.GaugeFunc
 	queueDuration     prometheus.Histogram
+
+	// TP Metrics.
+	tpQueueLength       *prometheus.GaugeVec
+	tpDiscardedRequests *prometheus.CounterVec
+	tpNumClients        prometheus.GaugeFunc
+	tpQueueDuration     prometheus.Histogram
 }
 
 type request struct {
@@ -90,9 +98,9 @@ type request struct {
 	queueSpan   opentracing.Span
 	originalCtx context.Context
 
-	request  *httpgrpc.HTTPRequest
+	request  *frontendv1pb.HTTPRequest
 	err      chan error
-	response chan *httpgrpc.HTTPResponse
+	response chan *frontendv1pb.HTTPResponse
 }
 
 // New creates a new frontend. Frontend implements service, and must be started and stopped.
@@ -114,9 +122,23 @@ func New(cfg Config, limits Limits, log log.Logger, registerer prometheus.Regist
 			Help:    "Time spend by requests queued.",
 			Buckets: prometheus.DefBuckets,
 		}),
+		tpQueueLength: promauto.With(registerer).NewGaugeVec(prometheus.GaugeOpts{
+			Name: "deep_tp_query_frontend_queue_length",
+			Help: "Number of queries in the queue.",
+		}, []string{"user"}),
+		tpDiscardedRequests: promauto.With(registerer).NewCounterVec(prometheus.CounterOpts{
+			Name: "deep_tp_query_frontend_discarded_requests_total",
+			Help: "Total number of query requests discarded.",
+		}, []string{"user"}),
+		tpQueueDuration: promauto.With(registerer).NewHistogram(prometheus.HistogramOpts{
+			Name:    "deep_query_frontend_tp_queue_duration_seconds",
+			Help:    "Time spend by requests queued.",
+			Buckets: prometheus.DefBuckets,
+		}),
 	}
 
 	f.requestQueue = queue.NewRequestQueue(cfg.MaxOutstandingPerTenant, cfg.QuerierForgetDelay, f.queueLength, f.discardedRequests)
+	f.tpRequestQueue = queue.NewRequestQueue(cfg.MaxOutstandingPerTenant, cfg.QuerierForgetDelay, f.tpQueueLength, f.tpDiscardedRequests)
 	f.activeUsers = util.NewActiveUsersCleanupWithDefaultValues(f.cleanupInactiveUserMetrics)
 
 	var err error
@@ -129,6 +151,11 @@ func New(cfg Config, limits Limits, log log.Logger, registerer prometheus.Regist
 		Name: "deep_query_frontend_connected_clients",
 		Help: "Number of worker clients currently connected to the frontend.",
 	}, f.requestQueue.GetConnectedQuerierWorkersMetric)
+
+	f.tpNumClients = promauto.With(registerer).NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "deep_tp_query_frontend_connected_clients",
+		Help: "Number of worker clients currently connected to the frontend.",
+	}, f.tpRequestQueue.GetConnectedQuerierWorkersMetric)
 
 	f.Service = services.NewBasicService(f.starting, f.running, f.stopping)
 	return f, nil
@@ -164,10 +191,25 @@ func (f *Frontend) stopping(_ error) error {
 func (f *Frontend) cleanupInactiveUserMetrics(user string) {
 	f.queueLength.DeleteLabelValues(user)
 	f.discardedRequests.DeleteLabelValues(user)
+
+	f.tpQueueLength.DeleteLabelValues(user)
+	f.tpDiscardedRequests.DeleteLabelValues(user)
 }
 
-// RoundTripGRPC round trips a proto (instead of a HTTP request).
-func (f *Frontend) RoundTripGRPC(ctx context.Context, req *httpgrpc.HTTPRequest) (*httpgrpc.HTTPResponse, error) {
+// QuerierRoundTrip sends a http request to the querier via a GRPC stream connection from the querier
+// we 'store' the request in a queue (requestQueue) locally until a querier asks for a job
+func (f *Frontend) QuerierRoundTrip(ctx context.Context, req *frontendv1pb.HTTPRequest) (*frontendv1pb.HTTPResponse, error) {
+	return f.commonRoundTrip(ctx, req, f.queueRequest)
+}
+
+// TracepointRoundTrip sends a http request to the tracepointAPI via a GRPC stream connection from the tracepointAPI
+// we 'store' the request in a queue (tpRequestQueue) locally until a tracepointAPI asks for a job
+func (f *Frontend) TracepointRoundTrip(ctx context.Context, req *frontendv1pb.HTTPRequest) (*frontendv1pb.HTTPResponse, error) {
+	return f.commonRoundTrip(ctx, req, f.tpQueueRequest)
+}
+
+// commonRoundTrip is the common way to enqueue a request and await the response from the worker (querier or tracepointAPI)
+func (f *Frontend) commonRoundTrip(ctx context.Context, req *frontendv1pb.HTTPRequest, queueFunc func(context.Context, *request) error) (*frontendv1pb.HTTPResponse, error) {
 	// Propagate trace context in gRPC too - this will be ignored if using HTTP.
 	tracer, span := opentracing.GlobalTracer(), opentracing.SpanFromContext(ctx)
 	if tracer != nil && span != nil {
@@ -190,10 +232,10 @@ func (f *Frontend) RoundTripGRPC(ctx context.Context, req *httpgrpc.HTTPRequest)
 		// of the Process stream, even if this goroutine goes away due to
 		// client context cancellation.
 		err:      make(chan error, 1),
-		response: make(chan *httpgrpc.HTTPResponse, 1),
+		response: make(chan *frontendv1pb.HTTPResponse, 1),
 	}
 
-	if err := f.queueRequest(ctx, &request); err != nil {
+	if err := queueFunc(ctx, &request); err != nil {
 		return nil, err
 	}
 
@@ -209,28 +251,36 @@ func (f *Frontend) RoundTripGRPC(ctx context.Context, req *httpgrpc.HTTPRequest)
 	}
 }
 
+func (f *Frontend) ProcessTracepoint(server frontendv1pb.Frontend_ProcessTracepointServer) error {
+	return f.commonProcessor(server, f.tpRequestQueue, f.tpQueueDuration)
+}
+
 // Process allows backends to pull requests from the frontend.
 func (f *Frontend) Process(server frontendv1pb.Frontend_ProcessServer) error {
+	return f.commonProcessor(server, f.requestQueue, f.queueDuration)
+}
+
+func (f *Frontend) commonProcessor(server frontendv1pb.Frontend_ProcessServer, requestQueue *queue.RequestQueue, queueDuration prometheus.Histogram) error {
 	querierID, err := getQuerierID(server)
 	if err != nil {
 		return err
 	}
 
-	f.requestQueue.RegisterQuerierConnection(querierID)
-	defer f.requestQueue.UnregisterQuerierConnection(querierID)
+	requestQueue.RegisterQuerierConnection(querierID)
+	defer requestQueue.UnregisterQuerierConnection(querierID)
 
 	// If the downstream request(from querier -> frontend) is cancelled,
 	// we need to ping the condition variable to unblock getNextRequestForQuerier.
 	// Ideally we'd have ctx aware condition variables...
 	go func() {
 		<-server.Context().Done()
-		f.requestQueue.QuerierDisconnecting()
+		requestQueue.QuerierDisconnecting()
 	}()
 
 	lastUserIndex := queue.FirstUser()
 
 	for {
-		reqWrapper, idx, err := f.requestQueue.GetNextRequestForQuerier(server.Context(), lastUserIndex, querierID)
+		reqWrapper, idx, err := requestQueue.GetNextRequestForQuerier(server.Context(), lastUserIndex, querierID)
 		if err != nil {
 			return err
 		}
@@ -238,7 +288,7 @@ func (f *Frontend) Process(server frontendv1pb.Frontend_ProcessServer) error {
 
 		req := reqWrapper.(*request)
 
-		f.queueDuration.Observe(time.Since(req.enqueueTime).Seconds())
+		queueDuration.Observe(time.Since(req.enqueueTime).Seconds())
 		req.queueSpan.Finish()
 
 		/*
@@ -296,9 +346,9 @@ func (f *Frontend) Process(server frontendv1pb.Frontend_ProcessServer) error {
 
 		// Happy path: merge the stats and propagate the response.
 		case resp := <-resps:
-			if stats.ShouldTrackHTTPGRPCResponse(resp.HttpResponse) {
-				stats := stats.FromContext(req.originalCtx)
-				stats.Merge(resp.Stats) // Safe if stats is nil.
+			if stats.ShouldTrackHTTPGRPCResponse(resp.HttpResponse.Code) {
+				ctxStats := stats.FromContext(req.originalCtx)
+				ctxStats.Merge(resp.Stats) // Safe if stats is nil.
 			}
 
 			req.response <- resp.HttpResponse
@@ -307,8 +357,10 @@ func (f *Frontend) Process(server frontendv1pb.Frontend_ProcessServer) error {
 }
 
 func (f *Frontend) NotifyClientShutdown(_ context.Context, req *frontendv1pb.NotifyClientShutdownRequest) (*frontendv1pb.NotifyClientShutdownResponse, error) {
-	level.Info(f.log).Log("msg", "received shutdown notification from querier", "querier", req.GetClientID())
+	level.Info(f.log).Log("msg", "received shutdown notification from querier/tracepointAPI", "querier", req.GetClientID())
+	// we share the API so call both should have no affect if no client id matches
 	f.requestQueue.NotifyQuerierShutdown(req.GetClientID())
+	f.tpRequestQueue.NotifyQuerierShutdown(req.GetClientID())
 
 	return &frontendv1pb.NotifyClientShutdownResponse{}, nil
 }
@@ -318,7 +370,7 @@ func getQuerierID(server frontendv1pb.Frontend_ProcessServer) (string, error) {
 		Type: frontendv1pb.Type_GET_ID,
 		// Old queriers don't support GET_ID, and will try to use the request.
 		// To avoid confusing them, include dummy request.
-		HttpRequest: &httpgrpc.HTTPRequest{
+		HttpRequest: &frontendv1pb.HTTPRequest{
 			Method: "GET",
 			Url:    "/invalid_request_sent_by_frontend",
 		},
@@ -337,6 +389,14 @@ func getQuerierID(server frontendv1pb.Frontend_ProcessServer) (string, error) {
 }
 
 func (f *Frontend) queueRequest(ctx context.Context, req *request) error {
+	return f.commonQueueRequest(ctx, req, f.requestQueue, "queued")
+}
+
+func (f *Frontend) tpQueueRequest(ctx context.Context, req *request) error {
+	return f.commonQueueRequest(ctx, req, f.tpRequestQueue, "tp_queued")
+}
+
+func (f *Frontend) commonQueueRequest(ctx context.Context, req *request, reqQueue *queue.RequestQueue, name string) error {
 	tenantIDs, err := tenant.TenantIDs(ctx)
 	if err != nil {
 		return err
@@ -344,7 +404,7 @@ func (f *Frontend) queueRequest(ctx context.Context, req *request) error {
 
 	now := time.Now()
 	req.enqueueTime = now
-	req.queueSpan, _ = opentracing.StartSpanFromContext(ctx, "queued")
+	req.queueSpan, _ = opentracing.StartSpanFromContext(ctx, name)
 
 	// aggregate the max queriers limit in the case of a multi tenant query
 	maxQueriers := validation.SmallestPositiveNonZeroIntPerTenant(tenantIDs, f.limits.MaxQueriersPerUser)
@@ -352,7 +412,7 @@ func (f *Frontend) queueRequest(ctx context.Context, req *request) error {
 	joinedTenantID := tenant.JoinTenantIDs(tenantIDs)
 	f.activeUsers.UpdateUserTimestamp(joinedTenantID, now)
 
-	err = f.requestQueue.EnqueueRequest(joinedTenantID, req, maxQueriers, nil)
+	err = reqQueue.EnqueueRequest(joinedTenantID, req, maxQueriers, nil)
 	if err == queue.ErrTooManyRequests {
 		return errTooManyRequest
 	}
