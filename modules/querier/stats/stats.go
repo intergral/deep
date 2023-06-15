@@ -21,8 +21,6 @@ import (
 	"context"
 	"sync/atomic" //lint:ignore faillint we can't use go.uber.org/atomic with a protobuf struct without wrapping it.
 	"time"
-
-	"github.com/weaveworks/common/httpgrpc"
 )
 
 type contextKey int
@@ -59,7 +57,7 @@ func (s *Stats) AddWallTime(t time.Duration) {
 		return
 	}
 
-	atomic.AddInt64((*int64)(&s.WallTime), int64(t))
+	atomic.AddInt64(&s.WallTime, int64(t))
 }
 
 // LoadWallTime returns current wall time.
@@ -68,7 +66,7 @@ func (s *Stats) LoadWallTime() time.Duration {
 		return 0
 	}
 
-	return time.Duration(atomic.LoadInt64((*int64)(&s.WallTime)))
+	return time.Duration(atomic.LoadInt64(&s.WallTime))
 }
 
 func (s *Stats) AddFetchedSeries(series uint64) {
@@ -114,7 +112,7 @@ func (s *Stats) Merge(other *Stats) {
 	s.AddFetchedChunkBytes(other.LoadFetchedChunkBytes())
 }
 
-func ShouldTrackHTTPGRPCResponse(r *httpgrpc.HTTPResponse) bool {
+func ShouldTrackHTTPGRPCResponse(code int32) bool {
 	// Do no track statistics for requests failed because of a server error.
-	return r.Code < 500
+	return code < 500
 }

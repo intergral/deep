@@ -106,7 +106,7 @@ services:
       - mkdir -p /data/deep && minio server /data --console-address ':9001'
 
   test_app:
-    image: ghcr.io/intergral/deep-python-client:simple-app
+    image: intergral/deep-python:latest
     environment:
       - DEEP_SERVICE_URL=distributor:43315
       - DEEP_SERVICE_SECURE=False

@@ -24,6 +24,7 @@ import (
 	"github.com/grafana/dskit/backoff"
 	"github.com/grafana/dskit/grpcclient"
 	"github.com/intergral/deep/modules/querier/worker"
+	pkg_wrk "github.com/intergral/deep/pkg/worker"
 )
 
 // Config for a querier.
@@ -60,21 +61,22 @@ func (cfg *Config) RegisterFlagsAndApplyDefaults(prefix string, f *flag.FlagSet)
 	cfg.Search.HedgeRequestsUpTo = 2
 	cfg.Search.QueryTimeout = 30 * time.Second
 	cfg.Worker = worker.Config{
-		MatchMaxConcurrency:   true,
-		MaxConcurrentRequests: cfg.MaxConcurrentQueries,
-		Parallelism:           2,
-		GRPCClientConfig: grpcclient.Config{
-			MaxRecvMsgSize:  100 << 20,
-			MaxSendMsgSize:  16 << 20,
-			GRPCCompression: "gzip",
-			BackoffConfig: backoff.Config{ // the max possible backoff should be lesser than QueryTimeout, with room for actual query response time
-				MinBackoff: 100 * time.Millisecond,
-				MaxBackoff: 1 * time.Second,
-				MaxRetries: 5,
+		Config: pkg_wrk.Config{
+			MatchMaxConcurrency:   true,
+			MaxConcurrentRequests: cfg.MaxConcurrentQueries,
+			Parallelism:           2,
+			GRPCClientConfig: grpcclient.Config{
+				MaxRecvMsgSize:  100 << 20,
+				MaxSendMsgSize:  16 << 20,
+				GRPCCompression: "gzip",
+				BackoffConfig: backoff.Config{ // the max possible backoff should be lesser than QueryTimeout, with room for actual query response time
+					MinBackoff: 100 * time.Millisecond,
+					MaxBackoff: 1 * time.Second,
+					MaxRetries: 5,
+				},
 			},
-		},
-		DNSLookupPeriod: 10 * time.Second,
-	}
+			DNSLookupPeriod: 10 * time.Second,
+		}}
 
 	f.StringVar(&cfg.Worker.FrontendAddress, prefix+".frontend-address", "", "Address of query frontend service, in host:port format.")
 }

@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/intergral/deep/modules/frontend/v1/frontendv1pb"
 	"github.com/intergral/deep/pkg/deeppb"
 	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/deepql"
@@ -49,7 +50,6 @@ import (
 
 	ingester_client "github.com/intergral/deep/modules/ingester/client"
 	"github.com/intergral/deep/modules/overrides"
-	"github.com/intergral/deep/modules/querier/worker"
 	"github.com/intergral/deep/modules/storage"
 	"github.com/intergral/deep/pkg/api"
 	"github.com/intergral/deep/pkg/deepdb/backend"
@@ -59,6 +59,7 @@ import (
 	"github.com/intergral/deep/pkg/util"
 	"github.com/intergral/deep/pkg/util/log"
 	"github.com/intergral/deep/pkg/validation"
+	"github.com/intergral/deep/pkg/worker"
 )
 
 var (
@@ -146,17 +147,20 @@ func New(cfg Config, clientCfg ingester_client.Config, ring ring.ReadRing, store
 
 func (q *Querier) CreateAndRegisterWorker(handler http.Handler) error {
 	q.cfg.Worker.MaxConcurrentRequests = q.cfg.MaxConcurrentQueries
-	worker, err := worker.NewQuerierWorker(
-		q.cfg.Worker,
+	querierWorker, err := worker.NewQuerierWorker(
+		q.cfg.Worker.Config,
 		httpgrpc_server.NewServer(handler),
 		log.Logger,
 		nil,
+		func(client frontendv1pb.FrontendClient, ctx context.Context) (frontendv1pb.Frontend_ProcessClient, error) {
+			return client.Process(ctx)
+		},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create frontend worker: %w", err)
 	}
 
-	return q.RegisterSubservices(worker, q.pool)
+	return q.RegisterSubservices(querierWorker, q.pool)
 }
 
 func (q *Querier) RegisterSubservices(s ...services.Service) error {

@@ -49,13 +49,15 @@ const (
 )
 
 type QueryFrontend struct {
-	SnapshotByID, Search http.Handler
-	logger               log.Logger
-	store                storage.Store
+	SnapshotByID, Search  http.Handler
+	logger                log.Logger
+	store                 storage.Store
+	LoadTracepointHandler http.Handler
+	DelTracepointHandler  http.Handler
 }
 
 // New returns a new QueryFrontend
-func New(cfg Config, next http.RoundTripper, o *overrides.Overrides, store storage.Store, logger log.Logger, registerer prometheus.Registerer) (*QueryFrontend, error) {
+func New(cfg Config, next http.RoundTripper, tpNext http.RoundTripper, o *overrides.Overrides, store storage.Store, logger log.Logger, registerer prometheus.Registerer) (*QueryFrontend, error) {
 	level.Info(logger).Log("msg", "creating middleware in query frontend")
 
 	if cfg.TraceByID.QueryShards < minQueryShards || cfg.TraceByID.QueryShards > maxQueryShards {
@@ -87,15 +89,34 @@ func New(cfg Config, next http.RoundTripper, o *overrides.Overrides, store stora
 
 	snapshotByIDCounter := queriesPerTenant.MustCurryWith(prometheus.Labels{"op": snapshotByIDOp})
 	searchCounter := queriesPerTenant.MustCurryWith(prometheus.Labels{"op": searchOp})
+	loadTp := queriesPerTenant.MustCurryWith(prometheus.Labels{"op": "loadtp"})
+	delTp := queriesPerTenant.MustCurryWith(prometheus.Labels{"op": "deltp"})
 
 	snapshots := traceByIDMiddleware.Wrap(next)
 	search := searchMiddleware.Wrap(next)
+
+	tpMiddleware := newTracepointForwardMiddleware(cfg, logger)
+	tpHandler := tpMiddleware.Wrap(tpNext)
+
 	return &QueryFrontend{
-		SnapshotByID: newHandler(snapshots, snapshotByIDCounter, logger),
-		Search:       newHandler(search, searchCounter, logger),
-		logger:       logger,
-		store:        store,
+		SnapshotByID:          newHandler(snapshots, snapshotByIDCounter, logger),
+		Search:                newHandler(search, searchCounter, logger),
+		LoadTracepointHandler: newHandler(tpHandler, loadTp, logger),
+		DelTracepointHandler:  newHandler(tpHandler, delTp, logger),
+		logger:                logger,
+		store:                 store,
 	}, nil
+}
+
+func newTracepointForwardMiddleware(cfg Config, logger log.Logger) Middleware {
+	return MiddlewareFunc(func(next http.RoundTripper) http.RoundTripper {
+		return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
+			// We just need to modify the uri to match the api expectation
+			r.RequestURI = path.Join(api.PathPrefixTracepoints, r.RequestURI)
+			resp, err := next.RoundTrip(r)
+			return resp, err
+		})
+	})
 }
 
 // newTraceByIDMiddleware creates a new frontend middleware responsible for handling get traces requests.

@@ -26,13 +26,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/grafana/dskit/services"
+	"github.com/intergral/deep/modules/frontend/v1/frontendv1pb"
 	"github.com/intergral/deep/modules/tracepoint/client"
 	"github.com/intergral/deep/pkg/api"
 	"github.com/intergral/deep/pkg/deeppb"
 	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
 	pb "github.com/intergral/deep/pkg/deeppb/poll/v1"
 	rp "github.com/intergral/deep/pkg/deeppb/resource/v1"
+	"github.com/intergral/deep/pkg/worker"
 	"github.com/opentracing/opentracing-go"
+	httpgrpc_server "github.com/weaveworks/common/httpgrpc/server"
 	"io"
 	"net/http"
 	"strconv"
@@ -46,21 +49,40 @@ type TracepointAPI struct {
 	cfg    Config
 	client *client.TPClient
 	log    log.Logger
+
+	subServices        *services.Manager
+	subServicesWatcher *services.FailureWatcher
 }
 
 func (ta *TracepointAPI) starting(ctx context.Context) error {
+	if ta.subServices != nil {
+		err := services.StartManagerAndAwaitHealthy(ctx, ta.subServices)
+		if err != nil {
+			return fmt.Errorf("failed to start subservices %w", err)
+		}
+	}
 
 	return nil
 }
 
 func (ta *TracepointAPI) running(ctx context.Context) error {
-	select {
-	case <-ctx.Done():
-		return nil
+	if ta.subServices != nil {
+		select {
+		case <-ctx.Done():
+			return nil
+		case err := <-ta.subServicesWatcher.Chan():
+			return fmt.Errorf("subservices failed %w", err)
+		}
+	} else {
+		<-ctx.Done()
 	}
+	return nil
 }
 
 func (ta *TracepointAPI) stopping(_ error) error {
+	if ta.subServices != nil {
+		return services.StopManagerAndAwaitStopped(context.Background(), ta.subServices)
+	}
 	return nil
 }
 
@@ -78,10 +100,13 @@ func NewTracepointAPI(cfg Config, tpClient *client.TPClient, log log.Logger) (*T
 }
 
 func (ta *TracepointAPI) LoadTracepointHandler(w http.ResponseWriter, r *http.Request) {
+	// trying to split GET and POST in the server handler with .Methods() doesn't work
+	// so if we are a POST then pass to CreateTracepointHandler
 	if strings.ToLower(r.Method) == "post" {
 		ta.CreateTracepointHandler(w, r)
 		return
 	}
+
 	ctx, cancel := context.WithDeadline(r.Context(), time.Now().Add(ta.cfg.LoadTracepoint.Timeout))
 	defer cancel()
 
@@ -262,4 +287,29 @@ func (ta *TracepointAPI) parseDeleteRequest(r *http.Request) (*deeppb.DeleteTrac
 	}
 
 	return &deeppb.DeleteTracepointRequest{TracepointID: tpID}, nil
+}
+
+func (ta *TracepointAPI) CreateAndRegisterWorker(handler http.Handler) error {
+	querierWorker, err := worker.NewQuerierWorker(
+		ta.cfg.Worker.Config,
+		httpgrpc_server.NewServer(handler),
+		ta.log,
+		nil,
+		func(frontendClient frontendv1pb.FrontendClient, ctx context.Context) (frontendv1pb.Frontend_ProcessClient, error) {
+			return frontendClient.ProcessTracepoint(ctx)
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create frontend worker: %w", err)
+	}
+
+	return ta.RegisterSubservices(querierWorker)
+}
+
+func (ta *TracepointAPI) RegisterSubservices(s ...services.Service) error {
+	var err error
+	ta.subServices, err = services.NewManager(s...)
+	ta.subServicesWatcher = services.NewFailureWatcher()
+	ta.subServicesWatcher.WatchManager(ta.subServices)
+	return err
 }

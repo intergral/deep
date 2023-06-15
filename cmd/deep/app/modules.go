@@ -223,6 +223,7 @@ func (t *App) initDistributor() (services.Service, error) {
 	return t.distributor, nil
 }
 
+// initTracepointClient will create a common client that can be used by service to connect to the tracepointService
 func (t *App) initTracepointClient() (services.Service, error) {
 	tpClient, err := client.New(t.cfg.Tracepoint.Client, t.tpRing, log.Logger)
 	if err != nil {
@@ -233,9 +234,10 @@ func (t *App) initTracepointClient() (services.Service, error) {
 	return t.tpClient, nil
 }
 
+// initTracepoint creates the service that will actually deal with storing the tracepoint configs
 func (t *App) initTracepoint() (services.Service, error) {
 	t.cfg.Tracepoint.LifecyclerConfig.ListenPort = t.cfg.Server.GRPCListenPort
-	newTracepointService, err := tracepoint.New(t.cfg.Tracepoint, t.cfg.StorageConfig, prometheus.DefaultRegisterer)
+	newTracepointService, err := tracepoint.New(t.cfg.Tracepoint, t.cfg.StorageConfig, log.Logger, prometheus.DefaultRegisterer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tracepoint config service: %w", err)
 	}
@@ -246,6 +248,8 @@ func (t *App) initTracepoint() (services.Service, error) {
 	return t.tracepointService, nil
 }
 
+// initTracepointAPI is the main handler for changes to tracepoint configs
+// here we accept the requests from HTTP and process the changes via tpClient
 func (t *App) initTracepointAPI() (services.Service, error) {
 	tracepointAPI, err := tpapi.NewTracepointAPI(t.cfg.Tracepoint.API, t.tpClient, log.Logger)
 	if err != nil {
@@ -254,13 +258,15 @@ func (t *App) initTracepointAPI() (services.Service, error) {
 
 	t.tracepointAPI = tracepointAPI
 
+	// trying to split GET and POST in the server handler with .Methods() doesn't work,
+	// so we do it ourselves in the handler
 	loadHandler := t.HTTPAuthMiddleware.Wrap(http.HandlerFunc(t.tracepointAPI.LoadTracepointHandler))
 	t.Server.HTTP.Handle(path.Join(api.PathPrefixTracepoints, addHTTPAPIPrefix(&t.cfg, api.PathTracepoints)), loadHandler)
 
 	deleteHandler := t.HTTPAuthMiddleware.Wrap(http.HandlerFunc(t.tracepointAPI.DeleteTracepointHandler))
 	t.Server.HTTP.Handle(path.Join(api.PathPrefixTracepoints, addHTTPAPIPrefix(&t.cfg, api.PathDeleteTracepoint)), deleteHandler)
 
-	return t.tracepointAPI, nil
+	return t.tracepointAPI, t.tracepointAPI.CreateAndRegisterWorker(t.Server.HTTPServer.Handler)
 }
 
 func (t *App) initIngester() (services.Service, error) {
@@ -342,17 +348,20 @@ func (t *App) initQuerier() (services.Service, error) {
 	return t.querier, t.querier.CreateAndRegisterWorker(t.Server.HTTPServer.Handler)
 }
 
+// initQueryFrontend creates a common front end API that will then distribute the calls to the appropriate backends
+// we have 2 backends querier and tracepointAPI
+// querier handles search queries - e.g. get snapshots by id, or deepql queries
+// tracepointAPI handles requests to change the config for tracepoints
 func (t *App) initQueryFrontend() (services.Service, error) {
-	// cortexTripper is a bridge between http and httpgrpc.
-	// It does the job of passing data to the cortex frontend code.
-	cortexTripper, v1, err := frontend.InitFrontend(t.cfg.Frontend.Config, frontend.CortexNoQuerierLimits{}, log.Logger, prometheus.DefaultRegisterer)
+	// we create to 2 bridges (roundTrippers) one for each backend
+	roundTripper, tpTripper, v1, err := frontend.InitFrontend(t.cfg.Frontend.Config, frontend.CortexNoQuerierLimits{}, log.Logger, prometheus.DefaultRegisterer)
 	if err != nil {
 		return nil, err
 	}
 	t.frontend = v1
 
 	// create query frontend
-	queryFrontend, err := frontend.New(t.cfg.Frontend, cortexTripper, t.overrides, t.store, log.Logger, prometheus.DefaultRegisterer)
+	queryFrontend, err := frontend.New(t.cfg.Frontend, roundTripper, tpTripper, t.overrides, t.store, log.Logger, prometheus.DefaultRegisterer)
 	if err != nil {
 		return nil, err
 	}
@@ -378,7 +387,12 @@ func (t *App) initQueryFrontend() (services.Service, error) {
 	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathSearchTagValues), searchHandler)
 	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathSearchTagValuesV2), searchHandler)
 
-	//todo add support for tracepoint routes
+	loadTracepointHandler := middleware.Wrap(queryFrontend.LoadTracepointHandler)
+	delTracepointHandler := middleware.Wrap(queryFrontend.DelTracepointHandler)
+
+	// http tracepoint endpoints
+	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathTracepoints), loadTracepointHandler)
+	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathDeleteTracepoint), delTracepointHandler)
 
 	// the query frontend needs to have knowledge of the blocks so it can shard search jobs
 	t.store.EnablePolling(nil)
