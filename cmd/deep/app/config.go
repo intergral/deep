@@ -174,14 +174,6 @@ func (c *Config) CheckConfig() []ConfigWarning {
 	}
 
 	// check v2 specific settings
-	if c.StorageConfig.Trace.Block.Version != "v2" && c.StorageConfig.Trace.Block.IndexDownsampleBytes != storage.DefaultIndexDownSampleBytes {
-		warnings = append(warnings, newV2Warning("v2_index_downsample_bytes"))
-	}
-
-	if c.StorageConfig.Trace.Block.Version != "v2" && c.StorageConfig.Trace.Block.IndexPageSizeBytes != storage.DefaultIndexPageSizeBytes {
-		warnings = append(warnings, newV2Warning("v2_index_page_size_bytes"))
-	}
-
 	if c.StorageConfig.Trace.Block.Version != "v2" && c.Compactor.Compactor.ChunkSizeBytes != deepdb.DefaultChunkSizeBytes {
 		warnings = append(warnings, newV2Warning("v2_in_buffer_bytes"))
 	}
@@ -225,7 +217,7 @@ type ConfigWarning struct {
 var (
 	warnCompleteBlockTimeout = ConfigWarning{
 		Message: "ingester.complete_block_timeout < storage.trace.blocklist_poll",
-		Explain: "You may receive 404s between the time the ingesters have flushed a trace and the querier is aware of the new block",
+		Explain: "You may receive 404s between the time the ingesters have flushed a snapshot and the querier is aware of the new block",
 	}
 	warnBlockRetention = ConfigWarning{
 		Message: "compactor.compaction.compacted_block_timeout < storage.trace.blocklist_poll",
@@ -243,11 +235,8 @@ var (
 		Message: "c.StorageConfig.Trace.BlocklistPollConcurrency must be greater than zero. Using default.",
 		Explain: fmt.Sprintf("default=%d", deepdb.DefaultBlocklistPollConcurrency),
 	}
-	warnLogReceivedTraces = ConfigWarning{
-		Message: "c.Distributor.LogReceivedTraces is deprecated. The new flag is c.Distributor.log_received_spans.enabled",
-	}
 	warnStorageTraceBackendLocal = ConfigWarning{
-		Message: "Local backend will not correctly retrieve traces with a distributed deployment unless all components have access to the same disk. You should probably be using object storage as a backend.",
+		Message: "Local backend will not correctly retrieve snapshots with a distributed deployment unless all components have access to the same disk. You should probably be using object storage as a backend.",
 	}
 )
 
