@@ -1,41 +1,10 @@
+# Create a name space to contain deep
 apiVersion: v1
 kind: Namespace
 metadata:
   name: deep
 ---
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    service: deep
-  name: deep
-  namespace: deep
-spec:
-  selector:
-    matchLabels:
-      service: deep
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        service: deep
-    spec:
-      containers:
-        - image: intergral/deep
-          imagePullPolicy: Always
-          name: deep
-          ports:
-            - containerPort: 3300
-            - containerPort: 43315
-          command: ["/deep", "-config.file=/etc/deep/deep.yaml"]
-          volumeMounts:
-            - name: config-volume
-              mountPath: /etc/deep
-      volumes:
-        - name: config-volume
-          configMap:
-            name: deep-config
----
+# Create the configmap that is used by deep
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -46,17 +15,23 @@ data:
     server:
       http_listen_port: 3300
       grpc_listen_port: 43315
-  
+    
     distributor:
       receivers:
         deep:
     
     ingester:
-      max_block_duration: 5m               # cut the headblock when this much time passes. this is being set for demo purposes and should probably be left alone normally
+      max_block_duration: 5m               
     
     compactor:
       compaction:
-        block_retention: 1h                # overall Deep snapshot retention. set for demo purposes
+        block_retention: 1h                
+    
+    memberlist:
+      abort_if_cluster_join_fails: false
+      bind_port: 7946
+      join_members:
+        - ingester.deep.svc.cluster.local:7946
     
     metrics_generator:
       registry:
@@ -68,7 +43,17 @@ data:
         remote_write:
           - url: http://prometheus:9090/api/v1/write
             send_exemplars: true
+    tracepoint:
+      api:
+        worker:
+          config:
+            frontend_address: query-frontend-headless.deep.svc.cluster.local:43315
     
+    querier:
+      frontend_worker:
+        config:
+          frontend_address: query-frontend-headless.deep.svc.cluster.local:43315
+          
     storage:
       tracepoint:
         backend: s3
@@ -79,9 +64,9 @@ data:
           region: <AWS-Region-Name>         # The AWS region name e.g. eu-west-1
           endpoint: <AWS-S3-Endpoint>       # The URL endpoint for S3. e.g. s3.dualstack.eu-west-1.amazonaws.com 
       trace:
-        backend: s3                     
+        backend: s3
         wal:
-          path: /tmp/deep/wal             
+          path: /tmp/deep/wal
         s3:
           bucket: <name-of-bucket>          # The name of the bucket to use
           access_key: <AWS-Access-Key>      # The AWS Access key for the IAM role that has permission for the bucket
@@ -90,19 +75,64 @@ data:
           endpoint: <AWS-S3-Endpoint>       # The URL endpoint for S3. e.g. s3.dualstack.eu-west-1.amazonaws.com
     
     overrides:
-      metrics_generator_processors: [] # enables metrics generator
+      metrics_generator_processors: [ ] # enables metrics generator
 ---
+# This is the public Service used to connect clients to DEEP
 apiVersion: v1
 kind: Service
 metadata:
-  name: deep
+  name: distributor
   namespace: deep
 spec:
   selector:
-    service: deep
+    service: distributor
   type: LoadBalancer
+  ports:
+    - port: 43315
+      name: grpc
+---
+# This is the public Service used to connect Grafana
+apiVersion: v1
+kind: Service
+metadata:
+  name: query-frontend
+  namespace: deep
+spec:
+  selector:
+    service: query-frontend
+  type: LoadBalancer
+  ports:
+    - port: 3300
+      name: http
+---
+# This is the internal headless service used by workers (tracepoint-api, querier) to connect to the frontend queue
+apiVersion: v1
+kind: Service
+metadata:
+  name: query-frontend-headless
+  namespace: deep
+spec:
+  clusterIP: None
+  selector:
+    service: query-frontend
   ports:
     - port: 3300
       name: http
     - port: 43315
       name: grpc
+---
+# This is the internal headless service used by the DEEP ring to connect the internal services together
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingester
+  namespace: deep
+spec:
+  selector:
+    service: ingester
+  clusterIP: None
+  ports:
+    - port: 43315
+      name: grpc
+    - port: 7946
+      name: gossip

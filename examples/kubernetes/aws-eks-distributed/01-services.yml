@@ -1,0 +1,264 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: distributor
+  name: distributor
+  namespace: deep
+spec:
+  selector:
+    matchLabels:
+      service: distributor
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        service: distributor
+    spec:
+      containers:
+        - image: intergral/deep
+          imagePullPolicy: Always
+          name: distributor
+          ports:
+            - containerPort: 3300
+            - containerPort: 43315
+          command: [ "/deep", "-config.file=/etc/deep/deep.yaml", "-target=distributor" ]
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/deep
+      volumes:
+        - name: config-volume
+          configMap:
+            name: deep-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: ingester
+  name: ingester
+  namespace: deep
+spec:
+  selector:
+    matchLabels:
+      service: ingester
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        service: ingester
+    spec:
+      containers:
+        - image: intergral/deep
+          imagePullPolicy: Always
+          name: ingester
+          ports:
+            - containerPort: 7946
+            - containerPort: 3300
+            - containerPort: 43315
+          command: [ "/deep", "-config.file=/etc/deep/deep.yaml", "-target=ingester" ]
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/deep
+      volumes:
+        - name: config-volume
+          configMap:
+            name: deep-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: query-frontend
+  name: query-frontend
+  namespace: deep
+spec:
+  selector:
+    matchLabels:
+      service: query-frontend
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        service: query-frontend
+    spec:
+      containers:
+        - image: intergral/deep
+          imagePullPolicy: Always
+          name: query-frontend
+          ports:
+            - containerPort: 3300
+            - containerPort: 43315
+          command: [ "/deep", "-config.file=/etc/deep/deep.yaml", "-target=query-frontend" ]
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/deep
+      volumes:
+        - name: config-volume
+          configMap:
+            name: deep-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: querier
+  name: querier
+  namespace: deep
+spec:
+  selector:
+    matchLabels:
+      service: querier
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        service: querier
+    spec:
+      containers:
+        - image: intergral/deep
+          imagePullPolicy: Always
+          name: querier
+          ports:
+            - containerPort: 3300
+            - containerPort: 43315
+          command: [ "/deep", "-config.file=/etc/deep/deep.yaml", "-target=querier" ]
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/deep
+      volumes:
+        - name: config-volume
+          configMap:
+            name: deep-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: compactor
+  name: compactor
+  namespace: deep
+spec:
+  selector:
+    matchLabels:
+      service: compactor
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        service: compactor
+    spec:
+      containers:
+        - image: intergral/deep
+          imagePullPolicy: Always
+          name: compactor
+          ports:
+            - containerPort: 3300
+            - containerPort: 43315
+          command: [ "/deep", "-config.file=/etc/deep/deep.yaml", "-target=compactor" ]
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/deep
+      volumes:
+        - name: config-volume
+          configMap:
+            name: deep-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: metrics-generator
+  name: metrics-generator
+  namespace: deep
+spec:
+  selector:
+    matchLabels:
+      service: metrics-generator
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        service: metrics-generator
+    spec:
+      containers:
+        - image: intergral/deep
+          imagePullPolicy: Always
+          name: metrics-generator
+          ports:
+            - containerPort: 3300
+            - containerPort: 43315
+          command: [ "/deep", "-config.file=/etc/deep/deep.yaml", "-target=metrics-generator" ]
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/deep
+      volumes:
+        - name: config-volume
+          configMap:
+            name: deep-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: tracepoint
+  name: tracepoint
+  namespace: deep
+spec:
+  selector:
+    matchLabels:
+      service: tracepoint
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        service: tracepoint
+    spec:
+      containers:
+        - image: intergral/deep
+          imagePullPolicy: Always
+          name: tracepoint
+          ports:
+            - containerPort: 3300
+            - containerPort: 43315
+          command: [ "/deep", "-config.file=/etc/deep/deep.yaml", "-target=tracepoint" ]
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/deep
+      volumes:
+        - name: config-volume
+          configMap:
+            name: deep-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: tracepoint-api
+  name: tracepoint-api
+  namespace: deep
+spec:
+  selector:
+    matchLabels:
+      service: tracepoint-api
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        service: tracepoint-api
+    spec:
+      containers:
+        - image: intergral/deep
+          imagePullPolicy: Always
+          name: tracepoint-api
+          ports:
+            - containerPort: 3300
+            - containerPort: 43315
+          command: [ "/deep", "-config.file=/etc/deep/deep.yaml", "-target=tracepoint-api" ]
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/deep
+      volumes:
+        - name: config-volume
+          configMap:
+            name: deep-config
