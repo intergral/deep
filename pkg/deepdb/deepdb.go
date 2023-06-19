@@ -84,8 +84,11 @@ var (
 	})
 )
 
-type Writer interface {
+type TracepointWriter interface {
 	WriteTracepointBlock(ctx context.Context, orgId string, reader *bytes.Reader, size int64) error
+}
+
+type Writer interface {
 	WriteBlock(ctx context.Context, block WriteableBlock) error
 	CompleteBlock(ctx context.Context, block common.WALBlock) (common.BackendBlock, error)
 	CompleteBlockWithBackend(ctx context.Context, block common.WALBlock, r backend.Reader, w backend.Writer) (common.BackendBlock, error)
@@ -94,8 +97,11 @@ type Writer interface {
 
 type IterateObjectCallback func(id common.ID, obj []byte) bool
 
-type Reader interface {
+type TracepointReader interface {
 	ReadTracepointBlock(ctx context.Context, orgId string) (io.ReadCloser, int64, error)
+}
+
+type Reader interface {
 	FindSnapshot(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) (*deep_tp.Snapshot, []error, error)
 
 	Search(ctx context.Context, meta *backend.BlockMeta, req *deeppb.SearchRequest, opts common.SearchOptions) (*deeppb.SearchResponse, error)

@@ -43,6 +43,9 @@ type Store interface {
 	deepdb.Reader
 	deepdb.Writer
 	deepdb.Compactor
+
+	deepdb.TracepointWriter
+	deepdb.TracepointReader
 }
 
 type store struct {
@@ -53,6 +56,9 @@ type store struct {
 	deepdb.Reader
 	deepdb.Writer
 	deepdb.Compactor
+
+	deepdb.TracepointWriter
+	deepdb.TracepointReader
 }
 
 // NewStore creates a new Tempo Store using configuration supplied.

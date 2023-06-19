@@ -21,14 +21,15 @@ import (
 	"bytes"
 	"context"
 	"github.com/golang/protobuf/proto"
-	"github.com/intergral/deep/modules/storage"
 	"github.com/intergral/deep/modules/tracepoint/store/encoding/types"
+	"github.com/intergral/deep/pkg/deepdb"
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 )
 
 type TPEncoder struct {
-	Store storage.Store
+	Reader deepdb.TracepointReader
+	Writer deepdb.TracepointWriter
 }
 
 func (t *TPEncoder) Flush(ctx context.Context, block types.TPBlock) error {
@@ -59,7 +60,7 @@ func (t *TPEncoder) Flush(ctx context.Context, block types.TPBlock) error {
 
 	reader := bytes.NewReader(data)
 
-	err := t.Store.WriteTracepointBlock(ctx, block.OrgId(), reader, int64(len(data)))
+	err := t.Writer.WriteTracepointBlock(ctx, block.OrgId(), reader, int64(len(data)))
 	if err != nil {
 		return err
 	}
@@ -69,7 +70,7 @@ func (t *TPEncoder) Flush(ctx context.Context, block types.TPBlock) error {
 }
 
 func (t *TPEncoder) LoadBlock(ctx context.Context, orgId string) (types.TPBlock, error) {
-	read, i, err := t.Store.ReadTracepointBlock(ctx, orgId)
+	read, i, err := t.Reader.ReadTracepointBlock(ctx, orgId)
 
 	if err != nil {
 		if err == backend.ErrDoesNotExist {

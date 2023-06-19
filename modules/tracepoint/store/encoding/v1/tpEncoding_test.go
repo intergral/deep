@@ -18,14 +18,33 @@
 package v1
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"github.com/intergral/deep/pkg/deepdb"
+	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/backend/local"
 	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"os"
 	"testing"
 )
+
+type mockTracepointReaderWriter struct {
+	deepdb.TracepointReader
+	deepdb.TracepointWriter
+	r backend.RawReader
+	w backend.RawWriter
+}
+
+func (rw mockTracepointReaderWriter) ReadTracepointBlock(ctx context.Context, orgId string) (io.ReadCloser, int64, error) {
+	return rw.r.Read(ctx, "tracepoints", []string{orgId}, false)
+}
+
+func (rw mockTracepointReaderWriter) WriteTracepointBlock(ctx context.Context, orgId string, reader *bytes.Reader, size int64) error {
+	return rw.w.Write(ctx, "tracepoints", []string{orgId}, reader, size, false)
+}
 
 func TestFlush(t *testing.T) {
 	fakeTracesFile, err := os.CreateTemp("/tmp", "")
@@ -36,9 +55,14 @@ func TestFlush(t *testing.T) {
 		Path: t.TempDir(),
 	})
 
+	rw := mockTracepointReaderWriter{
+		r: r,
+		w: w,
+	}
+
 	encoder := TPEncoder{
-		Reader: r,
-		Writer: w,
+		Reader: rw,
+		Writer: rw,
 	}
 
 	block := tpBlock{
