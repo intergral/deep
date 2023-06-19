@@ -24,14 +24,11 @@ compactor:
 tracepoint:
   api:
     worker:
-      config:
-        frontend_address: query-frontend:43315
-
+      frontend_address: query-frontend:43315
 
 querier:
   frontend_worker:
-    config:
-      frontend_address: query-frontend:43315
+    frontend_address: query-frontend:43315
 
 metrics_generator:
   registry:

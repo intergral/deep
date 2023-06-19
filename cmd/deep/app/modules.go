@@ -85,6 +85,8 @@ const (
 	UsageReport          string = "usage-report"
 )
 
+// initServer will create the server service that provides the listener and handler for HTTP and
+// GRPC endpoints. Each module can then register new endpoints as they are needed.
 func (t *App) initServer() (services.Service, error) {
 	t.cfg.Server.MetricsNamespace = metricsNamespace
 	t.cfg.Server.ExcludeRequestInLog = true
@@ -102,7 +104,7 @@ func (t *App) initServer() (services.Service, error) {
 
 	DisableSignalHandling(&t.cfg.Server)
 
-	server, err := server.New(t.cfg.Server)
+	deepServer, err := server.New(t.cfg.Server)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create server %w", err)
 	}
@@ -118,8 +120,8 @@ func (t *App) initServer() (services.Service, error) {
 		return svs
 	}
 
-	t.Server = server
-	s := NewServerService(server, servicesToWaitFor)
+	t.Server = deepServer
+	s := NewServerService(deepServer, servicesToWaitFor)
 
 	return s, nil
 }
@@ -190,11 +192,11 @@ func (t *App) initGeneratorRing() (services.Service, error) {
 }
 
 func (t *App) initOverrides() (services.Service, error) {
-	overrides, err := overrides.NewOverrides(t.cfg.LimitsConfig)
+	overridesService, err := overrides.NewOverrides(t.cfg.LimitsConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create overrides %w", err)
 	}
-	t.overrides = overrides
+	t.overrides = overridesService
 
 	prometheus.MustRegister(&t.cfg.LimitsConfig)
 
@@ -320,17 +322,17 @@ func (t *App) initQuerier() (services.Service, error) {
 	}
 
 	// todo: make ingester client a module instead of passing config everywhere
-	querier, err := querier.New(t.cfg.Querier, t.cfg.IngesterClient, t.ring, t.store, t.overrides)
+	newQuerier, err := querier.New(t.cfg.Querier, t.cfg.IngesterClient, t.ring, t.store, t.overrides)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create querier %w", err)
 	}
-	t.querier = querier
+	t.querier = newQuerier
 
-	middleware := middleware.Merge(
+	frontEndMiddleware := middleware.Merge(
 		t.HTTPAuthMiddleware,
 	)
 
-	tracesHandler := middleware.Wrap(http.HandlerFunc(t.querier.SnapshotByIdHandler))
+	tracesHandler := frontEndMiddleware.Wrap(http.HandlerFunc(t.querier.SnapshotByIdHandler))
 	t.Server.HTTP.Handle(path.Join(api.PathPrefixQuerier, addHTTPAPIPrefix(&t.cfg, api.PathSnapshots)), tracesHandler)
 
 	searchHandler := t.HTTPAuthMiddleware.Wrap(http.HandlerFunc(t.querier.SearchHandler))
@@ -367,15 +369,15 @@ func (t *App) initQueryFrontend() (services.Service, error) {
 	}
 
 	// wrap handlers with auth
-	middleware := middleware.Merge(
+	frontEndMiddleware := middleware.Merge(
 		t.HTTPAuthMiddleware,
 		httpGzipMiddleware(),
 	)
 
-	traceByIDHandler := middleware.Wrap(queryFrontend.SnapshotByID)
-	searchHandler := middleware.Wrap(queryFrontend.Search)
+	traceByIDHandler := frontEndMiddleware.Wrap(queryFrontend.SnapshotByID)
+	searchHandler := frontEndMiddleware.Wrap(queryFrontend.Search)
 
-	// register grpc server for queriers to connect to
+	// register grpc server for workers to connect to
 	frontend_v1pb.RegisterFrontendServer(t.Server.GRPC, t.frontend)
 
 	// http trace by id endpoint
@@ -387,14 +389,14 @@ func (t *App) initQueryFrontend() (services.Service, error) {
 	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathSearchTagValues), searchHandler)
 	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathSearchTagValuesV2), searchHandler)
 
-	loadTracepointHandler := middleware.Wrap(queryFrontend.LoadTracepointHandler)
-	delTracepointHandler := middleware.Wrap(queryFrontend.DelTracepointHandler)
+	loadTracepointHandler := frontEndMiddleware.Wrap(queryFrontend.LoadTracepointHandler)
+	delTracepointHandler := frontEndMiddleware.Wrap(queryFrontend.DelTracepointHandler)
 
 	// http tracepoint endpoints
 	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathTracepoints), loadTracepointHandler)
 	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathDeleteTracepoint), delTracepointHandler)
 
-	// the query frontend needs to have knowledge of the blocks so it can shard search jobs
+	// the query frontend needs to have knowledge of the blocks, so it can shard search jobs
 	t.store.EnablePolling(nil)
 
 	// http query echo endpoint
@@ -403,7 +405,6 @@ func (t *App) initQueryFrontend() (services.Service, error) {
 	// http endpoint to see usage stats data
 	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathUsageStats), usageStatsHandler(t.cfg.UsageReport))
 
-	// todo: queryFrontend should implement service.Service and take the cortex frontend a submodule
 	return t.frontend, nil
 }
 
@@ -412,11 +413,11 @@ func (t *App) initCompactor() (services.Service, error) {
 		t.cfg.Compactor.ShardingRing.KVStore.Store = "memberlist"
 	}
 
-	compactor, err := compactor.New(t.cfg.Compactor, t.store, t.overrides, prometheus.DefaultRegisterer)
+	newCompactor, err := compactor.New(t.cfg.Compactor, t.store, t.overrides, prometheus.DefaultRegisterer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create compactor %w", err)
 	}
-	t.compactor = compactor
+	t.compactor = newCompactor
 
 	if t.compactor.Ring != nil {
 		t.Server.HTTP.Handle("/compactor/ring", t.compactor.Ring)
@@ -425,6 +426,7 @@ func (t *App) initCompactor() (services.Service, error) {
 	return t.compactor, nil
 }
 
+// initStore will create the store service that can read/write to the configured storage service (S3, local disk etc)
 func (t *App) initStore() (services.Service, error) {
 	store, err := deep_storage.NewStore(t.cfg.StorageConfig, log.Logger)
 	if err != nil {
@@ -435,7 +437,7 @@ func (t *App) initStore() (services.Service, error) {
 	return t.store, nil
 }
 
-func (t *App) initMemberlistKV() (services.Service, error) {
+func (t *App) initMemberListKV() (services.Service, error) {
 	reg := prometheus.DefaultRegisterer
 	t.cfg.MemberlistKV.MetricsRegisterer = reg
 	t.cfg.MemberlistKV.MetricsNamespace = metricsNamespace
@@ -514,7 +516,7 @@ func (t *App) setupModuleManager() error {
 
 	mm.RegisterModule(Server, t.initServer, modules.UserInvisibleModule)
 	mm.RegisterModule(InternalServer, t.initInternalServer, modules.UserInvisibleModule)
-	mm.RegisterModule(MemberlistKV, t.initMemberlistKV, modules.UserInvisibleModule)
+	mm.RegisterModule(MemberlistKV, t.initMemberListKV, modules.UserInvisibleModule)
 	mm.RegisterModule(Ring, t.initRing, modules.UserInvisibleModule)
 	mm.RegisterModule(TPRing, t.initTPRing, modules.UserInvisibleModule)
 	mm.RegisterModule(MetricsGeneratorRing, t.initGeneratorRing, modules.UserInvisibleModule)
