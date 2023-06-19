@@ -237,7 +237,7 @@ func (t *App) initTracepointClient() (services.Service, error) {
 // initTracepoint creates the service that will actually deal with storing the tracepoint configs
 func (t *App) initTracepoint() (services.Service, error) {
 	t.cfg.Tracepoint.LifecyclerConfig.ListenPort = t.cfg.Server.GRPCListenPort
-	newTracepointService, err := tracepoint.New(t.cfg.Tracepoint, t.cfg.StorageConfig, log.Logger, prometheus.DefaultRegisterer)
+	newTracepointService, err := tracepoint.New(t.cfg.Tracepoint, t.store, log.Logger, prometheus.DefaultRegisterer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tracepoint config service: %w", err)
 	}
@@ -483,17 +483,17 @@ func (t *App) initUsageReport() (services.Service, error) {
 	var reader backend.RawReader
 	var writer backend.RawWriter
 
-	switch t.cfg.StorageConfig.Trace.Backend {
+	switch t.cfg.StorageConfig.TracePoint.Backend {
 	case "local":
-		reader, writer, _, err = local.New(t.cfg.StorageConfig.Trace.Local)
+		reader, writer, _, err = local.New(t.cfg.StorageConfig.TracePoint.Local)
 	case "gcs":
-		reader, writer, _, err = gcs.New(t.cfg.StorageConfig.Trace.GCS)
+		reader, writer, _, err = gcs.New(t.cfg.StorageConfig.TracePoint.GCS)
 	case "s3":
-		reader, writer, _, err = s3.New(t.cfg.StorageConfig.Trace.S3)
+		reader, writer, _, err = s3.New(t.cfg.StorageConfig.TracePoint.S3)
 	case "azure":
-		reader, writer, _, err = azure.New(t.cfg.StorageConfig.Trace.Azure)
+		reader, writer, _, err = azure.New(t.cfg.StorageConfig.TracePoint.Azure)
 	default:
-		err = fmt.Errorf("unknown backend %s", t.cfg.StorageConfig.Trace.Backend)
+		err = fmt.Errorf("unknown backend %s", t.cfg.StorageConfig.TracePoint.Backend)
 	}
 
 	if err != nil {

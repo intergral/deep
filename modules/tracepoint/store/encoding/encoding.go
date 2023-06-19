@@ -18,42 +18,14 @@
 package encoding
 
 import (
-	"fmt"
 	"github.com/intergral/deep/modules/storage"
 	"github.com/intergral/deep/modules/tracepoint/store/encoding/types"
 	v1 "github.com/intergral/deep/modules/tracepoint/store/encoding/v1"
-	"github.com/intergral/deep/pkg/deepdb/backend"
-	"github.com/intergral/deep/pkg/deepdb/backend/azure"
-	"github.com/intergral/deep/pkg/deepdb/backend/gcs"
-	"github.com/intergral/deep/pkg/deepdb/backend/local"
-	"github.com/intergral/deep/pkg/deepdb/backend/s3"
 )
 
-func LoadBackend(cfg storage.Config) (types.TPBackend, error) {
-
-	var err error
-	var rawR backend.RawReader
-	var rawW backend.RawWriter
-
-	switch cfg.Tracepoint.Backend {
-	case "local":
-		rawR, rawW, _, err = local.New(cfg.Tracepoint.Local)
-	case "gcs":
-		rawR, rawW, _, err = gcs.New(cfg.Tracepoint.GCS)
-	case "s3":
-		rawR, rawW, _, err = s3.New(cfg.Tracepoint.S3)
-	case "azure":
-		rawR, rawW, _, err = azure.New(cfg.Tracepoint.Azure)
-	default:
-		err = fmt.Errorf("unknown backend %s", cfg.Tracepoint.Backend)
-	}
-
-	if err != nil {
-		return nil, err
-	}
+func LoadBackend(store storage.Store) (types.TPBackend, error) {
 
 	return &v1.TPEncoder{
-		Reader: rawR,
-		Writer: rawW,
+		Store: store,
 	}, nil
 }

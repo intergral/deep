@@ -25,6 +25,7 @@ import (
 	"github.com/intergral/deep/pkg/deeppb"
 	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/deepql"
+	"io"
 	"time"
 
 	gkLog "github.com/go-kit/log"
@@ -84,6 +85,7 @@ var (
 )
 
 type Writer interface {
+	WriteTracepointBlock(ctx context.Context, orgId string, reader *bytes.Reader, size int64) error
 	WriteBlock(ctx context.Context, block WriteableBlock) error
 	CompleteBlock(ctx context.Context, block common.WALBlock) (common.BackendBlock, error)
 	CompleteBlockWithBackend(ctx context.Context, block common.WALBlock, r backend.Reader, w backend.Writer) (common.BackendBlock, error)
@@ -93,6 +95,7 @@ type Writer interface {
 type IterateObjectCallback func(id common.ID, obj []byte) bool
 
 type Reader interface {
+	ReadTracepointBlock(ctx context.Context, orgId string) (io.ReadCloser, int64, error)
 	FindSnapshot(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) (*deep_tp.Snapshot, []error, error)
 
 	Search(ctx context.Context, meta *backend.BlockMeta, req *deeppb.SearchRequest, opts common.SearchOptions) (*deeppb.SearchResponse, error)
@@ -215,6 +218,10 @@ func New(cfg *Config, logger gkLog.Logger) (Reader, Writer, Compactor, error) {
 	return rw, rw, rw, nil
 }
 
+func (rw *readerWriter) WriteTracepointBlock(ctx context.Context, orgId string, data *bytes.Reader, size int64) error {
+	return rw.w.WriteTracepointBlock(ctx, orgId, data, size)
+}
+
 func (rw *readerWriter) WriteBlock(ctx context.Context, c WriteableBlock) error {
 	w := rw.getWriterForBlock(c.BlockMeta(), time.Now())
 	return c.Write(ctx, w)
@@ -281,6 +288,10 @@ func (rw *readerWriter) WAL() *wal.WAL {
 
 func (rw *readerWriter) BlockMetas(tenantID string) []*backend.BlockMeta {
 	return rw.blocklist.Metas(tenantID)
+}
+
+func (rw *readerWriter) ReadTracepointBlock(ctx context.Context, orgId string) (io.ReadCloser, int64, error) {
+	return rw.r.ReadTracepointBlock(ctx, orgId)
 }
 
 func (rw *readerWriter) FindSnapshot(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) (*deep_tp.Snapshot, []error, error) {

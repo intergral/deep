@@ -26,13 +26,9 @@ metrics_generator:
 
 storage:
   tracepoint:
-    backend: local
-    local:
-      path: /tmp/deep/tracepoint
-  trace:
     backend: local                     # backend configuration to use
     wal:
-      path: /tmp/deep/wal             # where to store the the wal locally
+      path: /tmp/deep/wal             # where to store the wal locally
     local:
       path: /tmp/deep/blocks
 

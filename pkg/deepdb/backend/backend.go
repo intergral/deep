@@ -18,6 +18,7 @@
 package backend
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -49,6 +50,8 @@ type Writer interface {
 	CloseAppend(ctx context.Context, tracker AppendTracker) error
 	// WriteTenantIndex writes the two meta slices as a tenant index
 	WriteTenantIndex(ctx context.Context, tenantID string, meta []*BlockMeta, compactedMeta []*CompactedBlockMeta) error
+	// WriteTracepointBlock writes the tracepoint block for the given orgId
+	WriteTracepointBlock(ctx context.Context, orgId string, data *bytes.Reader, size int64) error
 }
 
 // Reader is a collection of methods to read data from deepdb backends
@@ -71,6 +74,8 @@ type Reader interface {
 	TenantIndex(ctx context.Context, tenantID string) (*TenantIndex, error)
 	// Shutdown shuts...down?
 	Shutdown()
+	// ReadTracepointBlock reads the tracepoint block for the given orgId
+	ReadTracepointBlock(ctx context.Context, orgId string) (io.ReadCloser, int64, error)
 }
 
 // Compactor is a collection of methods to interact with compacted elements of a deepdb block

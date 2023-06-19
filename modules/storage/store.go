@@ -58,14 +58,14 @@ type store struct {
 // NewStore creates a new Tempo Store using configuration supplied.
 func NewStore(cfg Config, logger log.Logger) (Store, error) {
 
-	statCache.Set(cfg.Trace.Cache)
-	statBackend.Set(cfg.Trace.Backend)
-	statWalEncoding.Set(cfg.Trace.WAL.Encoding.String())
-	statWalSearchEncoding.Set(cfg.Trace.WAL.SearchEncoding.String())
-	statBlockEncoding.Set(cfg.Trace.Block.Encoding.String())
-	statBlockSearchEncoding.Set(cfg.Trace.Block.SearchEncoding.String())
+	statCache.Set(cfg.TracePoint.Cache)
+	statBackend.Set(cfg.TracePoint.Backend)
+	statWalEncoding.Set(cfg.TracePoint.WAL.Encoding.String())
+	statWalSearchEncoding.Set(cfg.TracePoint.WAL.SearchEncoding.String())
+	statBlockEncoding.Set(cfg.TracePoint.Block.Encoding.String())
+	statBlockSearchEncoding.Set(cfg.TracePoint.Block.SearchEncoding.String())
 
-	r, w, c, err := deepdb.New(&cfg.Trace, logger)
+	r, w, c, err := deepdb.New(&cfg.TracePoint, logger)
 	if err != nil {
 		return nil, err
 	}

@@ -114,6 +114,11 @@ type MockReader struct {
 	ReadFn        func(name string, blockID uuid.UUID, tenantID string) ([]byte, error)
 }
 
+func (m *MockReader) ReadTracepointBlock(ctx context.Context, name string) (io.ReadCloser, int64, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (m *MockReader) Tenants(ctx context.Context) ([]string, error) {
 	return m.T, nil
 }
@@ -164,6 +169,10 @@ func (m *MockReader) Shutdown() {}
 type MockWriter struct {
 	IndexMeta          map[string][]*BlockMeta
 	IndexCompactedMeta map[string][]*CompactedBlockMeta
+}
+
+func (m *MockWriter) WriteTracepointBlock(ctx context.Context, name string, data *bytes.Reader, size int64) error {
+	return nil
 }
 
 func (m *MockWriter) Write(ctx context.Context, name string, blockID uuid.UUID, tenantID string, buffer []byte, shouldCache bool) error {

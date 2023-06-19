@@ -149,11 +149,11 @@ func (c *Config) MultitenancyIsEnabled() bool {
 // CheckConfig checks if config values are suspect and returns a bundled list of warnings and explanation.
 func (c *Config) CheckConfig() []ConfigWarning {
 	var warnings []ConfigWarning
-	if c.Ingester.CompleteBlockTimeout < c.StorageConfig.Trace.BlocklistPoll {
+	if c.Ingester.CompleteBlockTimeout < c.StorageConfig.TracePoint.BlocklistPoll {
 		warnings = append(warnings, warnCompleteBlockTimeout)
 	}
 
-	if c.Compactor.Compactor.BlockRetention < c.StorageConfig.Trace.BlocklistPoll {
+	if c.Compactor.Compactor.BlockRetention < c.StorageConfig.TracePoint.BlocklistPoll {
 		warnings = append(warnings, warnBlockRetention)
 	}
 
@@ -161,36 +161,36 @@ func (c *Config) CheckConfig() []ConfigWarning {
 		warnings = append(warnings, warnRetentionConcurrency)
 	}
 
-	if c.StorageConfig.Trace.Backend == "s3" && c.Compactor.Compactor.FlushSizeBytes < 5242880 {
+	if c.StorageConfig.TracePoint.Backend == "s3" && c.Compactor.Compactor.FlushSizeBytes < 5242880 {
 		warnings = append(warnings, warnStorageTraceBackendS3)
 	}
 
-	if c.StorageConfig.Trace.BlocklistPollConcurrency == 0 {
+	if c.StorageConfig.TracePoint.BlocklistPollConcurrency == 0 {
 		warnings = append(warnings, warnBlocklistPollConcurrency)
 	}
 
-	if c.StorageConfig.Trace.Backend == "local" && c.Target != SingleBinary {
+	if c.StorageConfig.TracePoint.Backend == "local" && c.Target != SingleBinary {
 		warnings = append(warnings, warnStorageTraceBackendLocal)
 	}
 
 	// check v2 specific settings
-	if c.StorageConfig.Trace.Block.Version != "v2" && c.StorageConfig.Trace.Block.IndexDownsampleBytes != storage.DefaultIndexDownSampleBytes {
+	if c.StorageConfig.TracePoint.Block.Version != "v2" && c.StorageConfig.TracePoint.Block.IndexDownsampleBytes != storage.DefaultIndexDownSampleBytes {
 		warnings = append(warnings, newV2Warning("v2_index_downsample_bytes"))
 	}
 
-	if c.StorageConfig.Trace.Block.Version != "v2" && c.StorageConfig.Trace.Block.IndexPageSizeBytes != storage.DefaultIndexPageSizeBytes {
+	if c.StorageConfig.TracePoint.Block.Version != "v2" && c.StorageConfig.TracePoint.Block.IndexPageSizeBytes != storage.DefaultIndexPageSizeBytes {
 		warnings = append(warnings, newV2Warning("v2_index_page_size_bytes"))
 	}
 
-	if c.StorageConfig.Trace.Block.Version != "v2" && c.Compactor.Compactor.ChunkSizeBytes != deepdb.DefaultChunkSizeBytes {
+	if c.StorageConfig.TracePoint.Block.Version != "v2" && c.Compactor.Compactor.ChunkSizeBytes != deepdb.DefaultChunkSizeBytes {
 		warnings = append(warnings, newV2Warning("v2_in_buffer_bytes"))
 	}
 
-	if c.StorageConfig.Trace.Block.Version != "v2" && c.Compactor.Compactor.FlushSizeBytes != deepdb.DefaultFlushSizeBytes {
+	if c.StorageConfig.TracePoint.Block.Version != "v2" && c.Compactor.Compactor.FlushSizeBytes != deepdb.DefaultFlushSizeBytes {
 		warnings = append(warnings, newV2Warning("v2_out_buffer_bytes"))
 	}
 
-	if c.StorageConfig.Trace.Block.Version != "v2" && c.Compactor.Compactor.IteratorBufferSize != deepdb.DefaultIteratorBufferSize {
+	if c.StorageConfig.TracePoint.Block.Version != "v2" && c.Compactor.Compactor.IteratorBufferSize != deepdb.DefaultIteratorBufferSize {
 		warnings = append(warnings, newV2Warning("v2_prefetch_traces_count"))
 	}
 
