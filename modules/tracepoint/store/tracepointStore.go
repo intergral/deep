@@ -52,8 +52,8 @@ type OrgTPStore interface {
 }
 
 // NewStore will create a new store to handle reading and writing to disk
-func NewStore(cfg storage.Config) (*TPStore, error) {
-	loadEncoding, err := encoding.LoadBackend(cfg)
+func NewStore(store storage.Store) (*TPStore, error) {
+	loadEncoding, err := encoding.LoadBackend(store)
 	if err != nil {
 		return nil, err
 	}

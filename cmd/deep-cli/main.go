@@ -104,18 +104,18 @@ func loadBackend(b *backendOptions, g *globalOptions) (backend.Reader, backend.W
 
 	// cli overrides
 	if b.Backend != "" {
-		cfg.StorageConfig.Trace.Backend = b.Backend
+		cfg.StorageConfig.TracePoint.Backend = b.Backend
 	}
 
 	if b.Bucket != "" {
-		cfg.StorageConfig.Trace.Local.Path = b.Bucket
-		cfg.StorageConfig.Trace.GCS.BucketName = b.Bucket
-		cfg.StorageConfig.Trace.S3.Bucket = b.Bucket
-		cfg.StorageConfig.Trace.Azure.ContainerName = b.Bucket
+		cfg.StorageConfig.TracePoint.Local.Path = b.Bucket
+		cfg.StorageConfig.TracePoint.GCS.BucketName = b.Bucket
+		cfg.StorageConfig.TracePoint.S3.Bucket = b.Bucket
+		cfg.StorageConfig.TracePoint.Azure.ContainerName = b.Bucket
 	}
 
 	if b.S3Endpoint != "" {
-		cfg.StorageConfig.Trace.S3.Endpoint = b.S3Endpoint
+		cfg.StorageConfig.TracePoint.S3.Endpoint = b.S3Endpoint
 	}
 
 	var err error
@@ -123,17 +123,17 @@ func loadBackend(b *backendOptions, g *globalOptions) (backend.Reader, backend.W
 	var w backend.RawWriter
 	var c backend.Compactor
 
-	switch cfg.StorageConfig.Trace.Backend {
+	switch cfg.StorageConfig.TracePoint.Backend {
 	case "local":
-		r, w, c, err = local.New(cfg.StorageConfig.Trace.Local)
+		r, w, c, err = local.New(cfg.StorageConfig.TracePoint.Local)
 	case "gcs":
-		r, w, c, err = gcs.New(cfg.StorageConfig.Trace.GCS)
+		r, w, c, err = gcs.New(cfg.StorageConfig.TracePoint.GCS)
 	case "s3":
-		r, w, c, err = s3.New(cfg.StorageConfig.Trace.S3)
+		r, w, c, err = s3.New(cfg.StorageConfig.TracePoint.S3)
 	case "azure":
-		r, w, c, err = azure.New(cfg.StorageConfig.Trace.Azure)
+		r, w, c, err = azure.New(cfg.StorageConfig.TracePoint.Azure)
 	default:
-		err = fmt.Errorf("unknown backend %s", cfg.StorageConfig.Trace.Backend)
+		err = fmt.Errorf("unknown backend %s", cfg.StorageConfig.TracePoint.Backend)
 	}
 
 	if err != nil {

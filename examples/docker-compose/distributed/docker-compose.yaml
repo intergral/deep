@@ -125,7 +125,7 @@ services:
       - "9090:9090"
 
   grafana:
-    image: ghcr.io/intergral/grafana:deep
+    image: intergral/grafana-deep:D0.0.5P0.0.3
     volumes:
       - ./grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
     environment:

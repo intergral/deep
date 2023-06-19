@@ -75,6 +75,10 @@ func NewWriter(w RawWriter) Writer {
 	}
 }
 
+func (w *writer) WriteTracepointBlock(ctx context.Context, orgId string, data *bytes.Reader, size int64) error {
+	return w.w.Write(ctx, "tracepoints", []string{orgId}, data, size, false)
+}
+
 func (w *writer) Write(ctx context.Context, name string, blockID uuid.UUID, tenantID string, buffer []byte, shouldCache bool) error {
 	return w.w.Write(ctx, name, KeyPathForBlock(blockID, tenantID), bytes.NewReader(buffer), int64(len(buffer)), shouldCache)
 }
@@ -128,6 +132,10 @@ func NewReader(r RawReader) Reader {
 	return &reader{
 		r: r,
 	}
+}
+
+func (r *reader) ReadTracepointBlock(ctx context.Context, orgId string) (io.ReadCloser, int64, error) {
+	return r.r.Read(ctx, "tracepoints", []string{orgId}, false)
 }
 
 func (r *reader) Read(ctx context.Context, name string, blockID uuid.UUID, tenantID string, shouldCache bool) ([]byte, error) {
