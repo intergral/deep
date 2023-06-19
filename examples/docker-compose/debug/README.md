@@ -16,14 +16,7 @@ image that runs Deep using [`dlv exec`](https://github.com/go-delve/delve/blob/m
 make docker-deep-debug
 ```
 
-To distinguish the debug image from the conventional Deep image its is tagged with `deep/deep-debug`. Let’s see if the image is present:
-
-```console
-docker images | grep deep/deep-debug
-```
-```
-deep/deep-debug                            latest                         3d6789d20dc3   2 days ago      112MB
-```
+To distinguish the debug image from the conventional Deep image its is tagged with `intergral/deep-debug`. 
 
 2. Take a look at deep service in the [docker-compose.yaml](./docker-compose.yaml). The environment
 variable `DEBUG_BLOCK` controls whether delve halts the execution of Deep until a debugger is connected.
