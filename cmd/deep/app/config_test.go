@@ -94,8 +94,6 @@ func TestConfig_CheckConfig(t *testing.T) {
 				return cfg
 			}(),
 			expect: []ConfigWarning{
-				newV2Warning("v2_index_downsample_bytes"),
-				newV2Warning("v2_index_page_size_bytes"),
 				newV2Warning("v2_in_buffer_bytes"),
 				newV2Warning("v2_out_buffer_bytes"),
 				newV2Warning("v2_prefetch_traces_count"),
