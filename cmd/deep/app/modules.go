@@ -251,6 +251,17 @@ func (t *App) initTracepoint() (services.Service, error) {
 // initTracepointAPI is the main handler for changes to tracepoint configs
 // here we accept the requests from HTTP and process the changes via tpClient
 func (t *App) initTracepointAPI() (services.Service, error) {
+	// validate worker config
+	// if we're not in single binary mode and worker address is not specified - bail
+	if t.cfg.Target != SingleBinary && t.cfg.Tracepoint.API.Worker.FrontendAddress == "" {
+		return nil, fmt.Errorf("frontend worker address not specified")
+	} else if t.cfg.Target == SingleBinary {
+		// if we're in single binary mode with no worker address specified, register default endpoint
+		if t.cfg.Tracepoint.API.Worker.FrontendAddress == "" {
+			t.cfg.Tracepoint.API.Worker.FrontendAddress = fmt.Sprintf("127.0.0.1:%d", t.cfg.Server.GRPCListenPort)
+			level.Warn(log.Logger).Log("msg", "Worker address is empty in single binary mode. Attempting automatic worker configuration. If queries are unresponsive consider configuring the worker explicitly.", "address", t.cfg.Tracepoint.API.Worker.FrontendAddress)
+		}
+	}
 	tracepointAPI, err := tpapi.NewTracepointAPI(t.cfg.Tracepoint.API, t.tpClient, log.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tracepoint API %w", err)
