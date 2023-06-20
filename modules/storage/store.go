@@ -71,16 +71,18 @@ func NewStore(cfg Config, logger log.Logger) (Store, error) {
 	statBlockEncoding.Set(cfg.TracePoint.Block.Encoding.String())
 	statBlockSearchEncoding.Set(cfg.TracePoint.Block.SearchEncoding.String())
 
-	r, w, c, err := deepdb.New(&cfg.TracePoint, logger)
+	r, w, tr, tw, c, err := deepdb.New(&cfg.TracePoint, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	s := &store{
-		cfg:       cfg,
-		Reader:    r,
-		Writer:    w,
-		Compactor: c,
+		cfg:              cfg,
+		Reader:           r,
+		Writer:           w,
+		Compactor:        c,
+		TracepointWriter: tw,
+		TracepointReader: tr,
 	}
 
 	s.Service = services.NewIdleService(s.starting, s.stopping)
