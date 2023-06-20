@@ -27,7 +27,7 @@ import (
 )
 
 type Config struct {
-	worker.Config
+	worker.Config `yaml:",inline"`
 }
 
 func (cfg *Config) RegisterFlags(f *flag.FlagSet) {

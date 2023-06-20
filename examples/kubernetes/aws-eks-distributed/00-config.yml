@@ -46,13 +46,11 @@ data:
     tracepoint:
       api:
         worker:
-          config:
-            frontend_address: query-frontend-headless.deep.svc.cluster.local:43315
+          frontend_address: query-frontend-headless.deep.svc.cluster.local:43315
     
     querier:
       frontend_worker:
-        config:
-          frontend_address: query-frontend-headless.deep.svc.cluster.local:43315
+        frontend_address: query-frontend-headless.deep.svc.cluster.local:43315
           
     storage:
       tracepoint:
