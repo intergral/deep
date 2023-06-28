@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/intergral/deep/modules/compactor"
 	"github.com/intergral/deep/modules/distributor"
+	receiver "github.com/intergral/deep/modules/distributor/snapshotreceiver"
 	"github.com/intergral/deep/modules/ingester"
 	"github.com/intergral/deep/modules/overrides"
 	"github.com/intergral/deep/modules/querier"
@@ -93,6 +94,7 @@ type App struct {
 	MemberlistKV   *memberlist.KVInitService
 
 	HTTPAuthMiddleware middleware.Interface
+	ReceiverMiddleware receiver.Middleware
 
 	ModuleManager *modules.Manager
 	serviceMap    map[string]services.Service
@@ -163,6 +165,7 @@ func (t *App) setupAuthMiddleware() {
 			},
 		}
 		t.HTTPAuthMiddleware = middleware.AuthenticateUser
+		t.ReceiverMiddleware = receiver.MultiTenancyMiddleware()
 	} else {
 		t.cfg.Server.GRPCMiddleware = []grpc.UnaryServerInterceptor{
 			fakeGRPCAuthUniaryMiddleware,
@@ -171,6 +174,7 @@ func (t *App) setupAuthMiddleware() {
 			fakeGRPCAuthStreamMiddleware,
 		}
 		t.HTTPAuthMiddleware = fakeHTTPAuthMiddleware
+		t.ReceiverMiddleware = receiver.FakeTenantMiddleware()
 	}
 }
 

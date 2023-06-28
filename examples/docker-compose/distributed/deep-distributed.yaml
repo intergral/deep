@@ -1,6 +1,5 @@
 server:
   http_listen_port: 3300
-  grpc_listen_port: 43315
 
 distributor:
   receivers:
@@ -24,11 +23,11 @@ compactor:
 tracepoint:
   api:
     worker:
-      frontend_address: query-frontend:43315
+      frontend_address: query-frontend:9095
 
 querier:
   frontend_worker:
-    frontend_address: query-frontend:43315
+    frontend_address: query-frontend:9095
 
 metrics_generator:
   registry:

@@ -14,4 +14,5 @@ The following folders and their subfolders are licensed under Apache-2.0:
 The following directories and their subdirectories are licensed under their original upstream licenses:
 
 ```
+pkg/receivers/config
 ```
