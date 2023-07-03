@@ -120,6 +120,10 @@ func (ta *TracepointAPI) LoadTracepointHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	tracepoints, err := ta.client.LoadTracepoints(ctx, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	if r.Header.Get(api.HeaderAccept) == api.HeaderAcceptProtobuf {
 		span.SetTag("contentType", api.HeaderAcceptProtobuf)
