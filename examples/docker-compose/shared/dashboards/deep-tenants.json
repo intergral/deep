@@ -1,0 +1,1521 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 10,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "deep"
+      ],
+      "targetBlank": false,
+      "title": "Deep Dashboards",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "intergral-deep-datasource",
+        "uid": "deep"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 11,
+      "panels": [],
+      "targets": [
+        {
+          "datasource": {
+            "type": "intergral-deep-datasource",
+            "uid": "deep"
+          },
+          "refId": "A"
+        }
+      ],
+      "title": "Tenant info",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "displayName": "",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Time"
+              },
+              {
+                "id": "custom.align"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "id": 1,
+      "links": [],
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.1.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "max(\n  max by (cluster, namespace, limit_name) (deep_limits_overrides{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",user=\"$tenant\"})\n  or max by (cluster, namespace, limit_name) (deep_limits_defaults{cluster=~\"$cluster\", job=~\"($namespace)/compactor\"})\n) by (limit_name)\n",
+          "format": "table",
+          "instant": true,
+          "intervalFactor": 2,
+          "legendFormat": "",
+          "refId": "A",
+          "step": 10
+        }
+      ],
+      "title": "Limits",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {
+            "reducers": []
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "intergral-deep-datasource",
+        "uid": "deep"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 12,
+      "panels": [],
+      "targets": [
+        {
+          "datasource": {
+            "type": "intergral-deep-datasource",
+            "uid": "deep"
+          },
+          "refId": "A"
+        }
+      ],
+      "title": "Ingestion",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "Bps"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "limit"
+            },
+            "properties": [
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [
+                    10,
+                    10
+                  ],
+                  "fill": "dash"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "burst limit"
+            },
+            "properties": [
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [
+                    10,
+                    10
+                  ],
+                  "fill": "dash"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 9
+      },
+      "id": 2,
+      "links": [],
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.1.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(deep_distributor_bytes_received_total{cluster=~\"$cluster\", job=~\"($namespace)/distributor\",tenant=\"$tenant\"}[$__rate_interval]))",
+          "format": "time_series",
+          "interval": "1m",
+          "intervalFactor": 2,
+          "legendFormat": "received",
+          "range": true,
+          "refId": "A",
+          "step": 10
+        },
+        {
+          "datasource": {
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "max(\n  max by (cluster, namespace, limit_name) (deep_limits_overrides{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",user=\"$tenant\",limit_name=\"ingestion_rate_limit_bytes\"})\n  or max by (cluster, namespace, limit_name) (deep_limits_defaults{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",limit_name=\"ingestion_rate_limit_bytes\"})\n) by (ingestion_rate_limit_bytes)\n",
+          "format": "time_series",
+          "interval": "1m",
+          "intervalFactor": 2,
+          "legendFormat": "limit",
+          "range": true,
+          "refId": "B",
+          "step": 10
+        },
+        {
+          "datasource": {
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "max(\n  max by (cluster, namespace, limit_name) (deep_limits_overrides{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",user=\"$tenant\",limit_name=\"ingestion_burst_size_bytes\"})\n  or max by (cluster, namespace, limit_name) (deep_limits_defaults{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",limit_name=\"ingestion_burst_size_bytes\"})\n) by (ingestion_burst_size_bytes)\n",
+          "format": "time_series",
+          "interval": "1m",
+          "intervalFactor": 2,
+          "legendFormat": "burst limit",
+          "range": true,
+          "refId": "C",
+          "step": 10
+        }
+      ],
+      "title": "Distributor bytes/s",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 9
+      },
+      "id": 3,
+      "links": [],
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.1.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(deep_distributor_spans_received_total{cluster=~\"$cluster\", job=~\"($namespace)/distributor\",tenant=\"$tenant\"}[$__rate_interval]))",
+          "format": "time_series",
+          "interval": "1m",
+          "intervalFactor": 2,
+          "legendFormat": "accepted",
+          "range": true,
+          "refId": "A",
+          "step": 10
+        },
+        {
+          "datasource": {
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(deep_discarded_spans_total{cluster=~\"$cluster\", job=~\"($namespace)/distributor\",tenant=\"$tenant\"}[$__rate_interval])) by (reason)",
+          "format": "time_series",
+          "interval": "1m",
+          "intervalFactor": 2,
+          "legendFormat": "refused {{ reason }}",
+          "range": true,
+          "refId": "B",
+          "step": 10
+        }
+      ],
+      "title": "Distributor spans/s",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "global limit"
+            },
+            "properties": [
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [
+                    10,
+                    10
+                  ],
+                  "fill": "dash"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "local limit"
+            },
+            "properties": [
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [
+                    10,
+                    10
+                  ],
+                  "fill": "dash"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 9
+      },
+      "id": 4,
+      "links": [],
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.1.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "max(deep_ingester_live_snapshots{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",tenant=\"$tenant\"})",
+          "format": "time_series",
+          "interval": "1m",
+          "intervalFactor": 2,
+          "legendFormat": "live traces",
+          "range": true,
+          "refId": "A",
+          "step": 10
+        },
+        {
+          "datasource": {
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "max(\n  max by (cluster, namespace, limit_name) (deep_limits_overrides{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",user=\"$tenant\",limit_name=\"max_global_traces_per_user\"})\n  or max by (cluster, namespace, limit_name) (deep_limits_defaults{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",limit_name=\"max_global_traces_per_user\"})\n) by (max_global_traces_per_user)\n",
+          "format": "time_series",
+          "interval": "1m",
+          "intervalFactor": 2,
+          "legendFormat": "global limit",
+          "range": true,
+          "refId": "B",
+          "step": 10
+        },
+        {
+          "datasource": {
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "max(\n  max by (cluster, namespace, limit_name) (deep_limits_overrides{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",user=\"$tenant\",limit_name=\"max_local_traces_per_user\"})\n  or max by (cluster, namespace, limit_name) (deep_limits_defaults{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",limit_name=\"max_local_traces_per_user\"})\n) by (max_local_traces_per_user)\n",
+          "format": "time_series",
+          "interval": "1m",
+          "intervalFactor": 2,
+          "legendFormat": "local limit",
+          "range": true,
+          "refId": "C",
+          "step": 10
+        }
+      ],
+      "title": "Live traces",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "intergral-deep-datasource",
+        "uid": "deep"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 13,
+      "panels": [],
+      "targets": [
+        {
+          "datasource": {
+            "type": "intergral-deep-datasource",
+            "uid": "deep"
+          },
+          "refId": "A"
+        }
+      ],
+      "title": "Reads",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 17
+      },
+      "id": 5,
+      "links": [],
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.1.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(deep_query_frontend_queries_total{cluster=~\"$cluster\", job=~\"($namespace)/query-frontend\",tenant=\"$tenant\",op=\"snapshots\"}[$__rate_interval])) by (status)",
+          "format": "time_series",
+          "interval": "1m",
+          "intervalFactor": 2,
+          "legendFormat": "{{ status }}",
+          "range": true,
+          "refId": "A",
+          "step": 10
+        }
+      ],
+      "title": "Queries/s (ID lookup)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 17
+      },
+      "id": 6,
+      "links": [],
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.1.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(deep_query_frontend_queries_total{cluster=~\"$cluster\", job=~\"($namespace)/query-frontend\",tenant=\"$tenant\",op=\"search\"}[$__rate_interval])) by (status)",
+          "format": "time_series",
+          "interval": "1m",
+          "intervalFactor": 2,
+          "legendFormat": "{{ status }}",
+          "range": true,
+          "refId": "A",
+          "step": 10
+        }
+      ],
+      "title": "Queries/s (search)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "intergral-deep-datasource",
+        "uid": "deep"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 14,
+      "panels": [],
+      "targets": [
+        {
+          "datasource": {
+            "type": "intergral-deep-datasource",
+            "uid": "deep"
+          },
+          "refId": "A"
+        }
+      ],
+      "title": "Storage",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      },
+      "id": 7,
+      "links": [],
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.1.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "avg(deepdb_blocklist_length{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",tenant=\"$tenant\"})",
+          "format": "time_series",
+          "interval": "1m",
+          "intervalFactor": 2,
+          "legendFormat": "length",
+          "range": true,
+          "refId": "A",
+          "step": 10
+        }
+      ],
+      "title": "Blockslist length",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      },
+      "id": 8,
+      "links": [],
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.1.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum(deepdb_compaction_outstanding_blocks{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",tenant=\"$tenant\"})\n/\ncount(deep_build_info{cluster=~\"$cluster\", job=~\"($namespace)/compactor\"})\n",
+          "format": "time_series",
+          "interval": "1m",
+          "intervalFactor": 2,
+          "legendFormat": "blocks",
+          "range": true,
+          "refId": "A",
+          "step": 10
+        }
+      ],
+      "title": "Outstanding compactions",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "intergral-deep-datasource",
+        "uid": "deep"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "id": 15,
+      "panels": [],
+      "targets": [
+        {
+          "datasource": {
+            "type": "intergral-deep-datasource",
+            "uid": "deep"
+          },
+          "refId": "A"
+        }
+      ],
+      "title": "Metrics generator",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 33
+      },
+      "id": 9,
+      "links": [],
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.1.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(deep_metrics_generator_bytes_received_total{cluster=~\"$cluster\", job=~\"($namespace)/metrics-generator\",tenant=\"$tenant\"}[$__rate_interval]))",
+          "format": "time_series",
+          "interval": "1m",
+          "intervalFactor": 2,
+          "legendFormat": "rate",
+          "range": true,
+          "refId": "A",
+          "step": 10
+        }
+      ],
+      "title": "Bytes/s",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "limit"
+            },
+            "properties": [
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [
+                    10,
+                    10
+                  ],
+                  "fill": "dash"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 33
+      },
+      "id": 10,
+      "links": [],
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.1.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum(deep_metrics_generator_registry_active_series{cluster=~\"$cluster\", job=~\"($namespace)/metrics-generator\",tenant=\"$tenant\"})",
+          "format": "time_series",
+          "interval": "1m",
+          "intervalFactor": 2,
+          "legendFormat": "{{ tenant }}",
+          "range": true,
+          "refId": "A",
+          "step": 10
+        },
+        {
+          "datasource": {
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "max(\n  max by (cluster, namespace, limit_name) (deep_limits_overrides{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",user=\"$tenant\",limit_name=\"metrics_generator_max_active_series\"})\n  or max by (cluster, namespace, limit_name) (deep_limits_defaults{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",limit_name=\"metrics_generator_max_active_series\"})\n) by (metrics_generator_max_active_series)\n",
+          "format": "time_series",
+          "interval": "1m",
+          "intervalFactor": 2,
+          "legendFormat": "limit",
+          "range": true,
+          "refId": "B",
+          "step": 10
+        }
+      ],
+      "title": "Active series",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": [
+    "deep"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "Prometheus",
+          "value": "PBFA97CFB590B2093"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Data Source",
+        "multi": false,
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "intergral-deep-datasource",
+          "uid": "$datasource"
+        },
+        "definition": "label_values(deep_build_info,cluster)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "cluster",
+        "multi": true,
+        "name": "cluster",
+        "options": [],
+        "query": {
+          "labelFilters": [],
+          "query": "label_values(deep_build_info,cluster)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 2,
+        "tagValuesQuery": "",
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "intergral-deep-datasource",
+          "uid": "$datasource"
+        },
+        "definition": "label_values(deep_build_info{cluster=\"$cluster\"},namespace)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "namespace",
+        "multi": true,
+        "name": "namespace",
+        "options": [],
+        "query": {
+          "labelFilters": [],
+          "query": "label_values(deep_build_info{cluster=\"$cluster\"},namespace)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 2,
+        "tagValuesQuery": "",
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "54c7a6d6f735f1886c944570",
+          "value": "54c7a6d6f735f1886c944570"
+        },
+        "datasource": {
+          "type": "intergral-deep-datasource",
+          "uid": "$datasource"
+        },
+        "definition": "label_values(deepdb_blocklist_length{cluster=\"$cluster\", job=~\"($namespace)/compactor\"},tenant)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "tenant",
+        "multi": false,
+        "name": "tenant",
+        "options": [],
+        "query": {
+          "labelFilters": [],
+          "query": "label_values(deepdb_blocklist_length{cluster=\"$cluster\", job=~\"($namespace)/compactor\"},tenant)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 2,
+        "tagValuesQuery": "",
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ],
+    "time_options": [
+      "5m",
+      "15m",
+      "1h",
+      "6h",
+      "12h",
+      "24h",
+      "2d",
+      "7d",
+      "30d"
+    ]
+  },
+  "timezone": "utc",
+  "title": "Deep / Tenants",
+  "uid": "bdd61cfc-5a4d-4920-ba8e-bf8b93fd0fc7",
+  "version": 2,
+  "weekStart": ""
+}
