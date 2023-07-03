@@ -25,6 +25,7 @@ import (
 	"github.com/grafana/dskit/services"
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/intergral/deep/pkg/deeppb"
+	pb "github.com/intergral/deep/pkg/deeppb/poll/v1"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -196,7 +197,13 @@ func (ts *TPClient) LoadTracepoints(ctx context.Context, req *deeppb.LoadTracepo
 	})
 
 	if len(doResults) == 0 {
-		return nil, nil
+		// no results so return empty stub
+		return &deeppb.LoadTracepointResponse{Response: &pb.PollResponse{
+			TsNanos:      req.Request.TsNanos,
+			CurrentHash:  "",
+			Response:     nil,
+			ResponseType: pb.ResponseType_NO_CHANGE,
+		}}, nil
 	}
 
 	var responses []*deeppb.LoadTracepointResponse
@@ -209,7 +216,13 @@ func (ts *TPClient) LoadTracepoints(ctx context.Context, req *deeppb.LoadTracepo
 	}
 
 	if len(responses) == 0 {
-		return nil, nil
+		// no results so return empty stub
+		return &deeppb.LoadTracepointResponse{Response: &pb.PollResponse{
+			TsNanos:      req.Request.TsNanos,
+			CurrentHash:  "",
+			Response:     nil,
+			ResponseType: pb.ResponseType_NO_CHANGE,
+		}}, nil
 	}
 
 	return responses[0], nil
