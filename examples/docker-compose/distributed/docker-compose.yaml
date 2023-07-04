@@ -7,6 +7,8 @@ services:
     restart: always
     volumes:
       - ./deep-distributed.yaml:/etc/deep.yaml
+    depends_on:
+      - minio
     ports:
       - "3300"   # deep
       - "43315" # deep grpc ingest
@@ -17,6 +19,8 @@ services:
     restart: always
     volumes:
       - ./deep-distributed.yaml:/etc/deep.yaml
+    depends_on:
+      - minio
     ports:
       - "3300"   # deep
 
@@ -26,6 +30,8 @@ services:
     restart: always
     volumes:
       - ./deep-distributed.yaml:/etc/deep.yaml
+    depends_on:
+      - minio
     ports:
       - "3300"   # deep
 
@@ -35,6 +41,8 @@ services:
     restart: always
     volumes:
       - ./deep-distributed.yaml:/etc/deep.yaml
+    depends_on:
+      - minio
     ports:
       - "3300"   # deep
 
@@ -44,6 +52,8 @@ services:
     restart: always
     volumes:
       - ./deep-distributed.yaml:/etc/deep.yaml
+    depends_on:
+      - minio
     ports:
       - "3300:3300"   # deep
 
@@ -53,6 +63,8 @@ services:
     restart: always
     volumes:
       - ./deep-distributed.yaml:/etc/deep.yaml
+    depends_on:
+      - minio
     ports:
       - "3300"   # deep
 
@@ -62,6 +74,8 @@ services:
     restart: always
     volumes:
       - ./deep-distributed.yaml:/etc/deep.yaml
+    depends_on:
+      - minio
     ports:
       - "3300"   # deep
 
@@ -71,6 +85,8 @@ services:
     restart: always
     volumes:
       - ./deep-distributed.yaml:/etc/deep.yaml
+    depends_on:
+      - minio
     ports:
       - "3300"   # deep
 
@@ -80,6 +96,8 @@ services:
     restart: always
     volumes:
       - ./deep-distributed.yaml:/etc/deep.yaml
+    depends_on:
+      - minio
     ports:
       - "3300" #deep
 
@@ -91,6 +109,8 @@ services:
       - ./deep-distributed.yaml:/etc/deep.yaml
     ports:
       - "3300" #deep
+    depends_on:
+      - minio
 
 
   minio:
