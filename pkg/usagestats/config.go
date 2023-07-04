@@ -32,7 +32,7 @@ type Config struct {
 
 // RegisterFlags adds the flags required to config this to the given FlagSet
 func (cfg *Config) RegisterFlagsAndApplyDefaults(prefix string, f *flag.FlagSet) {
-	f.BoolVar(&cfg.Enabled, util.PrefixConfig(prefix, "enabled"), true, "Enable anonymous usage reporting.")
+	f.BoolVar(&cfg.Enabled, util.PrefixConfig(prefix, "enabled"), false, "Enable anonymous usage reporting.")
 	cfg.Backoff.RegisterFlagsWithPrefix(prefix, f)
 	cfg.Backoff.MaxRetries = 0
 }
