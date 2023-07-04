@@ -37,10 +37,8 @@ import (
 )
 
 const (
-	DefaultBloomFP              = .01
-	DefaultBloomShardSizeBytes  = 100 * 1024
-	DefaultIndexDownSampleBytes = 1024 * 1024
-	DefaultIndexPageSizeBytes   = 250 * 1024
+	DefaultBloomFP             = .01
+	DefaultBloomShardSizeBytes = 100 * 1024
 )
 
 // Config is the Tempo storage configuration
@@ -71,15 +69,12 @@ func (cfg *Config) RegisterFlagsAndApplyDefaults(prefix string, f *flag.FlagSet)
 	cfg.TracePoint.Search.ReadBufferSizeBytes = deepdb.DefaultReadBufferSize
 
 	cfg.TracePoint.Block = &common.BlockConfig{}
-	f.Float64Var(&cfg.TracePoint.Block.BloomFP, util.PrefixConfig(prefix, "tracepoint.block.v2-bloom-filter-false-positive"), DefaultBloomFP, "Bloom Filter False Positive.")
-	f.IntVar(&cfg.TracePoint.Block.BloomShardSizeBytes, util.PrefixConfig(prefix, "tracepoint.block.v2-bloom-filter-shard-size-bytes"), DefaultBloomShardSizeBytes, "Bloom Filter Shard Size in bytes.")
-	f.IntVar(&cfg.TracePoint.Block.IndexDownsampleBytes, util.PrefixConfig(prefix, "tracepoint.block.v2-index-downsample-bytes"), DefaultIndexDownSampleBytes, "Number of bytes (before compression) per index record.")
-	f.IntVar(&cfg.TracePoint.Block.IndexPageSizeBytes, util.PrefixConfig(prefix, "tracepoint.block.v2-index-page-size-bytes"), DefaultIndexPageSizeBytes, "Number of bytes per index page.")
+	f.Float64Var(&cfg.TracePoint.Block.BloomFP, util.PrefixConfig(prefix, "trace.block.v2-bloom-filter-false-positive"), DefaultBloomFP, "Bloom Filter False Positive.")
+	f.IntVar(&cfg.TracePoint.Block.BloomShardSizeBytes, util.PrefixConfig(prefix, "trace.block.v2-bloom-filter-shard-size-bytes"), DefaultBloomShardSizeBytes, "Bloom Filter Shard Size in bytes.")
 	cfg.TracePoint.Block.Version = encoding.DefaultEncoding().Version()
 	cfg.TracePoint.Block.Encoding = backend.EncZstd
 	cfg.TracePoint.Block.SearchEncoding = backend.EncSnappy
-	cfg.TracePoint.Block.SearchPageSizeBytes = 1024 * 1024 // 1 MB
-	cfg.TracePoint.Block.RowGroupSizeBytes = 100_000_000   // 100 MB
+	cfg.TracePoint.Block.RowGroupSizeBytes = 100_000_000 // 100 MB
 
 	cfg.TracePoint.Azure = &azure.Config{}
 	f.StringVar(&cfg.TracePoint.Azure.StorageAccountName, util.PrefixConfig(prefix, "tracepoint.azure.storage_account_name"), "", "Azure storage account name.")

@@ -59,6 +59,7 @@ var (
 	Revision string
 )
 
+// init is called once by Go, we use it to set the version info and setup prometheus
 func init() {
 	version.Version = Version
 	version.Branch = Branch
@@ -66,6 +67,7 @@ func init() {
 	prometheus.MustRegister(version.NewCollector(appName))
 }
 
+// main entry to DEEP
 func main() {
 	printVersion := flag.Bool("version", false, "Print this builds version information")
 	ballastMBs := flag.Int("mem-ballast-size-mbs", 0, "Size of memory ballast to allocate in MBs.")
@@ -73,7 +75,7 @@ func main() {
 
 	config, err := loadConfig()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed parsing config: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "failed parsing config: %v\n", err)
 		os.Exit(1)
 	}
 	if *printVersion {
@@ -88,7 +90,7 @@ func main() {
 	}
 	log.InitLogger(&config.Server)
 
-	// Init tracer
+	// Init tracer used by DEEP to create traces about DEEP
 	var shutdownTracer func()
 	if config.UseOTelTracer {
 		shutdownTracer, err = installOpenTelemetryTracer(config)
@@ -108,7 +110,7 @@ func main() {
 	// Allocate a block of memory to alter GC behaviour. See https://github.com/golang/go/issues/23044
 	ballast := make([]byte, *ballastMBs*1024*1024)
 
-	// Start Tempo
+	// Start Deep
 	t, err := app.New(*config)
 	if err != nil {
 		level.Error(log.Logger).Log("msg", "error initialising Deep", "err", err)
@@ -206,13 +208,13 @@ func loadConfig() (*app.Config, error) {
 	// after loading config, let's force some values if in single binary mode
 	// if we're in single binary mode we're going to force some settings b/c nothing else makes sense
 	if config.Target == app.SingleBinary {
-		//config.Ingester.LifecyclerConfig.RingConfig.KVStore.Store = "inmemory"
-		//config.Ingester.LifecyclerConfig.RingConfig.ReplicationFactor = 1
-		//config.Ingester.LifecyclerConfig.Addr = "127.0.0.1"
+		config.Ingester.LifecyclerConfig.RingConfig.KVStore.Store = "inmemory"
+		config.Ingester.LifecyclerConfig.RingConfig.ReplicationFactor = 1
+		config.Ingester.LifecyclerConfig.Addr = "127.0.0.1"
 		//
 		//// Generator's ring
-		//config.Generator.Ring.KVStore.Store = "inmemory"
-		//config.Generator.Ring.InstanceAddr = "127.0.0.1"
+		config.Generator.Ring.KVStore.Store = "inmemory"
+		config.Generator.Ring.InstanceAddr = "127.0.0.1"
 	}
 
 	// after finalizing the configuration, verify its validity and exit if config.verify flag is true.
@@ -262,7 +264,7 @@ func installOpenTelemetryTracer(config *app.Config) (func(), error) {
 		resource.WithHost(),
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialise trace resuorces")
+		return nil, errors.Wrap(err, "failed to initialise trace resources")
 	}
 
 	tp := tracesdk.NewTracerProvider(
