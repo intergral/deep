@@ -45,7 +45,7 @@ func TestConfig_CheckConfig(t *testing.T) {
 			config: &Config{
 				Target: MetricsGenerator,
 				StorageConfig: storage.Config{
-					Trace: deepdb.Config{
+					TracePoint: deepdb.Config{
 						Backend:       "s3",
 						BlocklistPoll: time.Minute,
 						Block: &common.BlockConfig{
@@ -71,7 +71,7 @@ func TestConfig_CheckConfig(t *testing.T) {
 			name: "hit local backend warnings",
 			config: func() *Config {
 				cfg := newDefaultConfig()
-				cfg.StorageConfig.Trace = deepdb.Config{
+				cfg.StorageConfig.TracePoint = deepdb.Config{
 					Backend:                  "local",
 					BlocklistPollConcurrency: 1,
 					Block: &common.BlockConfig{
@@ -87,7 +87,7 @@ func TestConfig_CheckConfig(t *testing.T) {
 			name: "warnings for v2 settings when they drift from default",
 			config: func() *Config {
 				cfg := newDefaultConfig()
-				cfg.StorageConfig.Trace.Block.Version = vparquet.VersionString
+				cfg.StorageConfig.TracePoint.Block.Version = vparquet.VersionString
 				cfg.Compactor.Compactor.ChunkSizeBytes = 1
 				cfg.Compactor.Compactor.FlushSizeBytes = 1
 				cfg.Compactor.Compactor.IteratorBufferSize = 1
