@@ -1,13 +1,24 @@
 {
  "annotations": {
   "list": [
-
+   {
+    "builtIn": 1,
+    "datasource": {
+     "type": "grafana",
+     "uid": "-- Grafana --"
+    },
+    "enable": true,
+    "hide": true,
+    "iconColor": "rgba(0, 211, 255, 1)",
+    "name": "Annotations & Alerts",
+    "type": "dashboard"
+   }
   ]
  },
  "editable": true,
- "gnetId": null,
+ "fiscalYearStartMonth": 0,
  "graphTooltip": 0,
- "hideControls": false,
+ "id": 11,
  "links": [
   {
    "asDropdown": true,
@@ -18,1610 +29,2572 @@
     "deep"
    ],
    "targetBlank": false,
-   "title": "Deep Dashboards",
-   "type": "dashboards"
+   "title": "Deeep Dashboards",
+   "tooltip": "",
+   "type": "dashboards",
+   "url": ""
   }
  ],
- "refresh": "10s",
- "rows": [
+ "liveNow": false,
+ "panels": [
   {
-   "collapse": false,
-   "height": "250px",
-   "panels": [
+   "collapsed": false,
+   "datasource": {
+    "type": "intergral-deep-datasource",
+    "uid": "deep"
+   },
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 0
+   },
+   "id": 17,
+   "panels": [],
+   "targets": [
     {
-     "aliasColors": {
-      "1xx": "#EAB839",
-      "2xx": "#7EB26D",
-      "3xx": "#6ED0E0",
-      "4xx": "#EF843C",
-      "5xx": "#E24D42",
-      "error": "#E24D42",
-      "success": "#7EB26D"
+     "datasource": {
+      "type": "intergral-deep-datasource",
+      "uid": "deep"
      },
-     "bars": false,
-     "dashLength": 10,
-     "dashes": false,
-     "datasource": "$datasource",
-     "fill": 10,
-     "id": 1,
-     "legend": {
-      "avg": false,
-      "current": false,
-      "max": false,
-      "min": false,
-      "show": true,
-      "total": false,
-      "values": false
-     },
-     "lines": true,
-     "linewidth": 0,
-     "links": [
-
-     ],
-     "nullPointMode": "null as zero",
-     "percentage": false,
-     "pointradius": 5,
-     "points": false,
-     "renderer": "flot",
-     "seriesOverrides": [
-
-     ],
-     "spaceLength": 10,
-     "span": 6,
-     "stack": true,
-     "steppedLine": false,
-     "targets": [
-      {
-       "expr": "sum by (status) (\n  label_replace(label_replace(rate(deep_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/cortex-gw(-internal)?\", route=\"opentelemetry_proto_collector_trace_v1_traceservice_export\"}[$__rate_interval]),\n  \"status\", \"${1}xx\", \"status_code\", \"([0-9])..\"),\n  \"status\", \"${1}\", \"status_code\", \"([a-z]+)\"))\n",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{status}}",
-       "refId": "A",
-       "step": 10
-      }
-     ],
-     "thresholds": [
-
-     ],
-     "timeFrom": null,
-     "timeShift": null,
-     "title": "QPS",
-     "tooltip": {
-      "shared": true,
-      "sort": 2,
-      "value_type": "individual"
-     },
-     "type": "graph",
-     "xaxis": {
-      "buckets": null,
-      "mode": "time",
-      "name": null,
-      "show": true,
-      "values": [
-
-      ]
-     },
-     "yaxes": [
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": 0,
-       "show": true
-      },
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": null,
-       "show": false
-      }
-     ]
-    },
-    {
-     "aliasColors": {
-
-     },
-     "bars": false,
-     "dashLength": 10,
-     "dashes": false,
-     "datasource": "$datasource",
-     "fill": 1,
-     "id": 2,
-     "legend": {
-      "avg": false,
-      "current": false,
-      "max": false,
-      "min": false,
-      "show": true,
-      "total": false,
-      "values": false
-     },
-     "lines": true,
-     "linewidth": 1,
-     "links": [
-
-     ],
-     "nullPointMode": "null as zero",
-     "percentage": false,
-     "pointradius": 5,
-     "points": false,
-     "renderer": "flot",
-     "seriesOverrides": [
-
-     ],
-     "spaceLength": 10,
-     "span": 6,
-     "stack": false,
-     "steppedLine": false,
-     "targets": [
-      {
-       "expr": "histogram_quantile(0.99, sum(rate(deep_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/cortex-gw(-internal)?\", route=\"opentelemetry_proto_collector_trace_v1_traceservice_export\"}[$__interval])) by (le,)) * 1e3",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} 99th",
-       "refId": "A",
-       "step": 10
-      },
-      {
-       "expr": "histogram_quantile(0.50, sum(rate(deep_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/cortex-gw(-internal)?\", route=\"opentelemetry_proto_collector_trace_v1_traceservice_export\"}[$__interval])) by (le,)) * 1e3",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} 50th",
-       "refId": "B",
-       "step": 10
-      },
-      {
-       "expr": "sum(rate(deep_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/cortex-gw(-internal)?\", route=\"opentelemetry_proto_collector_trace_v1_traceservice_export\"}[$__interval])) by () * 1e3 / sum(rate(deep_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/cortex-gw(-internal)?\", route=\"opentelemetry_proto_collector_trace_v1_traceservice_export\"}[$__interval])) by ()",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} Average",
-       "refId": "C",
-       "step": 10
-      }
-     ],
-     "thresholds": [
-
-     ],
-     "timeFrom": null,
-     "timeShift": null,
-     "title": "Latency",
-     "tooltip": {
-      "shared": true,
-      "sort": 2,
-      "value_type": "individual"
-     },
-     "type": "graph",
-     "xaxis": {
-      "buckets": null,
-      "mode": "time",
-      "name": null,
-      "show": true,
-      "values": [
-
-      ]
-     },
-     "yaxes": [
-      {
-       "format": "ms",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": 0,
-       "show": true
-      },
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": null,
-       "show": false
-      }
-     ]
+     "refId": "A"
     }
    ],
-   "repeat": null,
-   "repeatIteration": null,
-   "repeatRowId": null,
-   "showTitle": true,
    "title": "Gateway",
-   "titleSize": "h6"
+   "type": "row"
   },
   {
-   "collapse": false,
-   "height": "250px",
-   "panels": [
-    {
-     "aliasColors": {
-
+   "datasource": {
+    "type": "prometheus",
+    "uid": "$datasource"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
      },
-     "bars": false,
-     "dashLength": 10,
-     "dashes": false,
-     "datasource": "$datasource",
-     "fill": 1,
-     "id": 3,
-     "legend": {
-      "avg": false,
-      "current": false,
-      "max": false,
-      "min": false,
-      "show": true,
-      "total": false,
-      "values": false
-     },
-     "lines": true,
-     "linewidth": 1,
-     "links": [
-
-     ],
-     "nullPointMode": "null as zero",
-     "percentage": false,
-     "pointradius": 5,
-     "points": false,
-     "renderer": "flot",
-     "seriesOverrides": [
-
-     ],
-     "spaceLength": 10,
-     "span": 6,
-     "stack": false,
-     "steppedLine": false,
-     "targets": [
-      {
-       "expr": "sum by (grpc_status) (\n    rate(\n        label_replace(\n            {cluster=~\"$cluster\", job=~\"($namespace)/cortex-gw(-internal)?\", __name__=~\"envoy_cluster_grpc_proto_collector_trace_v1_TraceService_[0-9]+\"},\n            \"grpc_status\", \"$1\", \"__name__\", \"envoy_cluster_grpc_proto_collector_trace_v1_TraceService_(.+)\"\n        )\n        [$__interval:$__interval]\n    )\n)\n",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{grpc_status}}",
-       "legendLink": null,
-       "step": 10
-      }
-     ],
-     "thresholds": [
-
-     ],
-     "timeFrom": null,
-     "timeShift": null,
-     "title": "QPS",
-     "tooltip": {
-      "shared": true,
-      "sort": 2,
-      "value_type": "individual"
-     },
-     "type": "graph",
-     "xaxis": {
-      "buckets": null,
-      "mode": "time",
-      "name": null,
-      "show": true,
-      "values": [
-
-      ]
-     },
-     "yaxes": [
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": 0,
-       "show": true
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 100,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
       },
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": null,
-       "show": false
+      "lineInterpolation": "linear",
+      "lineWidth": 0,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": false,
+      "stacking": {
+       "group": "A",
+       "mode": "normal"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
       }
-     ]
-    },
-    {
-     "datasource": null,
-     "fieldConfig": {
-      "defaults": {
-       "custom": {
-
+     },
+     "mappings": [],
+     "min": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
        }
-      },
-      "overrides": [
-
       ]
      },
-     "id": 4,
-     "options": {
-      "content": "Visit [Status codes and their use in gRPC](https://github.com/grpc/grpc/blob/master/doc/statuscodes.md)\n\nCode | Number | Description\n---|---|---\nOK | 0 | Not an error; returned on success.\nCANCELLED | 1 | The operation was cancelled, typically by the caller.\nUNKNOWN | 2 | Unknown error. For example, this error may be returned when a Status value received from another address space belongs to an error space that is not known in this address space. Also errors raised by APIs that do not return enough error information may be converted to this error.\nINVALID_ARGUMENT | 3 | The client specified an invalid argument. Note that this differs from FAILED_PRECONDITION. INVALID_ARGUMENT indicates arguments that are problematic regardless of the state of the system (e.g., a malformed file name).\nDEADLINE_EXCEEDED | 4 | The deadline expired before the operation could complete. For operations that change the state of the system, this error may be returned even if the operation has completed successfully. For example, a successful response from a server could have been delayed long\nNOT_FOUND | 5 | Some requested entity (e.g., file or directory) was not found. Note to server developers: if a request is denied for an entire class of users, such as gradual feature rollout or undocumented allowlist, NOT_FOUND may be used. If a request is denied for some users within a class of users, such as user-based access control, PERMISSION_DENIED must be used.\nALREADY_EXISTS | 6 | The entity that a client attempted to create (e.g., file or directory) already exists.\nPERMISSION_DENIED | 7 | The caller does not have permission to execute the specified operation. PERMISSION_DENIED must not be used for rejections caused by exhausting some resource (use RESOURCE_EXHAUSTED instead for those errors). PERMISSION_DENIED must not be used if the caller can not be identified (use UNAUTHENTICATED instead for those errors). This error code does not imply the request is valid or the requested entity exists or satisfies other pre-conditions.\nRESOURCE_EXHAUSTED | 8 | Some resource has been exhausted, perhaps a per-user quota, or perhaps the entire file system is out of space.\nFAILED_PRECONDITION | 9 | The operation was rejected because the system is not in a state required for the operation's execution. For example, the directory to be deleted is non-empty, an rmdir operation is applied to a non-directory, etc. Service implementors can use the following guidelines to decide between FAILED_PRECONDITION, ABORTED, and UNAVAILABLE: (a) Use UNAVAILABLE if the client can retry just the failing call. (b) Use ABORTED if the client should retry at a higher level (e.g., when a client-specified test-and-set fails, indicating the client should restart a read-modify-write sequence). (c) Use FAILED_PRECONDITION if the client should not retry until the system state has been explicitly fixed. E.g., if an \"rmdir\" fails because the directory is non-empty, FAILED_PRECONDITION should be returned since the client should not retry unless the files are deleted from the directory.\nABORTED | 10 | The operation was aborted, typically due to a concurrency issue such as a sequencer check failure or transaction abort. See the guidelines above for deciding between FAILED_PRECONDITION, ABORTED, and UNAVAILABLE.\nOUT_OF_RANGE | 11 | The operation was attempted past the valid range. E.g., seeking or reading past end-of-file. Unlike INVALID_ARGUMENT, this error indicates a problem that may be fixed if the system state changes. For example, a 32-bit file system will generate INVALID_ARGUMENT if asked to read at an offset that is not in the range [0,2^32-1], but it will generate OUT_OF_RANGE if asked to read from an offset past the current file size. There is a fair bit of overlap between FAILED_PRECONDITION and OUT_OF_RANGE. We recommend using OUT_OF_RANGE (the more specific error) when it applies so that callers who are iterating through a space can easily look for an OUT_OF_RANGE error to detect when they are done.\nUNIMPLEMENTED | 12 | The operation is not implemented or is not supported/enabled in this service.\nINTERNAL | 13 | Internal errors. This means that some invariants expected by the underlying system have been broken. This error code is reserved for serious errors.\nUNAVAILABLE | 14 | The service is currently unavailable. This is most likely a transient condition, which can be corrected by retrying with a backoff. Note that it is not always safe to retry non-idempotent operations.\nDATA_LOSS | 15 | Unrecoverable data loss or corruption.\nUNAUTHENTICATED | 16 | The request does not have valid authentication credentials for the operation.\n",
-      "mode": "markdown"
+     "unit": "short"
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "1xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#EAB839",
+         "mode": "fixed"
+        }
+       }
+      ]
      },
-     "span": 6,
-     "timeFrom": null,
-     "timeShift": null,
-     "title": "gRPC status codes",
-     "transparent": false,
-     "type": "text"
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "2xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#7EB26D",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "3xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#6ED0E0",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "4xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#EF843C",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "5xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#E24D42",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "error"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#E24D42",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "success"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#7EB26D",
+         "mode": "fixed"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 0,
+    "y": 1
+   },
+   "id": 1,
+   "links": [],
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   },
+   "pluginVersion": "10.1.0-pre",
+   "targets": [
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "sum by (status) (\n  label_replace(label_replace(rate(deep_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/cortex-gw(-internal)?\", route=\"opentelemetry_proto_collector_trace_v1_traceservice_export\"}[$__rate_interval]),\n  \"status\", \"${1}xx\", \"status_code\", \"([0-9])..\"),\n  \"status\", \"${1}\", \"status_code\", \"([a-z]+)\"))\n",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{status}}",
+     "range": true,
+     "refId": "A",
+     "step": 10
     }
    ],
-   "repeat": null,
-   "repeatIteration": null,
-   "repeatRowId": null,
-   "showTitle": true,
+   "title": "QPS",
+   "type": "timeseries"
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "$datasource"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 10,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 1,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": false,
+      "stacking": {
+       "group": "A",
+       "mode": "none"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
+      }
+     },
+     "mappings": [],
+     "min": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
+      ]
+     },
+     "unit": "ms"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 12,
+    "y": 1
+   },
+   "id": 2,
+   "links": [],
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   },
+   "pluginVersion": "10.1.0-pre",
+   "targets": [
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "histogram_quantile(0.99, sum(rate(deep_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/cortex-gw(-internal)?\", route=\"opentelemetry_proto_collector_trace_v1_traceservice_export\"}[$__interval])) by (le,)) * 1e3",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} 99th",
+     "range": true,
+     "refId": "A",
+     "step": 10
+    },
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "histogram_quantile(0.50, sum(rate(deep_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/cortex-gw(-internal)?\", route=\"opentelemetry_proto_collector_trace_v1_traceservice_export\"}[$__interval])) by (le,)) * 1e3",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} 50th",
+     "range": true,
+     "refId": "B",
+     "step": 10
+    },
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "sum(rate(deep_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/cortex-gw(-internal)?\", route=\"opentelemetry_proto_collector_trace_v1_traceservice_export\"}[$__interval])) by () * 1e3 / sum(rate(deep_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/cortex-gw(-internal)?\", route=\"opentelemetry_proto_collector_trace_v1_traceservice_export\"}[$__interval])) by ()",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} Average",
+     "range": true,
+     "refId": "C",
+     "step": 10
+    }
+   ],
+   "title": "Latency",
+   "type": "timeseries"
+  },
+  {
+   "collapsed": false,
+   "datasource": {
+    "type": "intergral-deep-datasource",
+    "uid": "deep"
+   },
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 8
+   },
+   "id": 18,
+   "panels": [],
+   "targets": [
+    {
+     "datasource": {
+      "type": "intergral-deep-datasource",
+      "uid": "deep"
+     },
+     "refId": "A"
+    }
+   ],
    "title": "Envoy Proxy",
-   "titleSize": "h6"
+   "type": "row"
   },
   {
-   "collapse": false,
-   "height": "250px",
-   "panels": [
-    {
-     "aliasColors": {
-
+   "datasource": {
+    "uid": "$datasource"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
      },
-     "bars": false,
-     "dashLength": 10,
-     "dashes": false,
-     "datasource": "$datasource",
-     "fill": 1,
-     "id": 5,
-     "legend": {
-      "avg": false,
-      "current": false,
-      "max": false,
-      "min": false,
-      "show": true,
-      "total": false,
-      "values": false
-     },
-     "lines": true,
-     "linewidth": 1,
-     "links": [
-
-     ],
-     "nullPointMode": "null as zero",
-     "percentage": false,
-     "pointradius": 5,
-     "points": false,
-     "renderer": "flot",
-     "seriesOverrides": [
-
-     ],
-     "spaceLength": 10,
-     "span": 6,
-     "stack": false,
-     "steppedLine": false,
-     "targets": [
-      {
-       "expr": "sum(rate(deep_receiver_accepted_spans{cluster=~\"$cluster\", job=~\"($namespace)/distributor\"}[$__interval]))",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "accepted",
-       "legendLink": null,
-       "step": 10
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 10,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
       },
-      {
-       "expr": "sum(rate(deep_receiver_refused_spans{cluster=~\"$cluster\", job=~\"($namespace)/distributor\"}[$__interval]))",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "refused",
-       "legendLink": null,
-       "step": 10
+      "lineInterpolation": "linear",
+      "lineWidth": 1,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": false,
+      "stacking": {
+       "group": "A",
+       "mode": "none"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
       }
-     ],
-     "thresholds": [
-
-     ],
-     "timeFrom": null,
-     "timeShift": null,
-     "title": "Spans/Second",
-     "tooltip": {
-      "shared": true,
-      "sort": 2,
-      "value_type": "individual"
      },
-     "type": "graph",
-     "xaxis": {
-      "buckets": null,
-      "mode": "time",
-      "name": null,
-      "show": true,
-      "values": [
-
+     "mappings": [],
+     "min": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
       ]
      },
-     "yaxes": [
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": 0,
-       "show": true
-      },
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": null,
-       "show": false
-      }
-     ]
+     "unit": "short"
     },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 0,
+    "y": 9
+   },
+   "id": 3,
+   "links": [],
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   },
+   "pluginVersion": "10.1.0-pre",
+   "targets": [
     {
-     "aliasColors": {
-
+     "datasource": {
+      "uid": "$datasource"
      },
-     "bars": false,
-     "dashLength": 10,
-     "dashes": false,
-     "datasource": "$datasource",
-     "fill": 1,
-     "id": 6,
-     "legend": {
-      "avg": false,
-      "current": false,
-      "max": false,
-      "min": false,
-      "show": true,
-      "total": false,
-      "values": false
-     },
-     "lines": true,
-     "linewidth": 1,
-     "links": [
-
-     ],
-     "nullPointMode": "null as zero",
-     "percentage": false,
-     "pointradius": 5,
-     "points": false,
-     "renderer": "flot",
-     "seriesOverrides": [
-
-     ],
-     "spaceLength": 10,
-     "span": 6,
-     "stack": false,
-     "steppedLine": false,
-     "targets": [
-      {
-       "expr": "histogram_quantile(0.99, sum(rate(deep_distributor_push_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/distributor\"}[$__interval])) by (le,)) * 1e3",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} 99th",
-       "refId": "A",
-       "step": 10
-      },
-      {
-       "expr": "histogram_quantile(0.50, sum(rate(deep_distributor_push_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/distributor\"}[$__interval])) by (le,)) * 1e3",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} 50th",
-       "refId": "B",
-       "step": 10
-      },
-      {
-       "expr": "sum(rate(deep_distributor_push_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/distributor\"}[$__interval])) by () * 1e3 / sum(rate(deep_distributor_push_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/distributor\"}[$__interval])) by ()",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} Average",
-       "refId": "C",
-       "step": 10
-      }
-     ],
-     "thresholds": [
-
-     ],
-     "timeFrom": null,
-     "timeShift": null,
-     "title": "Latency",
-     "tooltip": {
-      "shared": true,
-      "sort": 2,
-      "value_type": "individual"
-     },
-     "type": "graph",
-     "xaxis": {
-      "buckets": null,
-      "mode": "time",
-      "name": null,
-      "show": true,
-      "values": [
-
-      ]
-     },
-     "yaxes": [
-      {
-       "format": "ms",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": 0,
-       "show": true
-      },
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": null,
-       "show": false
-      }
-     ]
+     "expr": "sum by (grpc_status) (\n    rate(\n        label_replace(\n            {cluster=~\"$cluster\", job=~\"($namespace)/cortex-gw(-internal)?\", __name__=~\"envoy_cluster_grpc_proto_collector_trace_v1_TraceService_[0-9]+\"},\n            \"grpc_status\", \"$1\", \"__name__\", \"envoy_cluster_grpc_proto_collector_trace_v1_TraceService_(.+)\"\n        )\n        [$__interval:$__interval]\n    )\n)\n",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{grpc_status}}",
+     "refId": "A",
+     "step": 10
     }
    ],
-   "repeat": null,
-   "repeatIteration": null,
-   "repeatRowId": null,
-   "showTitle": true,
+   "title": "QPS",
+   "type": "timeseries"
+  },
+  {
+   "datasource": {
+    "type": "intergral-deep-datasource",
+    "uid": "deep"
+   },
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 12,
+    "y": 9
+   },
+   "id": 4,
+   "options": {
+    "code": {
+     "language": "plaintext",
+     "showLineNumbers": false,
+     "showMiniMap": false
+    },
+    "content": "Visit [Status codes and their use in gRPC](https://github.com/grpc/grpc/blob/master/doc/statuscodes.md)\n\nCode | Number | Description\n---|---|---\nOK | 0 | Not an error; returned on success.\nCANCELLED | 1 | The operation was cancelled, typically by the caller.\nUNKNOWN | 2 | Unknown error. For example, this error may be returned when a Status value received from another address space belongs to an error space that is not known in this address space. Also errors raised by APIs that do not return enough error information may be converted to this error.\nINVALID_ARGUMENT | 3 | The client specified an invalid argument. Note that this differs from FAILED_PRECONDITION. INVALID_ARGUMENT indicates arguments that are problematic regardless of the state of the system (e.g., a malformed file name).\nDEADLINE_EXCEEDED | 4 | The deadline expired before the operation could complete. For operations that change the state of the system, this error may be returned even if the operation has completed successfully. For example, a successful response from a server could have been delayed long\nNOT_FOUND | 5 | Some requested entity (e.g., file or directory) was not found. Note to server developers: if a request is denied for an entire class of users, such as gradual feature rollout or undocumented allowlist, NOT_FOUND may be used. If a request is denied for some users within a class of users, such as user-based access control, PERMISSION_DENIED must be used.\nALREADY_EXISTS | 6 | The entity that a client attempted to create (e.g., file or directory) already exists.\nPERMISSION_DENIED | 7 | The caller does not have permission to execute the specified operation. PERMISSION_DENIED must not be used for rejections caused by exhausting some resource (use RESOURCE_EXHAUSTED instead for those errors). PERMISSION_DENIED must not be used if the caller can not be identified (use UNAUTHENTICATED instead for those errors). This error code does not imply the request is valid or the requested entity exists or satisfies other pre-conditions.\nRESOURCE_EXHAUSTED | 8 | Some resource has been exhausted, perhaps a per-user quota, or perhaps the entire file system is out of space.\nFAILED_PRECONDITION | 9 | The operation was rejected because the system is not in a state required for the operation's execution. For example, the directory to be deleted is non-empty, an rmdir operation is applied to a non-directory, etc. Service implementors can use the following guidelines to decide between FAILED_PRECONDITION, ABORTED, and UNAVAILABLE: (a) Use UNAVAILABLE if the client can retry just the failing call. (b) Use ABORTED if the client should retry at a higher level (e.g., when a client-specified test-and-set fails, indicating the client should restart a read-modify-write sequence). (c) Use FAILED_PRECONDITION if the client should not retry until the system state has been explicitly fixed. E.g., if an \"rmdir\" fails because the directory is non-empty, FAILED_PRECONDITION should be returned since the client should not retry unless the files are deleted from the directory.\nABORTED | 10 | The operation was aborted, typically due to a concurrency issue such as a sequencer check failure or transaction abort. See the guidelines above for deciding between FAILED_PRECONDITION, ABORTED, and UNAVAILABLE.\nOUT_OF_RANGE | 11 | The operation was attempted past the valid range. E.g., seeking or reading past end-of-file. Unlike INVALID_ARGUMENT, this error indicates a problem that may be fixed if the system state changes. For example, a 32-bit file system will generate INVALID_ARGUMENT if asked to read at an offset that is not in the range [0,2^32-1], but it will generate OUT_OF_RANGE if asked to read from an offset past the current file size. There is a fair bit of overlap between FAILED_PRECONDITION and OUT_OF_RANGE. We recommend using OUT_OF_RANGE (the more specific error) when it applies so that callers who are iterating through a space can easily look for an OUT_OF_RANGE error to detect when they are done.\nUNIMPLEMENTED | 12 | The operation is not implemented or is not supported/enabled in this service.\nINTERNAL | 13 | Internal errors. This means that some invariants expected by the underlying system have been broken. This error code is reserved for serious errors.\nUNAVAILABLE | 14 | The service is currently unavailable. This is most likely a transient condition, which can be corrected by retrying with a backoff. Note that it is not always safe to retry non-idempotent operations.\nDATA_LOSS | 15 | Unrecoverable data loss or corruption.\nUNAUTHENTICATED | 16 | The request does not have valid authentication credentials for the operation.\n",
+    "mode": "markdown"
+   },
+   "pluginVersion": "10.1.0-pre",
+   "targets": [
+    {
+     "datasource": {
+      "type": "intergral-deep-datasource",
+      "uid": "deep"
+     },
+     "refId": "A"
+    }
+   ],
+   "title": "gRPC status codes",
+   "type": "text"
+  },
+  {
+   "collapsed": false,
+   "datasource": {
+    "type": "intergral-deep-datasource",
+    "uid": "deep"
+   },
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 16
+   },
+   "id": 19,
+   "panels": [],
+   "targets": [
+    {
+     "datasource": {
+      "type": "intergral-deep-datasource",
+      "uid": "deep"
+     },
+     "refId": "A"
+    }
+   ],
    "title": "Distributor",
-   "titleSize": "h6"
+   "type": "row"
   },
   {
-   "collapse": false,
-   "height": "250px",
-   "panels": [
-    {
-     "aliasColors": {
-      "1xx": "#EAB839",
-      "2xx": "#7EB26D",
-      "3xx": "#6ED0E0",
-      "4xx": "#EF843C",
-      "5xx": "#E24D42",
-      "error": "#E24D42",
-      "success": "#7EB26D"
+   "datasource": {
+    "type": "prometheus",
+    "uid": "$datasource"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
      },
-     "bars": false,
-     "dashLength": 10,
-     "dashes": false,
-     "datasource": "$datasource",
-     "fill": 10,
-     "id": 7,
-     "legend": {
-      "avg": false,
-      "current": false,
-      "max": false,
-      "min": false,
-      "show": true,
-      "total": false,
-      "values": false
-     },
-     "lines": true,
-     "linewidth": 0,
-     "links": [
-
-     ],
-     "nullPointMode": "null as zero",
-     "percentage": false,
-     "pointradius": 5,
-     "points": false,
-     "renderer": "flot",
-     "seriesOverrides": [
-
-     ],
-     "spaceLength": 10,
-     "span": 6,
-     "stack": true,
-     "steppedLine": false,
-     "targets": [
-      {
-       "expr": "sum by (status) (\n  label_replace(label_replace(rate(deep_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/ingester\", route=~\"/deeppb.Pusher/Push.*\"}[$__rate_interval]),\n  \"status\", \"${1}xx\", \"status_code\", \"([0-9])..\"),\n  \"status\", \"${1}\", \"status_code\", \"([a-z]+)\"))\n",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{status}}",
-       "refId": "A",
-       "step": 10
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 10,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 1,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": false,
+      "stacking": {
+       "group": "A",
+       "mode": "none"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
       }
-     ],
-     "thresholds": [
-
-     ],
-     "timeFrom": null,
-     "timeShift": null,
-     "title": "QPS",
-     "tooltip": {
-      "shared": true,
-      "sort": 2,
-      "value_type": "individual"
      },
-     "type": "graph",
-     "xaxis": {
-      "buckets": null,
-      "mode": "time",
-      "name": null,
-      "show": true,
-      "values": [
-
+     "mappings": [],
+     "min": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
       ]
      },
-     "yaxes": [
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": 0,
-       "show": true
-      },
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": null,
-       "show": false
-      }
-     ]
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 0,
+    "y": 17
+   },
+   "id": 5,
+   "links": [],
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   },
+   "pluginVersion": "10.1.0-pre",
+   "targets": [
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "sum(rate(deep_receiver_accepted_snapshots{cluster=~\"$cluster\", job=~\"($namespace)/distributor\"}[$__interval]))",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "accepted",
+     "range": true,
+     "refId": "A",
+     "step": 10
     },
     {
-     "aliasColors": {
-
+     "datasource": {
+      "uid": "$datasource"
      },
-     "bars": false,
-     "dashLength": 10,
-     "dashes": false,
-     "datasource": "$datasource",
-     "fill": 1,
-     "id": 8,
-     "legend": {
-      "avg": false,
-      "current": false,
-      "max": false,
-      "min": false,
-      "show": true,
-      "total": false,
-      "values": false
-     },
-     "lines": true,
-     "linewidth": 1,
-     "links": [
-
-     ],
-     "nullPointMode": "null as zero",
-     "percentage": false,
-     "pointradius": 5,
-     "points": false,
-     "renderer": "flot",
-     "seriesOverrides": [
-
-     ],
-     "spaceLength": 10,
-     "span": 6,
-     "stack": false,
-     "steppedLine": false,
-     "targets": [
-      {
-       "expr": "histogram_quantile(0.99, sum(rate(deep_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",route=~\"/deeppb.Pusher/Push.*\"}[$__interval])) by (le,)) * 1e3",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} 99th",
-       "refId": "A",
-       "step": 10
-      },
-      {
-       "expr": "histogram_quantile(0.50, sum(rate(deep_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",route=~\"/deeppb.Pusher/Push.*\"}[$__interval])) by (le,)) * 1e3",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} 50th",
-       "refId": "B",
-       "step": 10
-      },
-      {
-       "expr": "sum(rate(deep_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",route=~\"/deeppb.Pusher/Push.*\"}[$__interval])) by () * 1e3 / sum(rate(deep_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",route=~\"/deeppb.Pusher/Push.*\"}[$__interval])) by ()",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} Average",
-       "refId": "C",
-       "step": 10
-      }
-     ],
-     "thresholds": [
-
-     ],
-     "timeFrom": null,
-     "timeShift": null,
-     "title": "Latency",
-     "tooltip": {
-      "shared": true,
-      "sort": 2,
-      "value_type": "individual"
-     },
-     "type": "graph",
-     "xaxis": {
-      "buckets": null,
-      "mode": "time",
-      "name": null,
-      "show": true,
-      "values": [
-
-      ]
-     },
-     "yaxes": [
-      {
-       "format": "ms",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": 0,
-       "show": true
-      },
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": null,
-       "show": false
-      }
-     ]
+     "editorMode": "code",
+     "expr": "sum(rate(deep_receiver_refused_snapshots{cluster=~\"$cluster\", job=~\"($namespace)/distributor\"}[$__interval]))",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "refused",
+     "range": true,
+     "refId": "B",
+     "step": 10
     }
    ],
-   "repeat": null,
-   "repeatIteration": null,
-   "repeatRowId": null,
-   "showTitle": true,
+   "title": "Spans/Second",
+   "type": "timeseries"
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "$datasource"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 10,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 1,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": false,
+      "stacking": {
+       "group": "A",
+       "mode": "none"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
+      }
+     },
+     "mappings": [],
+     "min": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
+      ]
+     },
+     "unit": "ms"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 12,
+    "y": 17
+   },
+   "id": 6,
+   "links": [],
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   },
+   "pluginVersion": "10.1.0-pre",
+   "targets": [
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "histogram_quantile(0.99, sum(rate(deep_distributor_push_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/distributor\"}[$__interval])) by (le,)) * 1e3",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} 99th",
+     "range": true,
+     "refId": "A",
+     "step": 10
+    },
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "histogram_quantile(0.50, sum(rate(deep_distributor_push_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/distributor\"}[$__interval])) by (le,)) * 1e3",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} 50th",
+     "range": true,
+     "refId": "B",
+     "step": 10
+    },
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "sum(rate(deep_distributor_push_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/distributor\"}[$__interval])) by () * 1e3 / sum(rate(deep_distributor_push_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/distributor\"}[$__interval])) by ()",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} Average",
+     "range": true,
+     "refId": "C",
+     "step": 10
+    }
+   ],
+   "title": "Latency",
+   "type": "timeseries"
+  },
+  {
+   "collapsed": false,
+   "datasource": {
+    "type": "intergral-deep-datasource",
+    "uid": "deep"
+   },
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 24
+   },
+   "id": 20,
+   "panels": [],
+   "targets": [
+    {
+     "datasource": {
+      "type": "intergral-deep-datasource",
+      "uid": "deep"
+     },
+     "refId": "A"
+    }
+   ],
    "title": "Ingester",
-   "titleSize": "h6"
+   "type": "row"
   },
   {
-   "collapse": false,
-   "height": "250px",
-   "panels": [
-    {
-     "aliasColors": {
-      "1xx": "#EAB839",
-      "2xx": "#7EB26D",
-      "3xx": "#6ED0E0",
-      "4xx": "#EF843C",
-      "5xx": "#E24D42",
-      "error": "#E24D42",
-      "success": "#7EB26D"
+   "datasource": {
+    "type": "prometheus",
+    "uid": "$datasource"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
      },
-     "bars": false,
-     "dashLength": 10,
-     "dashes": false,
-     "datasource": "$datasource",
-     "fill": 10,
-     "id": 9,
-     "legend": {
-      "avg": false,
-      "current": false,
-      "max": false,
-      "min": false,
-      "show": true,
-      "total": false,
-      "values": false
-     },
-     "lines": true,
-     "linewidth": 0,
-     "links": [
-
-     ],
-     "nullPointMode": "null as zero",
-     "percentage": false,
-     "pointradius": 5,
-     "points": false,
-     "renderer": "flot",
-     "seriesOverrides": [
-
-     ],
-     "spaceLength": 10,
-     "span": 6,
-     "stack": true,
-     "steppedLine": false,
-     "targets": [
-      {
-       "expr": "sum by (status) (\n  label_replace(label_replace(rate(cortex_memcache_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",method=\"Memcache.Put\"}[$__rate_interval]),\n  \"status\", \"${1}xx\", \"status_code\", \"([0-9])..\"),\n  \"status\", \"${1}\", \"status_code\", \"([a-z]+)\"))\n",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{status}}",
-       "refId": "A",
-       "step": 10
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 100,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 0,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": false,
+      "stacking": {
+       "group": "A",
+       "mode": "normal"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
       }
-     ],
-     "thresholds": [
-
-     ],
-     "timeFrom": null,
-     "timeShift": null,
-     "title": "QPS",
-     "tooltip": {
-      "shared": true,
-      "sort": 2,
-      "value_type": "individual"
      },
-     "type": "graph",
-     "xaxis": {
-      "buckets": null,
-      "mode": "time",
-      "name": null,
-      "show": true,
-      "values": [
-
+     "mappings": [],
+     "min": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
       ]
      },
-     "yaxes": [
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": 0,
-       "show": true
-      },
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": null,
-       "show": false
-      }
-     ]
+     "unit": "short"
     },
-    {
-     "aliasColors": {
-
-     },
-     "bars": false,
-     "dashLength": 10,
-     "dashes": false,
-     "datasource": "$datasource",
-     "fill": 1,
-     "id": 10,
-     "legend": {
-      "avg": false,
-      "current": false,
-      "max": false,
-      "min": false,
-      "show": true,
-      "total": false,
-      "values": false
-     },
-     "lines": true,
-     "linewidth": 1,
-     "links": [
-
-     ],
-     "nullPointMode": "null as zero",
-     "percentage": false,
-     "pointradius": 5,
-     "points": false,
-     "renderer": "flot",
-     "seriesOverrides": [
-
-     ],
-     "spaceLength": 10,
-     "span": 6,
-     "stack": false,
-     "steppedLine": false,
-     "targets": [
-      {
-       "expr": "histogram_quantile(0.99, sum(rate(cortex_memcache_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",method=\"Memcache.Put\"}[$__interval])) by (le,)) * 1e3",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} 99th",
-       "refId": "A",
-       "step": 10
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "1xx"
       },
-      {
-       "expr": "histogram_quantile(0.50, sum(rate(cortex_memcache_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",method=\"Memcache.Put\"}[$__interval])) by (le,)) * 1e3",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} 50th",
-       "refId": "B",
-       "step": 10
-      },
-      {
-       "expr": "sum(rate(cortex_memcache_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",method=\"Memcache.Put\"}[$__interval])) by () * 1e3 / sum(rate(cortex_memcache_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",method=\"Memcache.Put\"}[$__interval])) by ()",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} Average",
-       "refId": "C",
-       "step": 10
-      }
-     ],
-     "thresholds": [
-
-     ],
-     "timeFrom": null,
-     "timeShift": null,
-     "title": "Latency",
-     "tooltip": {
-      "shared": true,
-      "sort": 2,
-      "value_type": "individual"
-     },
-     "type": "graph",
-     "xaxis": {
-      "buckets": null,
-      "mode": "time",
-      "name": null,
-      "show": true,
-      "values": [
-
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#EAB839",
+         "mode": "fixed"
+        }
+       }
       ]
      },
-     "yaxes": [
-      {
-       "format": "ms",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": 0,
-       "show": true
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "2xx"
       },
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": null,
-       "show": false
-      }
-     ]
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#7EB26D",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "3xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#6ED0E0",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "4xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#EF843C",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "5xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#E24D42",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "error"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#E24D42",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "success"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#7EB26D",
+         "mode": "fixed"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 0,
+    "y": 25
+   },
+   "id": 7,
+   "links": [],
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   },
+   "pluginVersion": "10.1.0-pre",
+   "targets": [
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "sum by (status) (\n  label_replace(label_replace(rate(deep_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/ingester\", route=~\"/deeppb.Pusher/Push.*\"}[$__rate_interval]),\n  \"status\", \"${1}xx\", \"status_code\", \"([0-9])..\"),\n  \"status\", \"${1}\", \"status_code\", \"([a-z]+)\"))\n",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{status}}",
+     "range": true,
+     "refId": "A",
+     "step": 10
     }
    ],
-   "repeat": null,
-   "repeatIteration": null,
-   "repeatRowId": null,
-   "showTitle": true,
+   "title": "QPS",
+   "type": "timeseries"
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "uid": "$datasource"
+   },
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 12,
+    "y": 25
+   },
+   "hiddenSeries": false,
+   "id": 8,
+   "legend": {
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "show": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "links": [],
+   "nullPointMode": "null as zero",
+   "options": {
+    "alertThreshold": true
+   },
+   "percentage": false,
+   "pluginVersion": "10.1.0-pre",
+   "pointradius": 5,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "expr": "histogram_quantile(0.99, sum(rate(tempo_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",route=~\"/tempopb.Pusher/Push.*\"}[$__interval])) by (le,)) * 1e3",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} 99th",
+     "refId": "A",
+     "step": 10
+    },
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "expr": "histogram_quantile(0.50, sum(rate(tempo_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",route=~\"/tempopb.Pusher/Push.*\"}[$__interval])) by (le,)) * 1e3",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} 50th",
+     "refId": "B",
+     "step": 10
+    },
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "expr": "sum(rate(tempo_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",route=~\"/tempopb.Pusher/Push.*\"}[$__interval])) by () * 1e3 / sum(rate(tempo_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",route=~\"/tempopb.Pusher/Push.*\"}[$__interval])) by ()",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} Average",
+     "refId": "C",
+     "step": 10
+    }
+   ],
+   "thresholds": [],
+   "timeRegions": [],
+   "title": "Latency",
+   "tooltip": {
+    "shared": true,
+    "sort": 2,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "format": "ms",
+     "logBase": 1,
+     "min": 0,
+     "show": true
+    },
+    {
+     "format": "short",
+     "logBase": 1,
+     "show": false
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "collapsed": false,
+   "datasource": {
+    "type": "intergral-deep-datasource",
+    "uid": "deep"
+   },
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 32
+   },
+   "id": 21,
+   "panels": [],
+   "targets": [
+    {
+     "datasource": {
+      "type": "intergral-deep-datasource",
+      "uid": "deep"
+     },
+     "refId": "A"
+    }
+   ],
    "title": "Memcached - Ingester",
-   "titleSize": "h6"
+   "type": "row"
   },
   {
-   "collapse": false,
-   "height": "250px",
-   "panels": [
-    {
-     "aliasColors": {
-      "1xx": "#EAB839",
-      "2xx": "#7EB26D",
-      "3xx": "#6ED0E0",
-      "4xx": "#EF843C",
-      "5xx": "#E24D42",
-      "error": "#E24D42",
-      "success": "#7EB26D"
+   "datasource": {
+    "type": "prometheus",
+    "uid": "$datasource"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
      },
-     "bars": false,
-     "dashLength": 10,
-     "dashes": false,
-     "datasource": "$datasource",
-     "fill": 10,
-     "id": 11,
-     "legend": {
-      "avg": false,
-      "current": false,
-      "max": false,
-      "min": false,
-      "show": true,
-      "total": false,
-      "values": false
-     },
-     "lines": true,
-     "linewidth": 0,
-     "links": [
-
-     ],
-     "nullPointMode": "null as zero",
-     "percentage": false,
-     "pointradius": 5,
-     "points": false,
-     "renderer": "flot",
-     "seriesOverrides": [
-
-     ],
-     "spaceLength": 10,
-     "span": 6,
-     "stack": true,
-     "steppedLine": false,
-     "targets": [
-      {
-       "expr": "sum by (status) (\n  label_replace(label_replace(rate(deepdb_backend_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",operation=~\"(PUT|POST)\"}[$__rate_interval]),\n  \"status\", \"${1}xx\", \"status_code\", \"([0-9])..\"),\n  \"status\", \"${1}\", \"status_code\", \"([a-z]+)\"))\n",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{status}}",
-       "refId": "A",
-       "step": 10
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 100,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 0,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": false,
+      "stacking": {
+       "group": "A",
+       "mode": "normal"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
       }
-     ],
-     "thresholds": [
-
-     ],
-     "timeFrom": null,
-     "timeShift": null,
-     "title": "QPS",
-     "tooltip": {
-      "shared": true,
-      "sort": 2,
-      "value_type": "individual"
      },
-     "type": "graph",
-     "xaxis": {
-      "buckets": null,
-      "mode": "time",
-      "name": null,
-      "show": true,
-      "values": [
-
+     "mappings": [],
+     "min": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
       ]
      },
-     "yaxes": [
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": 0,
-       "show": true
-      },
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": null,
-       "show": false
-      }
-     ]
+     "unit": "short"
     },
-    {
-     "aliasColors": {
-
-     },
-     "bars": false,
-     "dashLength": 10,
-     "dashes": false,
-     "datasource": "$datasource",
-     "fill": 1,
-     "id": 12,
-     "legend": {
-      "avg": false,
-      "current": false,
-      "max": false,
-      "min": false,
-      "show": true,
-      "total": false,
-      "values": false
-     },
-     "lines": true,
-     "linewidth": 1,
-     "links": [
-
-     ],
-     "nullPointMode": "null as zero",
-     "percentage": false,
-     "pointradius": 5,
-     "points": false,
-     "renderer": "flot",
-     "seriesOverrides": [
-
-     ],
-     "spaceLength": 10,
-     "span": 6,
-     "stack": false,
-     "steppedLine": false,
-     "targets": [
-      {
-       "expr": "histogram_quantile(0.99, sum(rate(deepdb_backend_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",operation=~\"(PUT|POST)\"}[$__interval])) by (le,)) * 1e3",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} 99th",
-       "refId": "A",
-       "step": 10
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "1xx"
       },
-      {
-       "expr": "histogram_quantile(0.50, sum(rate(deepdb_backend_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",operation=~\"(PUT|POST)\"}[$__interval])) by (le,)) * 1e3",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} 50th",
-       "refId": "B",
-       "step": 10
-      },
-      {
-       "expr": "sum(rate(deepdb_backend_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",operation=~\"(PUT|POST)\"}[$__interval])) by () * 1e3 / sum(rate(deepdb_backend_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",operation=~\"(PUT|POST)\"}[$__interval])) by ()",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} Average",
-       "refId": "C",
-       "step": 10
-      }
-     ],
-     "thresholds": [
-
-     ],
-     "timeFrom": null,
-     "timeShift": null,
-     "title": "Latency",
-     "tooltip": {
-      "shared": true,
-      "sort": 2,
-      "value_type": "individual"
-     },
-     "type": "graph",
-     "xaxis": {
-      "buckets": null,
-      "mode": "time",
-      "name": null,
-      "show": true,
-      "values": [
-
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#EAB839",
+         "mode": "fixed"
+        }
+       }
       ]
      },
-     "yaxes": [
-      {
-       "format": "ms",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": 0,
-       "show": true
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "2xx"
       },
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": null,
-       "show": false
-      }
-     ]
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#7EB26D",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "3xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#6ED0E0",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "4xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#EF843C",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "5xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#E24D42",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "error"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#E24D42",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "success"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#7EB26D",
+         "mode": "fixed"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 0,
+    "y": 33
+   },
+   "id": 9,
+   "links": [],
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   },
+   "pluginVersion": "10.1.0-pre",
+   "targets": [
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "sum by (status) (\n  label_replace(label_replace(rate(deep_memcache_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",method=\"Memcache.Put\"}[$__rate_interval]),\n  \"status\", \"${1}xx\", \"status_code\", \"([0-9])..\"),\n  \"status\", \"${1}\", \"status_code\", \"([a-z]+)\"))\n",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{status}}",
+     "range": true,
+     "refId": "A",
+     "step": 10
     }
    ],
-   "repeat": null,
-   "repeatIteration": null,
-   "repeatRowId": null,
-   "showTitle": true,
+   "title": "QPS",
+   "type": "timeseries"
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "$datasource"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 10,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 1,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": false,
+      "stacking": {
+       "group": "A",
+       "mode": "none"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
+      }
+     },
+     "mappings": [],
+     "min": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
+      ]
+     },
+     "unit": "ms"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 12,
+    "y": 33
+   },
+   "id": 10,
+   "links": [],
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   },
+   "pluginVersion": "10.1.0-pre",
+   "targets": [
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "histogram_quantile(0.99, sum(rate(deep_memcache_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",method=\"Memcache.Put\"}[$__interval])) by (le,)) * 1e3",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} 99th",
+     "range": true,
+     "refId": "A",
+     "step": 10
+    },
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "histogram_quantile(0.50, sum(rate(deep_memcache_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",method=\"Memcache.Put\"}[$__interval])) by (le,)) * 1e3",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} 50th",
+     "range": true,
+     "refId": "B",
+     "step": 10
+    },
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "sum(rate(deep_memcache_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",method=\"Memcache.Put\"}[$__interval])) by () * 1e3 / sum(rate(deep_memcache_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",method=\"Memcache.Put\"}[$__interval])) by ()",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} Average",
+     "range": true,
+     "refId": "C",
+     "step": 10
+    }
+   ],
+   "title": "Latency",
+   "type": "timeseries"
+  },
+  {
+   "collapsed": false,
+   "datasource": {
+    "type": "intergral-deep-datasource",
+    "uid": "deep"
+   },
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 40
+   },
+   "id": 22,
+   "panels": [],
+   "targets": [
+    {
+     "datasource": {
+      "type": "intergral-deep-datasource",
+      "uid": "deep"
+     },
+     "refId": "A"
+    }
+   ],
    "title": "Backend - Ingester",
-   "titleSize": "h6"
+   "type": "row"
   },
   {
-   "collapse": false,
-   "height": "250px",
-   "panels": [
-    {
-     "aliasColors": {
-      "1xx": "#EAB839",
-      "2xx": "#7EB26D",
-      "3xx": "#6ED0E0",
-      "4xx": "#EF843C",
-      "5xx": "#E24D42",
-      "error": "#E24D42",
-      "success": "#7EB26D"
+   "datasource": {
+    "type": "prometheus",
+    "uid": "$datasource"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
      },
-     "bars": false,
-     "dashLength": 10,
-     "dashes": false,
-     "datasource": "$datasource",
-     "fill": 10,
-     "id": 13,
-     "legend": {
-      "avg": false,
-      "current": false,
-      "max": false,
-      "min": false,
-      "show": true,
-      "total": false,
-      "values": false
-     },
-     "lines": true,
-     "linewidth": 0,
-     "links": [
-
-     ],
-     "nullPointMode": "null as zero",
-     "percentage": false,
-     "pointradius": 5,
-     "points": false,
-     "renderer": "flot",
-     "seriesOverrides": [
-
-     ],
-     "spaceLength": 10,
-     "span": 6,
-     "stack": true,
-     "steppedLine": false,
-     "targets": [
-      {
-       "expr": "sum by (status) (\n  label_replace(label_replace(rate(cortex_memcache_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",method=\"Memcache.Put\"}[$__rate_interval]),\n  \"status\", \"${1}xx\", \"status_code\", \"([0-9])..\"),\n  \"status\", \"${1}\", \"status_code\", \"([a-z]+)\"))\n",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{status}}",
-       "refId": "A",
-       "step": 10
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 100,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 0,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": false,
+      "stacking": {
+       "group": "A",
+       "mode": "normal"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
       }
-     ],
-     "thresholds": [
-
-     ],
-     "timeFrom": null,
-     "timeShift": null,
-     "title": "QPS",
-     "tooltip": {
-      "shared": true,
-      "sort": 2,
-      "value_type": "individual"
      },
-     "type": "graph",
-     "xaxis": {
-      "buckets": null,
-      "mode": "time",
-      "name": null,
-      "show": true,
-      "values": [
-
+     "mappings": [],
+     "min": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
       ]
      },
-     "yaxes": [
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": 0,
-       "show": true
-      },
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": null,
-       "show": false
-      }
-     ]
+     "unit": "short"
     },
-    {
-     "aliasColors": {
-
-     },
-     "bars": false,
-     "dashLength": 10,
-     "dashes": false,
-     "datasource": "$datasource",
-     "fill": 1,
-     "id": 14,
-     "legend": {
-      "avg": false,
-      "current": false,
-      "max": false,
-      "min": false,
-      "show": true,
-      "total": false,
-      "values": false
-     },
-     "lines": true,
-     "linewidth": 1,
-     "links": [
-
-     ],
-     "nullPointMode": "null as zero",
-     "percentage": false,
-     "pointradius": 5,
-     "points": false,
-     "renderer": "flot",
-     "seriesOverrides": [
-
-     ],
-     "spaceLength": 10,
-     "span": 6,
-     "stack": false,
-     "steppedLine": false,
-     "targets": [
-      {
-       "expr": "histogram_quantile(0.99, sum(rate(cortex_memcache_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",method=\"Memcache.Put\"}[$__interval])) by (le,)) * 1e3",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} 99th",
-       "refId": "A",
-       "step": 10
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "1xx"
       },
-      {
-       "expr": "histogram_quantile(0.50, sum(rate(cortex_memcache_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",method=\"Memcache.Put\"}[$__interval])) by (le,)) * 1e3",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} 50th",
-       "refId": "B",
-       "step": 10
-      },
-      {
-       "expr": "sum(rate(cortex_memcache_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",method=\"Memcache.Put\"}[$__interval])) by () * 1e3 / sum(rate(cortex_memcache_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",method=\"Memcache.Put\"}[$__interval])) by ()",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} Average",
-       "refId": "C",
-       "step": 10
-      }
-     ],
-     "thresholds": [
-
-     ],
-     "timeFrom": null,
-     "timeShift": null,
-     "title": "Latency",
-     "tooltip": {
-      "shared": true,
-      "sort": 2,
-      "value_type": "individual"
-     },
-     "type": "graph",
-     "xaxis": {
-      "buckets": null,
-      "mode": "time",
-      "name": null,
-      "show": true,
-      "values": [
-
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#EAB839",
+         "mode": "fixed"
+        }
+       }
       ]
      },
-     "yaxes": [
-      {
-       "format": "ms",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": 0,
-       "show": true
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "2xx"
       },
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": null,
-       "show": false
-      }
-     ]
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#7EB26D",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "3xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#6ED0E0",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "4xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#EF843C",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "5xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#E24D42",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "error"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#E24D42",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "success"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#7EB26D",
+         "mode": "fixed"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 0,
+    "y": 41
+   },
+   "id": 11,
+   "links": [],
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   },
+   "pluginVersion": "10.1.0-pre",
+   "targets": [
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "sum by (status) (\n  label_replace(label_replace(rate(deepdb_backend_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",operation=~\"(PUT|POST)\"}[$__rate_interval]),\n  \"status\", \"${1}xx\", \"status_code\", \"([0-9])..\"),\n  \"status\", \"${1}\", \"status_code\", \"([a-z]+)\"))\n",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{status}}",
+     "range": true,
+     "refId": "A",
+     "step": 10
     }
    ],
-   "repeat": null,
-   "repeatIteration": null,
-   "repeatRowId": null,
-   "showTitle": true,
+   "title": "QPS",
+   "type": "timeseries"
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "$datasource"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 10,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 1,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": false,
+      "stacking": {
+       "group": "A",
+       "mode": "none"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
+      }
+     },
+     "mappings": [],
+     "min": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
+      ]
+     },
+     "unit": "ms"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 12,
+    "y": 41
+   },
+   "id": 12,
+   "links": [],
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   },
+   "pluginVersion": "10.1.0-pre",
+   "targets": [
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "histogram_quantile(0.99, sum(rate(deepdb_backend_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",operation=~\"(PUT|POST)\"}[$__interval])) by (le,)) * 1e3",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} 99th",
+     "range": true,
+     "refId": "A",
+     "step": 10
+    },
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "histogram_quantile(0.50, sum(rate(deepdb_backend_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",operation=~\"(PUT|POST)\"}[$__interval])) by (le,)) * 1e3",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} 50th",
+     "range": true,
+     "refId": "B",
+     "step": 10
+    },
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "sum(rate(deepdb_backend_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",operation=~\"(PUT|POST)\"}[$__interval])) by () * 1e3 / sum(rate(deepdb_backend_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/ingester\",operation=~\"(PUT|POST)\"}[$__interval])) by ()",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} Average",
+     "range": true,
+     "refId": "C",
+     "step": 10
+    }
+   ],
+   "title": "Latency",
+   "type": "timeseries"
+  },
+  {
+   "collapsed": false,
+   "datasource": {
+    "type": "intergral-deep-datasource",
+    "uid": "deep"
+   },
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 48
+   },
+   "id": 23,
+   "panels": [],
+   "targets": [
+    {
+     "datasource": {
+      "type": "intergral-deep-datasource",
+      "uid": "deep"
+     },
+     "refId": "A"
+    }
+   ],
    "title": "Memcached - Compactor",
-   "titleSize": "h6"
+   "type": "row"
   },
   {
-   "collapse": false,
-   "height": "250px",
-   "panels": [
-    {
-     "aliasColors": {
-      "1xx": "#EAB839",
-      "2xx": "#7EB26D",
-      "3xx": "#6ED0E0",
-      "4xx": "#EF843C",
-      "5xx": "#E24D42",
-      "error": "#E24D42",
-      "success": "#7EB26D"
+   "datasource": {
+    "type": "prometheus",
+    "uid": "$datasource"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
      },
-     "bars": false,
-     "dashLength": 10,
-     "dashes": false,
-     "datasource": "$datasource",
-     "fill": 10,
-     "id": 15,
-     "legend": {
-      "avg": false,
-      "current": false,
-      "max": false,
-      "min": false,
-      "show": true,
-      "total": false,
-      "values": false
-     },
-     "lines": true,
-     "linewidth": 0,
-     "links": [
-
-     ],
-     "nullPointMode": "null as zero",
-     "percentage": false,
-     "pointradius": 5,
-     "points": false,
-     "renderer": "flot",
-     "seriesOverrides": [
-
-     ],
-     "spaceLength": 10,
-     "span": 6,
-     "stack": true,
-     "steppedLine": false,
-     "targets": [
-      {
-       "expr": "sum by (status) (\n  label_replace(label_replace(rate(deepdb_backend_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",operation=~\"(PUT|POST)\"}[$__rate_interval]),\n  \"status\", \"${1}xx\", \"status_code\", \"([0-9])..\"),\n  \"status\", \"${1}\", \"status_code\", \"([a-z]+)\"))\n",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{status}}",
-       "refId": "A",
-       "step": 10
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 100,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 0,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": false,
+      "stacking": {
+       "group": "A",
+       "mode": "normal"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
       }
-     ],
-     "thresholds": [
-
-     ],
-     "timeFrom": null,
-     "timeShift": null,
-     "title": "QPS",
-     "tooltip": {
-      "shared": true,
-      "sort": 2,
-      "value_type": "individual"
      },
-     "type": "graph",
-     "xaxis": {
-      "buckets": null,
-      "mode": "time",
-      "name": null,
-      "show": true,
-      "values": [
-
+     "mappings": [],
+     "min": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
       ]
      },
-     "yaxes": [
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": 0,
-       "show": true
-      },
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": null,
-       "show": false
-      }
-     ]
+     "unit": "short"
     },
-    {
-     "aliasColors": {
-
-     },
-     "bars": false,
-     "dashLength": 10,
-     "dashes": false,
-     "datasource": "$datasource",
-     "fill": 1,
-     "id": 16,
-     "legend": {
-      "avg": false,
-      "current": false,
-      "max": false,
-      "min": false,
-      "show": true,
-      "total": false,
-      "values": false
-     },
-     "lines": true,
-     "linewidth": 1,
-     "links": [
-
-     ],
-     "nullPointMode": "null as zero",
-     "percentage": false,
-     "pointradius": 5,
-     "points": false,
-     "renderer": "flot",
-     "seriesOverrides": [
-
-     ],
-     "spaceLength": 10,
-     "span": 6,
-     "stack": false,
-     "steppedLine": false,
-     "targets": [
-      {
-       "expr": "histogram_quantile(0.99, sum(rate(deepdb_backend_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",operation=~\"(PUT|POST)\"}[$__interval])) by (le,)) * 1e3",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} 99th",
-       "refId": "A",
-       "step": 10
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "1xx"
       },
-      {
-       "expr": "histogram_quantile(0.50, sum(rate(deepdb_backend_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",operation=~\"(PUT|POST)\"}[$__interval])) by (le,)) * 1e3",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} 50th",
-       "refId": "B",
-       "step": 10
-      },
-      {
-       "expr": "sum(rate(deepdb_backend_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",operation=~\"(PUT|POST)\"}[$__interval])) by () * 1e3 / sum(rate(deepdb_backend_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",operation=~\"(PUT|POST)\"}[$__interval])) by ()",
-       "format": "time_series",
-       "interval": "1m",
-       "intervalFactor": 2,
-       "legendFormat": "{{route}} Average",
-       "refId": "C",
-       "step": 10
-      }
-     ],
-     "thresholds": [
-
-     ],
-     "timeFrom": null,
-     "timeShift": null,
-     "title": "Latency",
-     "tooltip": {
-      "shared": true,
-      "sort": 2,
-      "value_type": "individual"
-     },
-     "type": "graph",
-     "xaxis": {
-      "buckets": null,
-      "mode": "time",
-      "name": null,
-      "show": true,
-      "values": [
-
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#EAB839",
+         "mode": "fixed"
+        }
+       }
       ]
      },
-     "yaxes": [
-      {
-       "format": "ms",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": 0,
-       "show": true
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "2xx"
       },
-      {
-       "format": "short",
-       "label": null,
-       "logBase": 1,
-       "max": null,
-       "min": null,
-       "show": false
-      }
-     ]
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#7EB26D",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "3xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#6ED0E0",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "4xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#EF843C",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "5xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#E24D42",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "error"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#E24D42",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "success"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#7EB26D",
+         "mode": "fixed"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 0,
+    "y": 49
+   },
+   "id": 13,
+   "links": [],
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   },
+   "pluginVersion": "10.1.0-pre",
+   "targets": [
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "sum by (status) (\n  label_replace(label_replace(rate(deep_memcache_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",method=\"Memcache.Put\"}[$__rate_interval]),\n  \"status\", \"${1}xx\", \"status_code\", \"([0-9])..\"),\n  \"status\", \"${1}\", \"status_code\", \"([a-z]+)\"))\n",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{status}}",
+     "range": true,
+     "refId": "A",
+     "step": 10
     }
    ],
-   "repeat": null,
-   "repeatIteration": null,
-   "repeatRowId": null,
-   "showTitle": true,
+   "title": "QPS",
+   "type": "timeseries"
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "$datasource"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 10,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 1,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": false,
+      "stacking": {
+       "group": "A",
+       "mode": "none"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
+      }
+     },
+     "mappings": [],
+     "min": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
+      ]
+     },
+     "unit": "ms"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 12,
+    "y": 49
+   },
+   "id": 14,
+   "links": [],
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   },
+   "pluginVersion": "10.1.0-pre",
+   "targets": [
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "histogram_quantile(0.99, sum(rate(deep_memcache_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",method=\"Memcache.Put\"}[$__interval])) by (le,)) * 1e3",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} 99th",
+     "range": true,
+     "refId": "A",
+     "step": 10
+    },
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "histogram_quantile(0.50, sum(rate(deep_memcache_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",method=\"Memcache.Put\"}[$__interval])) by (le,)) * 1e3",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} 50th",
+     "range": true,
+     "refId": "B",
+     "step": 10
+    },
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "sum(rate(deep_memcache_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",method=\"Memcache.Put\"}[$__interval])) by () * 1e3 / sum(rate(deep_memcache_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",method=\"Memcache.Put\"}[$__interval])) by ()",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} Average",
+     "range": true,
+     "refId": "C",
+     "step": 10
+    }
+   ],
+   "title": "Latency",
+   "type": "timeseries"
+  },
+  {
+   "collapsed": false,
+   "datasource": {
+    "type": "intergral-deep-datasource",
+    "uid": "deep"
+   },
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 56
+   },
+   "id": 24,
+   "panels": [],
+   "targets": [
+    {
+     "datasource": {
+      "type": "intergral-deep-datasource",
+      "uid": "deep"
+     },
+     "refId": "A"
+    }
+   ],
    "title": "Backend - Compactor",
-   "titleSize": "h6"
+   "type": "row"
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "$datasource"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 100,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 0,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": false,
+      "stacking": {
+       "group": "A",
+       "mode": "normal"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
+      }
+     },
+     "mappings": [],
+     "min": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
+      ]
+     },
+     "unit": "short"
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "1xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#EAB839",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "2xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#7EB26D",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "3xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#6ED0E0",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "4xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#EF843C",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "5xx"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#E24D42",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "error"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#E24D42",
+         "mode": "fixed"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "success"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "fixedColor": "#7EB26D",
+         "mode": "fixed"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 0,
+    "y": 57
+   },
+   "id": 15,
+   "links": [],
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   },
+   "pluginVersion": "10.1.0-pre",
+   "targets": [
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "sum by (status) (\n  label_replace(label_replace(rate(deepdb_backend_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",operation=~\"(PUT|POST)\"}[$__rate_interval]),\n  \"status\", \"${1}xx\", \"status_code\", \"([0-9])..\"),\n  \"status\", \"${1}\", \"status_code\", \"([a-z]+)\"))\n",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{status}}",
+     "range": true,
+     "refId": "A",
+     "step": 10
+    }
+   ],
+   "title": "QPS",
+   "type": "timeseries"
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "$datasource"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 10,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 1,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": false,
+      "stacking": {
+       "group": "A",
+       "mode": "none"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
+      }
+     },
+     "mappings": [],
+     "min": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
+      ]
+     },
+     "unit": "ms"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 12,
+    "y": 57
+   },
+   "id": 16,
+   "links": [],
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   },
+   "pluginVersion": "10.1.0-pre",
+   "targets": [
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "histogram_quantile(0.99, sum(rate(deepdb_backend_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",operation=~\"(PUT|POST)\"}[$__interval])) by (le,)) * 1e3",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} 99th",
+     "range": true,
+     "refId": "A",
+     "step": 10
+    },
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "histogram_quantile(0.50, sum(rate(deepdb_backend_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",operation=~\"(PUT|POST)\"}[$__interval])) by (le,)) * 1e3",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} 50th",
+     "range": true,
+     "refId": "B",
+     "step": 10
+    },
+    {
+     "datasource": {
+      "uid": "$datasource"
+     },
+     "editorMode": "code",
+     "expr": "sum(rate(deepdb_backend_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",operation=~\"(PUT|POST)\"}[$__interval])) by () * 1e3 / sum(rate(deepdb_backend_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",operation=~\"(PUT|POST)\"}[$__interval])) by ()",
+     "format": "time_series",
+     "interval": "1m",
+     "intervalFactor": 2,
+     "legendFormat": "{{route}} Average",
+     "range": true,
+     "refId": "C",
+     "step": 10
+    }
+   ],
+   "title": "Latency",
+   "type": "timeseries"
   }
  ],
- "schemaVersion": 14,
+ "refresh": "",
+ "schemaVersion": 38,
  "style": "dark",
  "tags": [
   "deep"
@@ -1630,72 +2603,88 @@
   "list": [
    {
     "current": {
-     "text": "default",
-     "value": "default"
+     "selected": false,
+     "text": "Prometheus",
+     "value": "PBFA97CFB590B2093"
     },
     "hide": 0,
+    "includeAll": false,
     "label": "Data Source",
+    "multi": false,
     "name": "datasource",
-    "options": [
-
-    ],
+    "options": [],
     "query": "prometheus",
     "refresh": 1,
     "regex": "",
+    "skipUrlSync": false,
     "type": "datasource"
    },
    {
-    "allValue": null,
     "current": {
      "selected": true,
-     "text": "All",
-     "value": "$__all"
+     "text": [
+      "deep"
+     ],
+     "value": [
+      "deep"
+     ]
     },
-    "datasource": "$datasource",
+    "datasource": {
+     "type": "intergral-deep-datasource",
+     "uid": "$datasource"
+    },
+    "definition": "label_values(deep_build_info,cluster)",
     "hide": 0,
     "includeAll": true,
     "label": "cluster",
     "multi": true,
     "name": "cluster",
-    "options": [
-
-    ],
-    "query": "label_values(deep_build_info, cluster)",
+    "options": [],
+    "query": {
+     "labelFilters": [],
+     "query": "label_values(deep_build_info,cluster)",
+     "refId": "PrometheusVariableQueryEditor-VariableQuery"
+    },
     "refresh": 1,
     "regex": "",
+    "skipUrlSync": false,
     "sort": 2,
     "tagValuesQuery": "",
-    "tags": [
-
-    ],
     "tagsQuery": "",
     "type": "query",
     "useTags": false
    },
    {
-    "allValue": null,
     "current": {
      "selected": true,
-     "text": "All",
-     "value": "$__all"
+     "text": [
+      "deep"
+     ],
+     "value": [
+      "deep"
+     ]
     },
-    "datasource": "$datasource",
+    "datasource": {
+     "type": "intergral-deep-datasource",
+     "uid": "$datasource"
+    },
+    "definition": "label_values(deep_build_info{cluster=\"$cluster\"},namespace)",
     "hide": 0,
     "includeAll": true,
     "label": "namespace",
     "multi": true,
     "name": "namespace",
-    "options": [
-
-    ],
-    "query": "label_values(deep_build_info{cluster=~'$cluster'}, namespace)",
+    "options": [],
+    "query": {
+     "labelFilters": [],
+     "query": "label_values(deep_build_info{cluster=\"$cluster\"},namespace)",
+     "refId": "PrometheusVariableQueryEditor-VariableQuery"
+    },
     "refresh": 1,
     "regex": "",
+    "skipUrlSync": false,
     "sort": 2,
     "tagValuesQuery": "",
-    "tags": [
-
-    ],
     "tagsQuery": "",
     "type": "query",
     "useTags": false
@@ -1733,6 +2722,7 @@
  },
  "timezone": "utc",
  "title": "Deep / Writes",
- "uid": "",
- "version": 0
+ "uid": "c0cb3a39-1402-42a6-b349-08a4f1f92126",
+ "version": 2,
+ "weekStart": ""
 }
