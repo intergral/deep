@@ -71,6 +71,27 @@ const (
 )
 
 var (
+	metricDiscardedSnapshots = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "deep",
+		Name:      "discarded_snapshots_total",
+		Help:      "The total number of samples that were discarded.",
+	}, []string{discardReasonLabel, "tenant"})
+	metricSnapshotBytesIngested = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "deep",
+		Name:      "distributor_snapshot_bytes_received_total",
+		Help:      "The total number of snapshot proto bytes received per tenant",
+	}, []string{"tenant"})
+	metricPollBytesIngested = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "deep",
+		Name:      "distributor_poll_bytes_received_total",
+		Help:      "The total number of poll proto bytes received per tenant",
+	}, []string{"tenant"})
+	metricPollBytesResponded = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "deep",
+		Name:      "distributor_poll_bytes_sent_total",
+		Help:      "The total number of poll proto bytes sent in response per tenant",
+	}, []string{"tenant"})
+
 	metricIngesterAppends = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
 		Name:      "distributor_ingester_appends_total",
@@ -81,18 +102,6 @@ var (
 		Name:      "distributor_ingester_append_failures_total",
 		Help:      "The total number of failed batch appends sent to ingesters.",
 	}, []string{"ingester"})
-
-	metricDiscardedSnapshots = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "deep",
-		Name:      "discarded_snapshots_total",
-		Help:      "The total number of samples that were discarded.",
-	}, []string{discardReasonLabel, "tenant"})
-
-	metricBytesIngested = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "deep",
-		Name:      "distributor_bytes_received_total",
-		Help:      "The total number of proto bytes received per tenant",
-	}, []string{"tenant"})
 
 	metricGeneratorPushes = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
@@ -289,6 +298,15 @@ func (d *Distributor) stopping(_ error) error {
 }
 
 func (d *Distributor) PushPoll(ctx context.Context, pollRequest *pb.PollRequest) (*pb.PollResponse, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "distributor.PushPoll")
+	defer span.Finish()
+
+	orgId, err := user.ExtractOrgID(ctx)
+	if err != nil {
+		// can't record as we have no tenant
+		return nil, err
+	}
+
 	// todo is this really needed?
 	// Convert to bytes and back. This is unfortunate for efficiency, but it works
 	// around to allow deep agent to be installed in deep service
@@ -306,12 +324,18 @@ func (d *Distributor) PushPoll(ctx context.Context, pollRequest *pb.PollRequest)
 
 	request := &deeppb.LoadTracepointRequest{Request: req}
 
+	size := proto.Size(pollRequest)
+	metricPollBytesIngested.WithLabelValues(orgId).Add(float64(size))
+
 	tracepoints, err := d.tpClient.LoadTracepoints(ctx, request)
 	if err != nil {
 		return nil, err
 	}
 
 	response := tracepoints.GetResponse()
+
+	responseSize := proto.Size(response)
+	metricPollBytesResponded.WithLabelValues(orgId).Add(float64(responseSize))
 
 	marshal, err := proto.Marshal(response)
 	if err != nil {
@@ -328,6 +352,12 @@ func (d *Distributor) PushSnapshot(ctx context.Context, in *tp.Snapshot) (*tp.Sn
 	span, ctx := opentracing.StartSpanFromContext(ctx, "distributor.PushSnapshot")
 	defer span.Finish()
 
+	orgId, err := user.ExtractOrgID(ctx)
+	if err != nil {
+		// can't record discarded spans here b/c there's no tenant
+		return nil, err
+	}
+
 	// todo is this really needed?
 	// Convert to bytes and back. This is unfortunate for efficiency, but it works
 	// around to allow deep agent to be installed in deep service
@@ -343,12 +373,6 @@ func (d *Distributor) PushSnapshot(ctx context.Context, in *tp.Snapshot) (*tp.Sn
 		return nil, err
 	}
 
-	userID, err := user.ExtractOrgID(ctx)
-	if err != nil {
-		// can't record discarded spans here b/c there's no tenant
-		return nil, err
-	}
-
 	if d.cfg.LogReceivedSnapshots.Enabled {
 		if d.cfg.LogReceivedSnapshots.IncludeAllAttributes {
 			logSnapshotWithAllAttributes(snapshot, d.logger)
@@ -358,37 +382,37 @@ func (d *Distributor) PushSnapshot(ctx context.Context, in *tp.Snapshot) (*tp.Sn
 	}
 
 	size := proto.Size(snapshot)
-	metricBytesIngested.WithLabelValues(userID).Add(float64(size))
+	metricSnapshotBytesIngested.WithLabelValues(orgId).Add(float64(size))
 
 	// check limits
 	now := time.Now()
-	if !d.ingestionRateLimiter.AllowN(now, userID, size) {
-		metricDiscardedSnapshots.WithLabelValues(reasonRateLimited, userID).Add(1)
+	if !d.ingestionRateLimiter.AllowN(now, orgId, size) {
+		metricDiscardedSnapshots.WithLabelValues(reasonRateLimited, orgId).Add(1)
 		return nil, status.Errorf(codes.ResourceExhausted,
 			"%s ingestion rate limit (%d bytes) exceeded while adding %d bytes",
 			overrides.ErrorPrefixRateLimited,
-			int(d.ingestionRateLimiter.Limit(now, userID)),
+			int(d.ingestionRateLimiter.Limit(now, orgId)),
 			size)
 	}
 
-	keys, err := extractKeys(snapshot, userID)
+	keys, err := extractKeys(snapshot, orgId)
 	if err != nil {
-		metricDiscardedSnapshots.WithLabelValues(reasonInternalError, userID).Add(1)
+		metricDiscardedSnapshots.WithLabelValues(reasonInternalError, orgId).Add(1)
 		return nil, err
 	}
 
-	err = d.sendToIngester(ctx, userID, keys, snapshot)
+	err = d.sendToIngester(ctx, orgId, keys, snapshot)
 	if err != nil {
-		recordDiscardedSnapshots(err, userID)
+		recordDiscardedSnapshots(err, orgId)
 		return nil, err
 	}
 
-	if len(d.overrides.MetricsGeneratorProcessors(userID)) > 0 {
-		d.generatorForwarder.SendSnapshot(ctx, userID, keys, snapshot)
+	if len(d.overrides.MetricsGeneratorProcessors(orgId)) > 0 {
+		d.generatorForwarder.SendSnapshot(ctx, orgId, keys, snapshot)
 	}
 
-	if err := d.forwardersManager.ForTenant(userID).ForwardSnapshot(ctx, snapshot); err != nil {
-		_ = level.Warn(d.logger).Log("msg", "failed to forward batches for tenant=%s: %w", userID, err)
+	if err := d.forwardersManager.ForTenant(orgId).ForwardSnapshot(ctx, snapshot); err != nil {
+		_ = level.Warn(d.logger).Log("msg", "failed to forward batches for tenant=%s: %w", orgId, err)
 	}
 
 	return &tp.SnapshotResponse{}, nil

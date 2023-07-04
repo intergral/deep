@@ -55,26 +55,28 @@ var (
 		Help:      "Records the amount of time to push a batch to the ingester.",
 		Buckets:   prometheus.DefBuckets,
 	})
+
 	metricDistributorAccepted = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "distributor_accepted_snapshots",
+		Name:      "distributor_snapshots_requests",
 		Help:      "Number of snapshots successfully pushed into the pipeline.",
-	}, []string{"tenant"})
+	}, []string{"tenant", "receiver"})
 	metricPollAccepted = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "distributor_accepted_poll",
+		Name:      "distributor_poll_requests",
 		Help:      "Number of completed poll requests.",
-	}, []string{"tenant"})
+	}, []string{"tenant", "receiver"})
+
 	metricDistributorRefused = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "distributor_refused_snapshots",
+		Name:      "distributor_failed_snapshots_requests",
 		Help:      "Number of snapshots that could not be pushed into the pipeline.",
-	}, []string{"tenant"})
+	}, []string{"tenant", "receiver"})
 	metricPollRefused = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "distributor_refused_poll",
+		Name:      "distributor_failed_poll_requests",
 		Help:      "Number of failed poll requests.",
-	}, []string{"tenant"})
+	}, []string{"tenant", "receiver"})
 )
 
 type SnapshotPusher interface {
@@ -106,7 +108,9 @@ func (sr *snapshotReceiver) ReportFatalError(err error) {
 // Poll will accept a pp.PollRequest from a receiver and push it on to be distributed.
 // Here we also track metrics for received polls
 func (sr *snapshotReceiver) Poll(ctx context.Context, pollRequest *pb.PollRequest) (*pb.PollResponse, error) {
+	name := receivers.ExtractReceiverName(ctx)
 	span, ctx := opentracing.StartSpanFromContext(ctx, "SnapshotReceiver.Poll")
+	span.SetTag("receiver", name)
 	defer span.Finish()
 
 	start := time.Now()
@@ -118,16 +122,18 @@ func (sr *snapshotReceiver) Poll(ctx context.Context, pollRequest *pb.PollReques
 
 	if err != nil {
 		sr.logger.Log("msg", "pusher failed to consume trace data", "err", err)
-		metricPollRefused.WithLabelValues(userID).Inc()
+		metricPollRefused.WithLabelValues(userID, name).Inc()
 	}
-	metricPollAccepted.WithLabelValues(userID).Inc()
+	metricPollAccepted.WithLabelValues(userID, name).Inc()
 	return pollResponse, err
 }
 
 // Send will accept a tp.Snapshot from a receiver and push it on to be distributed.
 // Here we also track metrics for received snapshots
 func (sr *snapshotReceiver) Send(ctx context.Context, in *tp.Snapshot) (*tp.SnapshotResponse, error) {
+	name := receivers.ExtractReceiverName(ctx)
 	span, ctx := opentracing.StartSpanFromContext(ctx, "SnapshotReceiver.Send")
+	span.SetTag("receiver", name)
 	defer span.Finish()
 
 	start := time.Now()
@@ -139,10 +145,10 @@ func (sr *snapshotReceiver) Send(ctx context.Context, in *tp.Snapshot) (*tp.Snap
 
 	if err != nil {
 		sr.logger.Log("msg", "pusher failed to consume trace data", "err", err)
-		metricDistributorRefused.WithLabelValues(userID).Inc()
+		metricDistributorRefused.WithLabelValues(userID, name).Inc()
 	}
 
-	metricDistributorAccepted.WithLabelValues(userID).Inc()
+	metricDistributorAccepted.WithLabelValues(userID, name).Inc()
 	return snapshotResponse, err
 }
 

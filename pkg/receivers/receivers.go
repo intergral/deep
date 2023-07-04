@@ -18,9 +18,12 @@
 package receivers
 
 import (
+	"context"
 	"github.com/go-kit/log"
 	"github.com/intergral/deep/pkg/receivers/deep"
 	"github.com/intergral/deep/pkg/receivers/types"
+	pb "github.com/intergral/go-deep-proto/poll/v1"
+	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
 )
 
 func ForConfig(receiverCfg map[string]interface{}, snapshotNext types.ProcessSnapshots, pollNext types.ProcessPoll, logger log.Logger) ([]types.Receiver, error) {
@@ -32,7 +35,7 @@ func ForConfig(receiverCfg map[string]interface{}, snapshotNext types.ProcessSna
 			if err != nil {
 				return nil, err
 			}
-			receiver, err := deep.NewDeepReceiver(deepCfg, snapshotNext, pollNext, logger)
+			receiver, err := deep.NewDeepReceiver(deepCfg, wrappedSnapshot("deep", snapshotNext), wrappedPoll("deep", pollNext), logger)
 			if err != nil {
 				return nil, err
 			}
@@ -40,4 +43,25 @@ func ForConfig(receiverCfg map[string]interface{}, snapshotNext types.ProcessSna
 		}
 	}
 	return receivers, nil
+}
+
+// wrappedPoll wraps the snapshot process function to attach metrics for all receivers
+func wrappedPoll(receiver string, pollNext types.ProcessPoll) types.ProcessPoll {
+	return func(ctx context.Context, pollRequest *pb.PollRequest) (*pb.PollResponse, error) {
+		value := context.WithValue(ctx, "receiver", receiver)
+		return pollNext(value, pollRequest)
+	}
+}
+
+// wrappedSnapshot wraps the snapshot process function to attach metrics for all receivers
+func wrappedSnapshot(receiver string, snapshotNext types.ProcessSnapshots) types.ProcessSnapshots {
+	return func(ctx context.Context, in *tp.Snapshot) (*tp.SnapshotResponse, error) {
+		value := context.WithValue(ctx, "receiver", receiver)
+		return snapshotNext(value, in)
+	}
+}
+
+// ExtractReceiverName retrieve the receiver name from the context
+func ExtractReceiverName(ctx context.Context) string {
+	return ctx.Value("receiver").(string)
 }
