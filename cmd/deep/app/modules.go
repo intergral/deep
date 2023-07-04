@@ -49,8 +49,6 @@ import (
 	"github.com/intergral/deep/pkg/usagestats"
 	"github.com/intergral/deep/pkg/util/log"
 	util_log "github.com/intergral/deep/pkg/util/log"
-	pb "github.com/intergral/go-deep-proto/poll/v1"
-	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
@@ -85,6 +83,8 @@ const (
 	UsageReport          string = "usage-report"
 )
 
+// initServer will create the server service that provides the listener and handler for HTTP and
+// GRPC endpoints. Each module can then register new endpoints as they are needed.
 func (t *App) initServer() (services.Service, error) {
 	t.cfg.Server.MetricsNamespace = metricsNamespace
 	t.cfg.Server.ExcludeRequestInLog = true
@@ -102,7 +102,7 @@ func (t *App) initServer() (services.Service, error) {
 
 	DisableSignalHandling(&t.cfg.Server)
 
-	server, err := server.New(t.cfg.Server)
+	deepServer, err := server.New(t.cfg.Server)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create server %w", err)
 	}
@@ -118,8 +118,8 @@ func (t *App) initServer() (services.Service, error) {
 		return svs
 	}
 
-	t.Server = server
-	s := NewServerService(server, servicesToWaitFor)
+	t.Server = deepServer
+	s := NewServerService(deepServer, servicesToWaitFor)
 
 	return s, nil
 }
@@ -190,11 +190,11 @@ func (t *App) initGeneratorRing() (services.Service, error) {
 }
 
 func (t *App) initOverrides() (services.Service, error) {
-	overrides, err := overrides.NewOverrides(t.cfg.LimitsConfig)
+	overridesService, err := overrides.NewOverrides(t.cfg.LimitsConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create overrides %w", err)
 	}
-	t.overrides = overrides
+	t.overrides = overridesService
 
 	prometheus.MustRegister(&t.cfg.LimitsConfig)
 
@@ -205,9 +205,11 @@ func (t *App) initOverrides() (services.Service, error) {
 	return t.overrides, nil
 }
 
+// initDistributor will create the distributor that accepts new snapshots from clients
+// The distributor will then ensure the format of the snapshot and forward it to the ingester
 func (t *App) initDistributor() (services.Service, error) {
 	// todo: make ingester client a module instead of passing the config everywhere
-	newDistributor, err := distributor.New(t.cfg.Distributor, t.tpClient, t.cfg.IngesterClient, t.ring, t.cfg.GeneratorClient, t.generatorRing, t.overrides, log.Logger, t.cfg.Server.LogLevel, prometheus.DefaultRegisterer)
+	newDistributor, err := distributor.New(t.cfg.Distributor, t.tpClient, t.cfg.IngesterClient, t.ReceiverMiddleware, t.ring, t.cfg.GeneratorClient, t.generatorRing, t.overrides, log.Logger, prometheus.DefaultRegisterer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create distributor %w", err)
 	}
@@ -216,9 +218,6 @@ func (t *App) initDistributor() (services.Service, error) {
 	if newDistributor.DistributorRing != nil {
 		t.Server.HTTP.Handle("/distributor/ring", t.distributor.DistributorRing)
 	}
-
-	pb.RegisterPollConfigServer(t.Server.GRPC, t.distributor)
-	tp.RegisterSnapshotServiceServer(t.Server.GRPC, t.distributor.SnapshotReceiver)
 
 	return t.distributor, nil
 }
@@ -237,7 +236,7 @@ func (t *App) initTracepointClient() (services.Service, error) {
 // initTracepoint creates the service that will actually deal with storing the tracepoint configs
 func (t *App) initTracepoint() (services.Service, error) {
 	t.cfg.Tracepoint.LifecyclerConfig.ListenPort = t.cfg.Server.GRPCListenPort
-	newTracepointService, err := tracepoint.New(t.cfg.Tracepoint, t.cfg.StorageConfig, log.Logger, prometheus.DefaultRegisterer)
+	newTracepointService, err := tracepoint.New(t.cfg.Tracepoint, t.store, log.Logger, prometheus.DefaultRegisterer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tracepoint config service: %w", err)
 	}
@@ -251,6 +250,17 @@ func (t *App) initTracepoint() (services.Service, error) {
 // initTracepointAPI is the main handler for changes to tracepoint configs
 // here we accept the requests from HTTP and process the changes via tpClient
 func (t *App) initTracepointAPI() (services.Service, error) {
+	// validate worker config
+	// if we're not in single binary mode and worker address is not specified - bail
+	if t.cfg.Target != SingleBinary && t.cfg.Tracepoint.API.Worker.FrontendAddress == "" {
+		return nil, fmt.Errorf("frontend worker address not specified")
+	} else if t.cfg.Target == SingleBinary {
+		// if we're in single binary mode with no worker address specified, register default endpoint
+		if t.cfg.Tracepoint.API.Worker.FrontendAddress == "" {
+			t.cfg.Tracepoint.API.Worker.FrontendAddress = fmt.Sprintf("127.0.0.1:%d", t.cfg.Server.GRPCListenPort)
+			level.Warn(log.Logger).Log("msg", "Worker address is empty in single binary mode. Attempting automatic worker configuration. If queries are unresponsive consider configuring the worker explicitly.", "address", t.cfg.Tracepoint.API.Worker.FrontendAddress)
+		}
+	}
 	tracepointAPI, err := tpapi.NewTracepointAPI(t.cfg.Tracepoint.API, t.tpClient, log.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tracepoint API %w", err)
@@ -320,17 +330,17 @@ func (t *App) initQuerier() (services.Service, error) {
 	}
 
 	// todo: make ingester client a module instead of passing config everywhere
-	querier, err := querier.New(t.cfg.Querier, t.cfg.IngesterClient, t.ring, t.store, t.overrides)
+	newQuerier, err := querier.New(t.cfg.Querier, t.cfg.IngesterClient, t.ring, t.store, t.overrides)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create querier %w", err)
 	}
-	t.querier = querier
+	t.querier = newQuerier
 
-	middleware := middleware.Merge(
+	frontEndMiddleware := middleware.Merge(
 		t.HTTPAuthMiddleware,
 	)
 
-	tracesHandler := middleware.Wrap(http.HandlerFunc(t.querier.SnapshotByIdHandler))
+	tracesHandler := frontEndMiddleware.Wrap(http.HandlerFunc(t.querier.SnapshotByIdHandler))
 	t.Server.HTTP.Handle(path.Join(api.PathPrefixQuerier, addHTTPAPIPrefix(&t.cfg, api.PathSnapshots)), tracesHandler)
 
 	searchHandler := t.HTTPAuthMiddleware.Wrap(http.HandlerFunc(t.querier.SearchHandler))
@@ -367,15 +377,15 @@ func (t *App) initQueryFrontend() (services.Service, error) {
 	}
 
 	// wrap handlers with auth
-	middleware := middleware.Merge(
+	frontEndMiddleware := middleware.Merge(
 		t.HTTPAuthMiddleware,
 		httpGzipMiddleware(),
 	)
 
-	traceByIDHandler := middleware.Wrap(queryFrontend.SnapshotByID)
-	searchHandler := middleware.Wrap(queryFrontend.Search)
+	traceByIDHandler := frontEndMiddleware.Wrap(queryFrontend.SnapshotByID)
+	searchHandler := frontEndMiddleware.Wrap(queryFrontend.Search)
 
-	// register grpc server for queriers to connect to
+	// register grpc server for workers to connect to
 	frontend_v1pb.RegisterFrontendServer(t.Server.GRPC, t.frontend)
 
 	// http trace by id endpoint
@@ -387,14 +397,14 @@ func (t *App) initQueryFrontend() (services.Service, error) {
 	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathSearchTagValues), searchHandler)
 	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathSearchTagValuesV2), searchHandler)
 
-	loadTracepointHandler := middleware.Wrap(queryFrontend.LoadTracepointHandler)
-	delTracepointHandler := middleware.Wrap(queryFrontend.DelTracepointHandler)
+	loadTracepointHandler := frontEndMiddleware.Wrap(queryFrontend.LoadTracepointHandler)
+	delTracepointHandler := frontEndMiddleware.Wrap(queryFrontend.DelTracepointHandler)
 
 	// http tracepoint endpoints
 	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathTracepoints), loadTracepointHandler)
 	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathDeleteTracepoint), delTracepointHandler)
 
-	// the query frontend needs to have knowledge of the blocks so it can shard search jobs
+	// the query frontend needs to have knowledge of the blocks, so it can shard search jobs
 	t.store.EnablePolling(nil)
 
 	// http query echo endpoint
@@ -403,7 +413,6 @@ func (t *App) initQueryFrontend() (services.Service, error) {
 	// http endpoint to see usage stats data
 	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathUsageStats), usageStatsHandler(t.cfg.UsageReport))
 
-	// todo: queryFrontend should implement service.Service and take the cortex frontend a submodule
 	return t.frontend, nil
 }
 
@@ -412,11 +421,11 @@ func (t *App) initCompactor() (services.Service, error) {
 		t.cfg.Compactor.ShardingRing.KVStore.Store = "memberlist"
 	}
 
-	compactor, err := compactor.New(t.cfg.Compactor, t.store, t.overrides, prometheus.DefaultRegisterer)
+	newCompactor, err := compactor.New(t.cfg.Compactor, t.store, t.overrides, prometheus.DefaultRegisterer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create compactor %w", err)
 	}
-	t.compactor = compactor
+	t.compactor = newCompactor
 
 	if t.compactor.Ring != nil {
 		t.Server.HTTP.Handle("/compactor/ring", t.compactor.Ring)
@@ -425,6 +434,7 @@ func (t *App) initCompactor() (services.Service, error) {
 	return t.compactor, nil
 }
 
+// initStore will create the store service that can read/write to the configured storage service (S3, local disk etc)
 func (t *App) initStore() (services.Service, error) {
 	store, err := deep_storage.NewStore(t.cfg.StorageConfig, log.Logger)
 	if err != nil {
@@ -435,7 +445,7 @@ func (t *App) initStore() (services.Service, error) {
 	return t.store, nil
 }
 
-func (t *App) initMemberlistKV() (services.Service, error) {
+func (t *App) initMemberListKV() (services.Service, error) {
 	reg := prometheus.DefaultRegisterer
 	t.cfg.MemberlistKV.MetricsRegisterer = reg
 	t.cfg.MemberlistKV.MetricsNamespace = metricsNamespace
@@ -483,17 +493,17 @@ func (t *App) initUsageReport() (services.Service, error) {
 	var reader backend.RawReader
 	var writer backend.RawWriter
 
-	switch t.cfg.StorageConfig.Trace.Backend {
+	switch t.cfg.StorageConfig.TracePoint.Backend {
 	case "local":
-		reader, writer, _, err = local.New(t.cfg.StorageConfig.Trace.Local)
+		reader, writer, _, err = local.New(t.cfg.StorageConfig.TracePoint.Local)
 	case "gcs":
-		reader, writer, _, err = gcs.New(t.cfg.StorageConfig.Trace.GCS)
+		reader, writer, _, err = gcs.New(t.cfg.StorageConfig.TracePoint.GCS)
 	case "s3":
-		reader, writer, _, err = s3.New(t.cfg.StorageConfig.Trace.S3)
+		reader, writer, _, err = s3.New(t.cfg.StorageConfig.TracePoint.S3)
 	case "azure":
-		reader, writer, _, err = azure.New(t.cfg.StorageConfig.Trace.Azure)
+		reader, writer, _, err = azure.New(t.cfg.StorageConfig.TracePoint.Azure)
 	default:
-		err = fmt.Errorf("unknown backend %s", t.cfg.StorageConfig.Trace.Backend)
+		err = fmt.Errorf("unknown backend %s", t.cfg.StorageConfig.TracePoint.Backend)
 	}
 
 	if err != nil {
@@ -514,7 +524,7 @@ func (t *App) setupModuleManager() error {
 
 	mm.RegisterModule(Server, t.initServer, modules.UserInvisibleModule)
 	mm.RegisterModule(InternalServer, t.initInternalServer, modules.UserInvisibleModule)
-	mm.RegisterModule(MemberlistKV, t.initMemberlistKV, modules.UserInvisibleModule)
+	mm.RegisterModule(MemberlistKV, t.initMemberListKV, modules.UserInvisibleModule)
 	mm.RegisterModule(Ring, t.initRing, modules.UserInvisibleModule)
 	mm.RegisterModule(TPRing, t.initTPRing, modules.UserInvisibleModule)
 	mm.RegisterModule(MetricsGeneratorRing, t.initGeneratorRing, modules.UserInvisibleModule)

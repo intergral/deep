@@ -15,18 +15,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package encoding
+package receivers
 
 import (
-	"github.com/intergral/deep/modules/storage"
-	"github.com/intergral/deep/modules/tracepoint/store/encoding/types"
-	v1 "github.com/intergral/deep/modules/tracepoint/store/encoding/v1"
+	"github.com/go-kit/log"
+	"github.com/intergral/deep/pkg/receivers/deep"
+	"github.com/intergral/deep/pkg/receivers/types"
 )
 
-func LoadBackend(store storage.Store) (types.TPBackend, error) {
-
-	return &v1.TPEncoder{
-		Reader: store,
-		Writer: store,
-	}, nil
+func ForConfig(receiverCfg map[string]interface{}, snapshotNext types.ProcessSnapshots, pollNext types.ProcessPoll, logger log.Logger) ([]types.Receiver, error) {
+	var receivers []types.Receiver
+	for key, cfg := range receiverCfg {
+		switch key {
+		case "deep":
+			deepCfg, err := deep.CreateConfig(cfg)
+			if err != nil {
+				return nil, err
+			}
+			receiver, err := deep.NewDeepReceiver(deepCfg, snapshotNext, pollNext, logger)
+			if err != nil {
+				return nil, err
+			}
+			receivers = append(receivers, receiver)
+		}
+	}
+	return receivers, nil
 }

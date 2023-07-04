@@ -26,7 +26,7 @@ import (
 )
 
 type TPWorkerConfig struct {
-	pkg_worker.Config
+	pkg_worker.Config `yaml:",inline"`
 }
 
 func (cfg *TPWorkerConfig) RegisterFlags(f *flag.FlagSet) {

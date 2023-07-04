@@ -15,18 +15,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package encoding
+package types
 
 import (
-	"github.com/intergral/deep/modules/storage"
-	"github.com/intergral/deep/modules/tracepoint/store/encoding/types"
-	v1 "github.com/intergral/deep/modules/tracepoint/store/encoding/v1"
+	"context"
+	pb "github.com/intergral/go-deep-proto/poll/v1"
+	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
 )
 
-func LoadBackend(store storage.Store) (types.TPBackend, error) {
-
-	return &v1.TPEncoder{
-		Reader: store,
-		Writer: store,
-	}, nil
+type Host interface {
+	ReportFatalError(err error)
 }
+
+type Receiver interface {
+	Start(ctx context.Context, host Host) error
+
+	Shutdown(ctx context.Context) error
+}
+
+type ProcessSnapshots func(ctx context.Context, in *tp.Snapshot) (*tp.SnapshotResponse, error)
+type ProcessPoll func(ctx context.Context, pollRequest *pb.PollRequest) (*pb.PollResponse, error)

@@ -74,7 +74,7 @@ func New(clientCfg Config, tracepointRing ring.ReadRing, logger log.Logger) (*TP
 	return &client, nil
 }
 
-func (ts *TPClient) starting(err context.Context) error {
+func (ts *TPClient) starting(ctx context.Context) error {
 	return nil
 }
 
@@ -175,7 +175,7 @@ func (ts *TPClient) DeleteTracepoint(ctx context.Context, req *deeppb.DeleteTrac
 func (ts *TPClient) LoadTracepoints(ctx context.Context, req *deeppb.LoadTracepointRequest) (*deeppb.LoadTracepointResponse, error) {
 	orgId, err := user.ExtractOrgID(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Querier.Search")
+		return nil, errors.Wrap(err, "error extracting org id in Tracepoint.LoadTracepoints")
 	}
 
 	tokenFor := TokenFor(orgId)

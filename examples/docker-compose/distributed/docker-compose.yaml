@@ -9,7 +9,7 @@ services:
       - ./deep-distributed.yaml:/etc/deep.yaml
     ports:
       - "3300"   # deep
-      - "43315"
+      - "43315" # deep grpc ingest
 
   ingester-0:
     image: intergral/deep:latest

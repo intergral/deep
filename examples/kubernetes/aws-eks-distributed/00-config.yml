@@ -46,24 +46,14 @@ data:
     tracepoint:
       api:
         worker:
-          config:
-            frontend_address: query-frontend-headless.deep.svc.cluster.local:43315
+          frontend_address: query-frontend-headless.deep.svc.cluster.local:43315
     
     querier:
       frontend_worker:
-        config:
-          frontend_address: query-frontend-headless.deep.svc.cluster.local:43315
+        frontend_address: query-frontend-headless.deep.svc.cluster.local:43315
           
     storage:
       tracepoint:
-        backend: s3
-        s3:
-          bucket: <name-of-bucket>          # The name of the bucket to use
-          access_key: <AWS-Access-Key>      # The AWS Access key for the IAM role that has permission for the bucket
-          secret_key: <AWS-Secret-Key>      # The AWS Secret key for the IAM role that has permission for the bucket
-          region: <AWS-Region-Name>         # The AWS region name e.g. eu-west-1
-          endpoint: <AWS-S3-Endpoint>       # The URL endpoint for S3. e.g. s3.dualstack.eu-west-1.amazonaws.com 
-      trace:
         backend: s3
         wal:
           path: /tmp/deep/wal

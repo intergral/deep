@@ -21,8 +21,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/intergral/deep/modules/distributor/snapshotreciever"
+	"github.com/intergral/deep/modules/distributor/snapshotreceiver"
 	"github.com/intergral/deep/modules/tracepoint/client"
+	deeppb_poll "github.com/intergral/deep/pkg/deeppb/poll/v1"
 	pb "github.com/intergral/go-deep-proto/poll/v1"
 	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
 	"google.golang.org/grpc/status"
@@ -40,7 +41,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/prometheus/util/strutil"
-	"github.com/weaveworks/common/logging"
 	"github.com/weaveworks/common/user"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -50,7 +50,6 @@ import (
 	ingester_client "github.com/intergral/deep/modules/ingester/client"
 	"github.com/intergral/deep/modules/overrides"
 	"github.com/intergral/deep/pkg/deeppb"
-	deeppb_poll "github.com/intergral/deep/pkg/deeppb/poll/v1"
 	deeppb_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/model"
 	deep_util "github.com/intergral/deep/pkg/util"
@@ -82,16 +81,13 @@ var (
 		Name:      "distributor_ingester_append_failures_total",
 		Help:      "The total number of failed batch appends sent to ingesters.",
 	}, []string{"ingester"})
+
 	metricDiscardedSnapshots = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
 		Name:      "discarded_snapshots_total",
 		Help:      "The total number of samples that were discarded.",
 	}, []string{discardReasonLabel, "tenant"})
-	metricSpansIngested = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "deep",
-		Name:      "distributor_snapshots_received_total",
-		Help:      "The total number of snapshots received per tenant",
-	}, []string{"tenant"})
+
 	metricBytesIngested = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
 		Name:      "distributor_bytes_received_total",
@@ -123,7 +119,6 @@ var (
 // Distributor coordinates replicates and distribution of log streams.
 type Distributor struct {
 	services.Service
-	pb.UnimplementedPollConfigServer
 
 	cfg             Config
 	clientCfg       ingester_client.Config
@@ -155,38 +150,8 @@ type Distributor struct {
 	tpClient         *client.TPClient
 }
 
-func (d *Distributor) Poll(ctx context.Context, pollRequest *pb.PollRequest) (*pb.PollResponse, error) {
-	// todo is this really needed?
-	// Convert to bytes and back. This is unfortunate for efficiency, but it works
-	// around to allow deep agent to be installed in deep service
-	convert, err := proto.Marshal(pollRequest)
-	if err != nil {
-		return nil, err
-	}
-
-	// deeppb_tp.Snapshot is wire-compatible with go-deep-proto
-	req := &deeppb_poll.PollRequest{}
-	err = proto.Unmarshal(convert, req)
-	if err != nil {
-		return nil, err
-	}
-
-	request := &deeppb.LoadTracepointRequest{Request: req}
-
-	tracepoints, err := d.tpClient.LoadTracepoints(ctx, request)
-
-	response := tracepoints.GetResponse()
-
-	marshal, err := proto.Marshal(response)
-
-	resp := &pb.PollResponse{}
-	err = proto.Unmarshal(marshal, resp)
-
-	return resp, nil
-}
-
-// New a distributor creates.
-func New(cfg Config, tpClient *client.TPClient, clientCfg ingester_client.Config, ingestersRing ring.ReadRing, generatorClientCfg generator_client.Config, generatorsRing ring.ReadRing, o *overrides.Overrides, logger log.Logger, loggingLevel logging.Level, reg prometheus.Registerer) (*Distributor, error) {
+// New crates a new distributor services
+func New(cfg Config, tpClient *client.TPClient, clientCfg ingester_client.Config, middleware snapshotreceiver.Middleware, ingestersRing ring.ReadRing, generatorClientCfg generator_client.Config, generatorsRing ring.ReadRing, o *overrides.Overrides, logger log.Logger, reg prometheus.Registerer) (*Distributor, error) {
 	factory := cfg.factory
 	if factory == nil {
 		factory = func(addr string) (ring_client.PoolClient, error) {
@@ -200,7 +165,10 @@ func New(cfg Config, tpClient *client.TPClient, clientCfg ingester_client.Config
 	var ingestionRateStrategy limiter.RateLimiterStrategy
 	var distributorRing *ring.Ring
 
+	// using global ingestion rate means we monitor the number of distributor instances with a ring and divide
+	// the ingest rate between the instances
 	if o.IngestionRateStrategy() == overrides.GlobalIngestionRateStrategy {
+		// create ring to monitor number of distributor instances
 		lifecyclerCfg := cfg.DistributorRing.ToLifecyclerConfig()
 		lifecycler, err := ring.NewLifecycler(lifecyclerCfg, nil, "distributor", cfg.OverrideRingKey, false, logger, prometheus.WrapRegistererWithPrefix("deep_", reg))
 		if err != nil {
@@ -219,6 +187,7 @@ func New(cfg Config, tpClient *client.TPClient, clientCfg ingester_client.Config
 		ingestionRateStrategy = newLocalIngestionRateStrategy(o)
 	}
 
+	// this pool lets the distributor connect to the ingesters via the Ingester Client
 	pool := ring_client.NewPool("distributor_pool",
 		clientCfg.PoolConfig,
 		ring_client.NewRingServiceDiscovery(ingestersRing),
@@ -243,6 +212,7 @@ func New(cfg Config, tpClient *client.TPClient, clientCfg ingester_client.Config
 		tpClient:             tpClient,
 	}
 
+	// this pool lets the distributor generate metrics via the generator client
 	d.generatorsPool = ring_client.NewPool(
 		"distributor_metrics_generator_pool",
 		generatorClientCfg.PoolConfig,
@@ -255,10 +225,10 @@ func New(cfg Config, tpClient *client.TPClient, clientCfg ingester_client.Config
 	)
 
 	subServices = append(subServices, d.generatorsPool)
-
+	// create forwarder for metrics generator
 	d.generatorForwarder = newGeneratorForwarder(logger, d.sendToGenerators, o)
 	subServices = append(subServices, d.generatorForwarder)
-
+	// create dynamic (from config) forwarders that will get sent the snapshots we receive
 	forwardersManager, err := forwarder.NewManager(d.cfg.Forwarders, logger, o)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create forwarders manager: %w", err)
@@ -267,18 +237,21 @@ func New(cfg Config, tpClient *client.TPClient, clientCfg ingester_client.Config
 	d.forwardersManager = forwardersManager
 	subServices = append(subServices, d.forwardersManager)
 
+	// setup receivers
 	cfgReceivers := cfg.Receivers
 	if len(cfgReceivers) == 0 {
 		cfgReceivers = defaultReceivers
 	}
 
-	receiverServices, snapshotReceiver, err := snapshotreciever.New(cfgReceivers, d, loggingLevel)
+	// create snapshot receiver
+	receiverServices, snapshotReceiver, err := snapshotreceiver.New(cfgReceivers, d, middleware, logger)
 	d.SnapshotReceiver = snapshotReceiver
 	if err != nil {
 		return nil, err
 	}
 	subServices = append(subServices, receiverServices)
 
+	// create new service for distributor and related services
 	d.subservices, err = services.NewManager(subServices...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create subservices %w", err)
@@ -313,6 +286,42 @@ func (d *Distributor) running(ctx context.Context) error {
 // Called after distributor is asked to stop via StopAsync.
 func (d *Distributor) stopping(_ error) error {
 	return services.StopManagerAndAwaitStopped(context.Background(), d.subservices)
+}
+
+func (d *Distributor) PushPoll(ctx context.Context, pollRequest *pb.PollRequest) (*pb.PollResponse, error) {
+	// todo is this really needed?
+	// Convert to bytes and back. This is unfortunate for efficiency, but it works
+	// around to allow deep agent to be installed in deep service
+	convert, err := proto.Marshal(pollRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	// deeppb_tp.Snapshot is wire-compatible with go-deep-proto
+	req := &deeppb_poll.PollRequest{}
+	err = proto.Unmarshal(convert, req)
+	if err != nil {
+		return nil, err
+	}
+
+	request := &deeppb.LoadTracepointRequest{Request: req}
+
+	tracepoints, err := d.tpClient.LoadTracepoints(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+
+	response := tracepoints.GetResponse()
+
+	marshal, err := proto.Marshal(response)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &pb.PollResponse{}
+	err = proto.Unmarshal(marshal, resp)
+
+	return resp, nil
 }
 
 func (d *Distributor) PushSnapshot(ctx context.Context, in *tp.Snapshot) (*tp.SnapshotResponse, error) {
@@ -350,7 +359,6 @@ func (d *Distributor) PushSnapshot(ctx context.Context, in *tp.Snapshot) (*tp.Sn
 
 	size := proto.Size(snapshot)
 	metricBytesIngested.WithLabelValues(userID).Add(float64(size))
-	metricSpansIngested.WithLabelValues(userID).Add(float64(1))
 
 	// check limits
 	now := time.Now()
@@ -371,7 +379,7 @@ func (d *Distributor) PushSnapshot(ctx context.Context, in *tp.Snapshot) (*tp.Sn
 
 	err = d.sendToIngester(ctx, userID, keys, snapshot)
 	if err != nil {
-		recordDiscardedSnapshots(err, userID, 1)
+		recordDiscardedSnapshots(err, userID)
 		return nil, err
 	}
 
@@ -499,7 +507,7 @@ func (d *Distributor) sendToIngester(ctx context.Context, userID string, keys []
 	return err
 }
 
-func recordDiscardedSnapshots(err error, userID string, spanCount int) {
+func recordDiscardedSnapshots(err error, userID string) {
 	s := status.Convert(err)
 	if s == nil {
 		return

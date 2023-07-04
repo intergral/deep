@@ -25,7 +25,7 @@ import (
 	"github.com/grafana/dskit/ring"
 	"github.com/grafana/dskit/services"
 	"github.com/intergral/deep/modules/storage"
-	"github.com/intergral/deep/modules/tracepoint/store"
+	tp_store "github.com/intergral/deep/modules/tracepoint/store"
 	"github.com/intergral/deep/pkg/deeppb"
 	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
 	"github.com/intergral/deep/pkg/util/log"
@@ -44,7 +44,7 @@ type TPService struct {
 
 	cfg        Config
 	lifecycler *ring.Lifecycler
-	store      *store.TPStore
+	store      *tp_store.TPStore
 	log        gkLog.Logger
 }
 
@@ -60,8 +60,8 @@ func (ts *TPService) TransferOut(ctx context.Context) error {
 }
 
 // New will create a new TPService that handles reading and writing tracepoint changes to disk
-func New(cfg Config, storeConfig storage.Config, logger gkLog.Logger, reg prometheus.Registerer) (*TPService, error) {
-	newStore, err := store.NewStore(storeConfig)
+func New(cfg Config, store storage.Store, logger gkLog.Logger, reg prometheus.Registerer) (*TPService, error) {
+	newStore, err := tp_store.NewStore(store)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create new tracepoint store %w", err)
 	}

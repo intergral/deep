@@ -25,6 +25,7 @@ import (
 	"github.com/intergral/deep/pkg/deeppb"
 	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/deepql"
+	"io"
 	"time"
 
 	gkLog "github.com/go-kit/log"
@@ -83,6 +84,10 @@ var (
 	})
 )
 
+type TracepointWriter interface {
+	WriteTracepointBlock(ctx context.Context, orgId string, reader *bytes.Reader, size int64) error
+}
+
 type Writer interface {
 	WriteBlock(ctx context.Context, block WriteableBlock) error
 	CompleteBlock(ctx context.Context, block common.WALBlock) (common.BackendBlock, error)
@@ -91,6 +96,10 @@ type Writer interface {
 }
 
 type IterateObjectCallback func(id common.ID, obj []byte) bool
+
+type TracepointReader interface {
+	ReadTracepointBlock(ctx context.Context, orgId string) (io.ReadCloser, int64, error)
+}
 
 type Reader interface {
 	FindSnapshot(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) (*deep_tp.Snapshot, []error, error)
@@ -124,9 +133,11 @@ type WriteableBlock interface {
 }
 
 type readerWriter struct {
-	r backend.Reader
-	w backend.Writer
-	c backend.Compactor
+	r  backend.Reader
+	w  backend.Writer
+	c  backend.Compactor
+	tw TracepointWriter
+	tr TracepointReader
 
 	uncachedReader backend.Reader
 	uncachedWriter backend.Writer
@@ -147,14 +158,14 @@ type readerWriter struct {
 }
 
 // New creates a new deepdb
-func New(cfg *Config, logger gkLog.Logger) (Reader, Writer, Compactor, error) {
+func New(cfg *Config, logger gkLog.Logger) (Reader, Writer, TracepointReader, TracepointWriter, Compactor, error) {
 	var rawR backend.RawReader
 	var rawW backend.RawWriter
 	var c backend.Compactor
 
 	err := validateConfig(cfg)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("invalid config while creating deepdb: %w", err)
+		return nil, nil, nil, nil, nil, fmt.Errorf("invalid config while creating deepdb: %w", err)
 	}
 
 	switch cfg.Backend {
@@ -171,7 +182,7 @@ func New(cfg *Config, logger gkLog.Logger) (Reader, Writer, Compactor, error) {
 	}
 
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
 	uncachedReader := backend.NewReader(rawR)
@@ -189,7 +200,7 @@ func New(cfg *Config, logger gkLog.Logger) (Reader, Writer, Compactor, error) {
 	if cacheBackend != nil {
 		rawR, rawW, err = cache.NewCache(rawR, rawW, cacheBackend)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, nil, nil, err
 		}
 	}
 
@@ -205,14 +216,20 @@ func New(cfg *Config, logger gkLog.Logger) (Reader, Writer, Compactor, error) {
 		logger:         logger,
 		pool:           pool.NewPool(cfg.Pool),
 		blocklist:      blocklist.New(),
+		tw:             w,
+		tr:             r,
 	}
 
 	rw.wal, err = wal.New(rw.cfg.WAL)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
-	return rw, rw, rw, nil
+	return rw, rw, rw, rw, rw, nil
+}
+
+func (rw *readerWriter) WriteTracepointBlock(ctx context.Context, orgId string, data *bytes.Reader, size int64) error {
+	return rw.tw.WriteTracepointBlock(ctx, orgId, data, size)
 }
 
 func (rw *readerWriter) WriteBlock(ctx context.Context, c WriteableBlock) error {
@@ -283,6 +300,10 @@ func (rw *readerWriter) BlockMetas(tenantID string) []*backend.BlockMeta {
 	return rw.blocklist.Metas(tenantID)
 }
 
+func (rw *readerWriter) ReadTracepointBlock(ctx context.Context, orgId string) (io.ReadCloser, int64, error) {
+	return rw.tr.ReadTracepointBlock(ctx, orgId)
+}
+
 func (rw *readerWriter) FindSnapshot(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) (*deep_tp.Snapshot, []error, error) {
 	// tracing instrumentation
 	logger := log.WithContext(ctx, log.Logger)
@@ -307,13 +328,13 @@ func (rw *readerWriter) FindSnapshot(ctx context.Context, tenantID string, id co
 	}
 
 	// gather appropriate blocks
-	blocklist := rw.blocklist.Metas(tenantID)
+	blockMetas := rw.blocklist.Metas(tenantID)
 	compactedBlocklist := rw.blocklist.CompactedMetas(tenantID)
-	copiedBlocklist := make([]interface{}, 0, len(blocklist))
+	copiedBlocklist := make([]interface{}, 0, len(blockMetas))
 	blocksSearched := 0
 	compactedBlocksSearched := 0
 
-	for _, b := range blocklist {
+	for _, b := range blockMetas {
 		if includeBlock(b, id, blockStartBytes, blockEndBytes, timeStart, timeEnd) {
 			copiedBlocklist = append(copiedBlocklist, b)
 			blocksSearched++
@@ -361,7 +382,7 @@ func (rw *readerWriter) FindSnapshot(ctx context.Context, tenantID string, id co
 	}
 
 	span.SetTag("blockErrs", len(funcErrs))
-	span.SetTag("liveBlocks", len(blocklist))
+	span.SetTag("liveBlocks", len(blockMetas))
 	span.SetTag("liveBlocksSearched", blocksSearched)
 	span.SetTag("compactedBlocks", len(compactedBlocklist))
 	span.SetTag("compactedBlocksSearched", compactedBlocksSearched)
@@ -467,13 +488,13 @@ func (rw *readerWriter) pollingLoop() {
 }
 
 func (rw *readerWriter) pollBlocklist() {
-	blocklist, compactedBlocklist, err := rw.blocklistPoller.Do()
+	blockMetas, compactedBlocklist, err := rw.blocklistPoller.Do()
 	if err != nil {
 		level.Error(rw.logger).Log("msg", "failed to poll blocklist. using previously polled lists", "err", err)
 		return
 	}
 
-	rw.blocklist.ApplyPollResults(blocklist, compactedBlocklist)
+	rw.blocklist.ApplyPollResults(blockMetas, compactedBlocklist)
 }
 
 func (rw *readerWriter) shouldCache(meta *backend.BlockMeta, curTime time.Time) bool {
