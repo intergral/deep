@@ -167,6 +167,11 @@ func (fp frontendProcessor) handle(ctx context.Context, request *frontendv1pb.HT
 }
 
 func (fp frontendProcessor) fromHttpGrpc(response *httpgrpc.HTTPResponse) *frontendv1pb.HTTPResponse {
+	// response is nil when there is an error
+	// the error is handled later
+	if response == nil {
+		return nil
+	}
 	marshal, _ := proto.Marshal(response)
 	ourResponse := &frontendv1pb.HTTPResponse{}
 	_ = proto.Unmarshal(marshal, ourResponse)
