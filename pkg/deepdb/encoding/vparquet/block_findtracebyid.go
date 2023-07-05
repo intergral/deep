@@ -70,6 +70,7 @@ func (b *backendBlock) checkBloom(ctx context.Context, id common.ID) (found bool
 	return filter.Test(id), nil
 }
 
+// FindSnapshotByID scan the block for the snapshot with the given ID
 func (b *backendBlock) FindSnapshotByID(ctx context.Context, snapshotID common.ID, opts common.SearchOptions) (_ *deep_tp.Snapshot, err error) {
 	span, derivedCtx := opentracing.StartSpanFromContext(ctx, "parquet.backendBlock.FindSnapshotByID",
 		opentracing.Tags{
@@ -79,6 +80,8 @@ func (b *backendBlock) FindSnapshotByID(ctx context.Context, snapshotID common.I
 		})
 	defer span.Finish()
 
+	// if the id is not in the bloom, then it is not in the block.
+	// bloom can give false positives, so we still need to handle the case it is not in the block later
 	found, err := b.checkBloom(derivedCtx, snapshotID)
 	if err != nil {
 		return nil, err
@@ -98,6 +101,7 @@ func (b *backendBlock) FindSnapshotByID(ctx context.Context, snapshotID common.I
 	return findSnapshotByID(derivedCtx, snapshotID, b.meta, pf)
 }
 
+// findSnapshotByID will scan a given block for the snapshot
 func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.BlockMeta, pf *parquet.File) (*deep_tp.Snapshot, error) {
 	// snapshotID column index
 	colIndex, _ := pq.GetColumnIndexByPath(pf, SnapshotIDColumnName)

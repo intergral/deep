@@ -113,7 +113,7 @@ func (b *backendBlock) Search(ctx context.Context, req *deeppb.SearchRequest, op
 	}
 	results.Metrics.InspectedBlocks++
 	results.Metrics.InspectedBytes += rr.TotalBytesRead.Load()
-	results.Metrics.InspectedTraces += uint32(b.meta.TotalObjects)
+	results.Metrics.InspectedSnapshots += uint32(b.meta.TotalObjects)
 
 	return results, nil
 }

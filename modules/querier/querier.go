@@ -548,7 +548,7 @@ func (q *Querier) internalSearchBlock(ctx context.Context, req *deeppb.SearchBlo
 	opts.TotalPages = int(req.PagesToSearch)
 	opts.MaxBytes = q.limits.MaxBytesPerSnapshot(tenantID)
 
-	if api.IsTraceQLQuery(req.SearchReq) {
+	if api.IsDeepQLQuery(req.SearchReq) {
 		fetcher := deepql.NewSnapshotResultFetcherWrapper(func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
 			return q.store.Fetch(ctx, meta, req, opts)
 		})
@@ -576,7 +576,7 @@ func (q *Querier) postProcessIngesterSearchResults(req *deeppb.SearchRequest, rr
 		}
 		if sr.Metrics != nil {
 			response.Metrics.InspectedBytes += sr.Metrics.InspectedBytes
-			response.Metrics.InspectedTraces += sr.Metrics.InspectedTraces
+			response.Metrics.InspectedSnapshots += sr.Metrics.InspectedSnapshots
 			response.Metrics.InspectedBlocks += sr.Metrics.InspectedBlocks
 			response.Metrics.SkippedBlocks += sr.Metrics.SkippedBlocks
 		}
@@ -620,7 +620,9 @@ func (q *Querier) searchExternalEndpoint(ctx context.Context, externalEndpoint s
 	if err != nil {
 		return nil, fmt.Errorf("external endpoint failed to call http: %s, %w", externalEndpoint, err)
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("external endpoint failed to read body: %w", err)

@@ -41,7 +41,7 @@ type localBlock struct {
 	reader backend.Reader
 	writer backend.Writer
 
-	flushedTime atomic.Int64 // protecting flushedTime b/c it's accessed from the store on flush and from the ingester instance checking flush time
+	flushedTime atomic.Int64 // protecting flushedTime b/c it's accessed from the store on flush and from the ingester tenantBlockManager checking flush time
 }
 
 var _ common.Finder = (*localBlock)(nil)
@@ -67,9 +67,11 @@ func newLocalBlock(ctx context.Context, existingBlock common.BackendBlock, l *lo
 	return c
 }
 
+// FindSnapshotByID will scan the local block for the id
 func (c *localBlock) FindSnapshotByID(ctx context.Context, id common.ID, opts common.SearchOptions) (*deep_tp.Snapshot, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "localBlock.FindTraceByID")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "localBlock.FindSnapshotByID")
 	defer span.Finish()
+	// local block is a local version of the backend lock so just pass to the backend block
 	return c.BackendBlock.FindSnapshotByID(ctx, id, opts)
 }
 

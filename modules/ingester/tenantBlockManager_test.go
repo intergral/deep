@@ -140,9 +140,9 @@ package ingester
 //	queryAll(t, i, ids, traces)
 //}
 //
-//// pushTracesToInstance makes and pushes numTraces in the ingester instance,
+//// pushTracesToInstance makes and pushes numTraces in the ingester tenantBlockManager,
 //// returns traces and trace ids
-//func pushTracesToInstance(t *testing.T, i *instance, numTraces int) ([]*tempopb.Trace, [][]byte) {
+//func pushTracesToInstance(t *testing.T, i *tenantBlockManager, numTraces int) ([]*tempopb.Trace, [][]byte) {
 //	var ids [][]byte
 //	var traces []*tempopb.Trace
 //
@@ -166,7 +166,7 @@ package ingester
 //	return traces, ids
 //}
 //
-//func queryAll(t *testing.T, i *instance, ids [][]byte, traces []*tempopb.Trace) {
+//func queryAll(t *testing.T, i *tenantBlockManager, ids [][]byte, traces []*tempopb.Trace) {
 //	for j, id := range ids {
 //		trace, err := i.FindTraceByID(context.Background(), id)
 //		require.NoError(t, err)
@@ -231,7 +231,7 @@ package ingester
 //func TestInstanceLimits(t *testing.T) {
 //	limits, err := overrides.NewOverrides(overrides.Limits{
 //		MaxBytesPerSnapshot:   1000,
-//		MaxLocalTracesPerUser: 4,
+//		MaxLocalSnapshotsPerUser: 4,
 //	})
 //	require.NoError(t, err, "unexpected error creating limits")
 //	limiter := NewLimiter(limits, &ringCountMock{count: 1}, 1)
@@ -314,9 +314,9 @@ package ingester
 //
 //	for _, tt := range tests {
 //		t.Run(tt.name, func(t *testing.T) {
-//			delete(ingester.instances, testTenantID) // force recreate instance to reset limits
+//			delete(ingester.instances, testTenantID) // force recreate tenantBlockManager to reset limits
 //			i, err := ingester.getOrCreateInstance(testTenantID)
-//			require.NoError(t, err, "unexpected error creating new instance")
+//			require.NoError(t, err, "unexpected error creating new tenantBlockManager")
 //
 //			for j, push := range tt.pushes {
 //				err = i.PushBytesRequest(context.Background(), push.req)
@@ -385,24 +385,24 @@ package ingester
 //
 //	for _, tc := range tt {
 //		t.Run(tc.name, func(t *testing.T) {
-//			instance, _ := defaultInstance(t)
+//			tenantBlockManager, _ := defaultInstance(t)
 //
 //			for _, trace := range tc.input {
-//				fp := instance.tokenForSnapshotID(trace.snapshotId)
-//				instance.liveSnapshots[fp] = trace
+//				fp := tenantBlockManager.tokenForSnapshotID(trace.snapshotId)
+//				tenantBlockManager.liveSnapshots[fp] = trace
 //			}
 //
-//			err := instance.CutSnapshots(tc.cutoff, tc.immediate)
+//			err := tenantBlockManager.CutSnapshots(tc.cutoff, tc.immediate)
 //			require.NoError(t, err)
 //
-//			require.Equal(t, len(tc.expectedExist), len(instance.liveSnapshots))
+//			require.Equal(t, len(tc.expectedExist), len(tenantBlockManager.liveSnapshots))
 //			for _, expectedExist := range tc.expectedExist {
-//				_, ok := instance.liveSnapshots[instance.tokenForSnapshotID(expectedExist.snapshotId)]
+//				_, ok := tenantBlockManager.liveSnapshots[tenantBlockManager.tokenForSnapshotID(expectedExist.snapshotId)]
 //				require.True(t, ok)
 //			}
 //
 //			for _, expectedNotExist := range tc.expectedNotExist {
-//				_, ok := instance.liveSnapshots[instance.tokenForSnapshotID(expectedNotExist.snapshotId)]
+//				_, ok := tenantBlockManager.liveSnapshots[tenantBlockManager.tokenForSnapshotID(expectedNotExist.snapshotId)]
 //				require.False(t, ok)
 //			}
 //		})
@@ -451,13 +451,13 @@ package ingester
 //
 //	for _, tc := range tt {
 //		t.Run(tc.name, func(t *testing.T) {
-//			instance, _ := defaultInstance(t)
+//			tenantBlockManager, _ := defaultInstance(t)
 //
 //			for i := 0; i < tc.pushCount; i++ {
 //				tr := test.MakeTrace(1, uuid.Nil[:])
 //				bytes, err := dec.PrepareForWrite(tr, 0, 0)
 //				require.NoError(t, err)
-//				err = instance.PushBytes(context.Background(), uuid.Nil[:], bytes)
+//				err = tenantBlockManager.PushBytes(context.Background(), uuid.Nil[:], bytes)
 //				require.NoError(t, err)
 //			}
 //
@@ -469,16 +469,16 @@ package ingester
 //				tc.maxBlockLifetime = time.Hour
 //			}
 //
-//			lastCutTime := instance.lastBlockCut
+//			lastCutTime := tenantBlockManager.lastBlockCut
 //
 //			// Cut all traces to headblock for testing
-//			err := instance.CutSnapshots(0, true)
+//			err := tenantBlockManager.CutSnapshots(0, true)
 //			require.NoError(t, err)
 //
-//			blockID, err := instance.CutBlockIfReady(tc.maxBlockLifetime, tc.maxBlockBytes, tc.immediate)
+//			blockID, err := tenantBlockManager.CutBlockIfReady(tc.maxBlockLifetime, tc.maxBlockBytes, tc.immediate)
 //			require.NoError(t, err)
 //
-//			err = instance.CompleteBlock(blockID)
+//			err = tenantBlockManager.CompleteBlock(blockID)
 //			if tc.expectedToCutBlock {
 //				require.NoError(t, err, "unexpected error completing block")
 //			}
@@ -488,7 +488,7 @@ package ingester
 //				time.Sleep(time.Millisecond * 250)
 //			}
 //
-//			require.Equal(t, tc.expectedToCutBlock, instance.lastBlockCut.After(lastCutTime))
+//			require.Equal(t, tc.expectedToCutBlock, tenantBlockManager.lastBlockCut.After(lastCutTime))
 //		})
 //	}
 //}
@@ -596,65 +596,65 @@ package ingester
 //	assert.Equal(t, traceBytes, traceBytes2)
 //}
 //
-//func defaultInstance(t testing.TB) (*instance, *Ingester) {
-//	instance, ingester, _ := defaultInstanceAndTmpDir(t)
-//	return instance, ingester
+//func defaultInstance(t testing.TB) (*tenantBlockManager, *Ingester) {
+//	tenantBlockManager, ingester, _ := defaultInstanceAndTmpDir(t)
+//	return tenantBlockManager, ingester
 //}
 //
-//func defaultInstanceAndTmpDir(t testing.TB) (*instance, *Ingester, string) {
+//func defaultInstanceAndTmpDir(t testing.TB) (*tenantBlockManager, *Ingester, string) {
 //	tmpDir := t.TempDir()
 //
 //	ingester, _, _ := defaultIngester(t, tmpDir)
-//	instance, err := ingester.getOrCreateInstance(testTenantID)
-//	require.NoError(t, err, "unexpected error creating new instance")
+//	tenantBlockManager, err := ingester.getOrCreateInstance(testTenantID)
+//	require.NoError(t, err, "unexpected error creating new tenantBlockManager")
 //
-//	return instance, ingester, tmpDir
+//	return tenantBlockManager, ingester, tmpDir
 //}
 //
 //func BenchmarkInstancePush(b *testing.B) {
-//	instance, _ := defaultInstance(b)
+//	tenantBlockManager, _ := defaultInstance(b)
 //	request := makeRequest([]byte{})
 //
 //	b.ResetTimer()
 //	for i := 0; i < b.N; i++ {
 //		// Rotate trace ID
 //		binary.LittleEndian.PutUint32(request.Ids[0].Slice, uint32(i))
-//		err := instance.PushBytesRequest(context.Background(), request)
+//		err := tenantBlockManager.PushBytesRequest(context.Background(), request)
 //		require.NoError(b, err)
 //	}
 //}
 //
 //func BenchmarkInstancePushExistingTrace(b *testing.B) {
-//	instance, _ := defaultInstance(b)
+//	tenantBlockManager, _ := defaultInstance(b)
 //	request := makeRequest([]byte{})
 //
 //	b.ResetTimer()
 //	for i := 0; i < b.N; i++ {
-//		err := instance.PushBytesRequest(context.Background(), request)
+//		err := tenantBlockManager.PushBytesRequest(context.Background(), request)
 //		require.NoError(b, err)
 //	}
 //}
 //
 //func BenchmarkInstanceFindTraceByIDFromCompleteBlock(b *testing.B) {
-//	instance, _ := defaultInstance(b)
+//	tenantBlockManager, _ := defaultInstance(b)
 //	traceID := test.ValidTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8})
 //	request := makeRequest(traceID)
-//	err := instance.PushBytesRequest(context.Background(), request)
+//	err := tenantBlockManager.PushBytesRequest(context.Background(), request)
 //	require.NoError(b, err)
 //
 //	// force the trace to be in a complete block
-//	err = instance.CutSnapshots(0, true)
+//	err = tenantBlockManager.CutSnapshots(0, true)
 //	require.NoError(b, err)
-//	id, err := instance.CutBlockIfReady(0, 0, true)
+//	id, err := tenantBlockManager.CutBlockIfReady(0, 0, true)
 //	require.NoError(b, err)
-//	err = instance.CompleteBlock(id)
+//	err = tenantBlockManager.CompleteBlock(id)
 //	require.NoError(b, err)
 //
-//	require.Equal(b, 1, len(instance.completeBlocks))
+//	require.Equal(b, 1, len(tenantBlockManager.completeBlocks))
 //
 //	b.ResetTimer()
 //	for i := 0; i < b.N; i++ {
-//		trace, err := instance.FindTraceByID(context.Background(), traceID)
+//		trace, err := tenantBlockManager.FindTraceByID(context.Background(), traceID)
 //		require.NotNil(b, trace)
 //		require.NoError(b, err)
 //	}
@@ -667,25 +667,25 @@ package ingester
 //	benchmarkInstanceSearch(t)
 //}
 //func benchmarkInstanceSearch(b testing.TB) {
-//	instance, _ := defaultInstance(b)
+//	tenantBlockManager, _ := defaultInstance(b)
 //	for i := 0; i < 1000; i++ {
 //		request := makeRequest(nil)
-//		err := instance.PushBytesRequest(context.Background(), request)
+//		err := tenantBlockManager.PushBytesRequest(context.Background(), request)
 //		require.NoError(b, err)
 //
 //		if i%100 == 0 {
-//			err := instance.CutSnapshots(0, true)
+//			err := tenantBlockManager.CutSnapshots(0, true)
 //			require.NoError(b, err)
 //		}
 //	}
 //
 //	// force the traces to be in a complete block
-//	id, err := instance.CutBlockIfReady(0, 0, true)
+//	id, err := tenantBlockManager.CutBlockIfReady(0, 0, true)
 //	require.NoError(b, err)
-//	err = instance.CompleteBlock(id)
+//	err = tenantBlockManager.CompleteBlock(id)
 //	require.NoError(b, err)
 //
-//	require.Equal(b, 1, len(instance.completeBlocks))
+//	require.Equal(b, 1, len(tenantBlockManager.completeBlocks))
 //
 //	ctx := context.Background()
 //	ctx = user.InjectOrgID(ctx, testTenantID)
@@ -693,7 +693,7 @@ package ingester
 //	if rt, ok := b.(*testing.B); ok {
 //		rt.ResetTimer()
 //		for i := 0; i < rt.N; i++ {
-//			resp, err := instance.SearchTags(ctx)
+//			resp, err := tenantBlockManager.SearchTags(ctx)
 //			require.NoError(b, err)
 //			require.NotNil(b, resp)
 //		}
@@ -701,7 +701,7 @@ package ingester
 //	}
 //
 //	for i := 0; i < 100; i++ {
-//		resp, err := instance.SearchTags(ctx)
+//		resp, err := tenantBlockManager.SearchTags(ctx)
 //		require.NoError(b, err)
 //		require.NotNil(b, resp)
 //	}

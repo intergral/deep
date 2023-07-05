@@ -26,11 +26,11 @@ import (
 )
 
 func (i *Ingester) SearchRecent(ctx context.Context, req *deeppb.SearchRequest) (*deeppb.SearchResponse, error) {
-	instanceID, err := user.ExtractOrgID(ctx)
+	tenantID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
 	}
-	inst, ok := i.getInstanceByID(instanceID)
+	inst, ok := i.getInstanceByID(tenantID)
 	if !ok || inst == nil {
 		return &deeppb.SearchResponse{}, nil
 	}
@@ -43,12 +43,12 @@ func (i *Ingester) SearchRecent(ctx context.Context, req *deeppb.SearchRequest) 
 	return res, nil
 }
 
-func (i *Ingester) SearchTags(ctx context.Context, req *deeppb.SearchTagsRequest) (*deeppb.SearchTagsResponse, error) {
-	instanceID, err := user.ExtractOrgID(ctx)
+func (i *Ingester) SearchTags(ctx context.Context, _ *deeppb.SearchTagsRequest) (*deeppb.SearchTagsResponse, error) {
+	tenantID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
 	}
-	inst, ok := i.getInstanceByID(instanceID)
+	inst, ok := i.getInstanceByID(tenantID)
 	if !ok || inst == nil {
 		return &deeppb.SearchTagsResponse{}, nil
 	}
@@ -62,11 +62,11 @@ func (i *Ingester) SearchTags(ctx context.Context, req *deeppb.SearchTagsRequest
 }
 
 func (i *Ingester) SearchTagValues(ctx context.Context, req *deeppb.SearchTagValuesRequest) (*deeppb.SearchTagValuesResponse, error) {
-	instanceID, err := user.ExtractOrgID(ctx)
+	tenantID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
 	}
-	inst, ok := i.getInstanceByID(instanceID)
+	inst, ok := i.getInstanceByID(tenantID)
 	if !ok || inst == nil {
 		return &deeppb.SearchTagValuesResponse{}, nil
 	}
@@ -80,11 +80,11 @@ func (i *Ingester) SearchTagValues(ctx context.Context, req *deeppb.SearchTagVal
 }
 
 func (i *Ingester) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagValuesRequest) (*deeppb.SearchTagValuesV2Response, error) {
-	instanceID, err := user.ExtractOrgID(ctx)
+	tenantID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
 	}
-	inst, ok := i.getInstanceByID(instanceID)
+	inst, ok := i.getInstanceByID(tenantID)
 	if !ok || inst == nil {
 		return &deeppb.SearchTagValuesV2Response{}, nil
 	}

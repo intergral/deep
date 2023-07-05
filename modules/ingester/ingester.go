@@ -49,15 +49,16 @@ var ErrReadOnly = errors.New("Ingester is shutting down")
 
 var metricFlushQueueLength = promauto.NewGauge(prometheus.GaugeOpts{
 	Namespace: "deep",
-	Name:      "ingester_flush_queue_length",
-	Help:      "The total number of series pending in the flush queue.",
+	Subsystem: "ingester",
+	Name:      "flush_queue_length",
+	Help:      "The total length of the ingester queue",
 })
 
 const (
 	ingesterRingKey = "ring"
 )
 
-// Ingester builds blocks out of incoming traces
+// Ingester builds blocks out of incoming snapshots
 type Ingester struct {
 	services.Service
 	deeppb.UnimplementedIngesterServiceServer
@@ -66,7 +67,7 @@ type Ingester struct {
 	cfg Config
 
 	instancesMtx sync.RWMutex
-	instances    map[string]*instance
+	instances    map[string]*tenantBlockManager
 	readonly     bool
 
 	lifecycler   *ring.Lifecycler
@@ -80,18 +81,18 @@ type Ingester struct {
 	limiter *Limiter
 
 	subservicesWatcher *services.FailureWatcher
-	traceEncoder       model.SegmentDecoder
+	encoder            model.SegmentDecoder
 }
 
 // New makes a new Ingester.
 func New(cfg Config, store storage.Store, limits *overrides.Overrides, reg prometheus.Registerer) (*Ingester, error) {
 	i := &Ingester{
 		cfg:          cfg,
-		instances:    map[string]*instance{},
+		instances:    map[string]*tenantBlockManager{},
 		store:        store,
 		flushQueues:  flushqueues.New(cfg.ConcurrentFlushes, metricFlushQueueLength),
 		replayJitter: true,
-		traceEncoder: model.MustNewSegmentDecoder(model.CurrentEncoding),
+		encoder:      model.MustNewSegmentDecoder(model.CurrentEncoding),
 	}
 
 	i.local = store.WAL().LocalBackend()
@@ -186,19 +187,19 @@ func (i *Ingester) markUnavailable() {
 	i.stopIncomingRequests()
 }
 
-// PushBytes implements deeppb.Ingester.PushBytes. Snapshot pushed to this endpoint are expected to be in the formats
-// defined by ./pkg/model/v1
+// PushBytes accepts ingest requests of data (snapshots) as byte data
 func (i *Ingester) PushBytes(ctx context.Context, req *deeppb.PushBytesRequest) (*deeppb.PushBytesResponse, error) {
 	if i.readonly {
 		return nil, ErrReadOnly
 	}
 
-	instanceID, err := user.ExtractOrgID(ctx)
+	tenantID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	instance, err := i.getOrCreateInstance(instanceID)
+	// get the tenant manager
+	instance, err := i.getOrCreateInstance(tenantID)
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +250,7 @@ func (i *Ingester) CheckReady(ctx context.Context) error {
 	return nil
 }
 
-func (i *Ingester) getOrCreateInstance(instanceID string) (*instance, error) {
+func (i *Ingester) getOrCreateInstance(instanceID string) (*tenantBlockManager, error) {
 	inst, ok := i.getInstanceByID(instanceID)
 	if ok {
 		return inst, nil
@@ -260,7 +261,7 @@ func (i *Ingester) getOrCreateInstance(instanceID string) (*instance, error) {
 	inst, ok = i.instances[instanceID]
 	if !ok {
 		var err error
-		inst, err = newInstance(instanceID, i.limiter, i.store, i.local)
+		inst, err = newTenantBlockManager(instanceID, i.limiter, i.store, i.local)
 		if err != nil {
 			return nil, err
 		}
@@ -269,7 +270,7 @@ func (i *Ingester) getOrCreateInstance(instanceID string) (*instance, error) {
 	return inst, nil
 }
 
-func (i *Ingester) getInstanceByID(id string) (*instance, bool) {
+func (i *Ingester) getInstanceByID(id string) (*tenantBlockManager, bool) {
 	i.instancesMtx.RLock()
 	defer i.instancesMtx.RUnlock()
 
@@ -277,11 +278,11 @@ func (i *Ingester) getInstanceByID(id string) (*instance, bool) {
 	return inst, ok
 }
 
-func (i *Ingester) getInstances() []*instance {
+func (i *Ingester) getInstances() []*tenantBlockManager {
 	i.instancesMtx.RLock()
 	defer i.instancesMtx.RUnlock()
 
-	instances := make([]*instance, 0, len(i.instances))
+	instances := make([]*tenantBlockManager, 0, len(i.instances))
 	for _, instance := range i.instances {
 		instances = append(instances, instance)
 	}
@@ -297,15 +298,16 @@ func (i *Ingester) stopIncomingRequests() {
 }
 
 // TransferOut implements ring.Lifecycler.
-func (i *Ingester) TransferOut(ctx context.Context) error {
+func (i *Ingester) TransferOut(_ context.Context) error {
 	return ring.ErrTransferDisabled
 }
 
+// replayWal will scan the configured WAL directory for an existing blocks and load them into the tenant managers
 func (i *Ingester) replayWal() error {
 	level.Info(log.Logger).Log("msg", "beginning wal replay")
 
 	// pass i.cfg.MaxBlockDuration into RescanBlocks to make an attempt to set the start time
-	// of the blocks correctly. as we are scanning traces in the blocks we read their start/end times
+	// of the blocks correctly. as we are scanning snapshots in the blocks we read their start/end times
 	// and attempt to set start/end times appropriately. we use now - max_block_duration - ingestion_slack
 	// as the minimum acceptable start time for a replayed block.
 	blocks, err := i.store.WAL().RescanBlocks(i.cfg.MaxBlockDuration, log.Logger)
@@ -334,9 +336,9 @@ func (i *Ingester) replayWal() error {
 		instance.AddCompletingBlock(b)
 
 		i.enqueue(&flushOp{
-			kind:    opKindComplete,
-			userID:  tenantID,
-			blockID: b.BlockMeta().BlockID,
+			kind:     opKindComplete,
+			tenantID: tenantID,
+			blockID:  b.BlockMeta().BlockID,
 		}, i.replayJitter)
 	}
 
@@ -345,6 +347,7 @@ func (i *Ingester) replayWal() error {
 	return nil
 }
 
+// rediscoverLocalBlocks will look for any blocks that have been written locally read to push to storage
 func (i *Ingester) rediscoverLocalBlocks() error {
 	ctx := context.TODO()
 
@@ -357,7 +360,7 @@ func (i *Ingester) rediscoverLocalBlocks() error {
 	level.Info(log.Logger).Log("msg", "reloading local blocks", "tenants", len(tenants))
 
 	for _, t := range tenants {
-		// check if any local blocks exist for a tenant before creating the instance. this is to protect us from cases
+		// check if any local blocks exist for a tenant before creating the tenantBlockManager. this is to protect us from cases
 		// where left-over empty local tenant folders persist empty tenants
 		blocks, err := reader.Blocks(ctx, t)
 		if err != nil {
@@ -381,9 +384,9 @@ func (i *Ingester) rediscoverLocalBlocks() error {
 		for _, b := range newBlocks {
 			if b.FlushedTime().IsZero() {
 				i.enqueue(&flushOp{
-					kind:    opKindFlush,
-					userID:  t,
-					blockID: b.BlockMeta().BlockID,
+					kind:     opKindFlush,
+					tenantID: t,
+					blockID:  b.BlockMeta().BlockID,
 				}, i.replayJitter)
 			}
 		}

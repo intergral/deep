@@ -44,33 +44,39 @@ import (
 var (
 	metricBlocksFlushed = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "ingester_blocks_flushed_total",
-		Help:      "The total number of blocks flushed",
+		Subsystem: "ingester",
+		Name:      "blocks_flushed_total",
+		Help:      "The total number of blocks flushed to storage",
 	})
-	metricFailedFlushes = promauto.NewCounter(prometheus.CounterOpts{
+	metricFailedFlushes = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "ingester_failed_flushes_total",
-		Help:      "The total number of failed traces",
-	})
-	metricFlushRetries = promauto.NewCounter(prometheus.CounterOpts{
+		Subsystem: "ingester",
+		Name:      "failed_operations_total",
+		Help:      "The total number of failed operations",
+	}, []string{"operation"})
+	metricFlushRetries = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "ingester_flush_retries_total",
-		Help:      "The total number of retries after a failed flush",
-	})
-	metricFlushFailedRetries = promauto.NewCounter(prometheus.CounterOpts{
+		Subsystem: "ingester",
+		Name:      "operation_retries_total",
+		Help:      "The total number of retries after a failed operation",
+	}, []string{"operation"})
+	metricFlushFailedRetries = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "ingester_flush_failed_retries_total",
-		Help:      "The total number of failed retries after a failed flush",
-	})
-	metricFlushDuration = promauto.NewHistogram(prometheus.HistogramOpts{
+		Subsystem: "ingester",
+		Name:      "failed_retried_operations",
+		Help:      "The total number of operations that failed, even after a retry.",
+	}, []string{"operation"})
+	metricFlushDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "deep",
-		Name:      "ingester_flush_duration_seconds",
-		Help:      "Records the amount of time to flush a complete block.",
+		Subsystem: "ingester",
+		Name:      "operation_duration_seconds",
+		Help:      "Records the amount of time to complete an operation.",
 		Buckets:   prometheus.ExponentialBuckets(1, 2, 10),
-	})
+	}, []string{"operation"})
 	metricFlushSize = promauto.NewHistogram(prometheus.HistogramOpts{
 		Namespace: "deep",
-		Name:      "ingester_flush_size_bytes",
+		Subsystem: "ingester",
+		Name:      "flush_size_bytes",
 		Help:      "Size in bytes of blocks flushed.",
 		Buckets:   prometheus.ExponentialBuckets(1024*1024, 2, 10), // from 1MB up to 1GB
 	})
@@ -88,8 +94,8 @@ const (
 	opKindFlush
 )
 
-// Flush triggers a flush of all in memory traces to disk.  This is called
-// by the lifecycler on shutdown and will put our traces in the WAL to be
+// Flush triggers a flush of all in memory snapshots to disk.  This is called
+// by the lifecycler on shutdown and will put our snapshots in the WAL to be
 // replayed.
 func (i *Ingester) Flush() {
 	instances := i.getInstances()
@@ -97,7 +103,7 @@ func (i *Ingester) Flush() {
 	for _, instance := range instances {
 		err := instance.CutSnapshots(0, true)
 		if err != nil {
-			level.Error(log.WithUserID(instance.instanceID, log.Logger)).Log("msg", "failed to cut complete traces on shutdown", "err", err)
+			level.Error(log.WithUserID(instance.tenantID, log.Logger)).Log("msg", "failed to cut complete snapshots on shutdown", "err", err)
 		}
 	}
 }
@@ -131,7 +137,7 @@ func (i *Ingester) ShutdownHandler(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte("shutdown job acknowledged"))
 }
 
-// FlushHandler calls sweepAllInstances(true) which will force push all traces into the WAL and force
+// FlushHandler calls sweepAllInstances(true) which will force push all snapshots into the WAL and force
 // mark all head blocks as ready to flush.
 func (i *Ingester) FlushHandler(w http.ResponseWriter, _ *http.Request) {
 	i.sweepAllInstances(true)
@@ -143,12 +149,12 @@ type flushOp struct {
 	at       time.Time // When to execute
 	attempts uint
 	backoff  time.Duration
-	userID   string
+	tenantID string
 	blockID  uuid.UUID
 }
 
 func (o *flushOp) Key() string {
-	return o.userID + "/" + strconv.Itoa(o.kind) + "/" + o.blockID.String()
+	return o.tenantID + "/" + strconv.Itoa(o.kind) + "/" + o.blockID.String()
 }
 
 // Priority orders entries in the queue. The larger the number the higher the priority, so inverted here to
@@ -166,36 +172,36 @@ func (i *Ingester) sweepAllInstances(immediate bool) {
 	}
 }
 
-func (i *Ingester) sweepInstance(instance *instance, immediate bool) {
-	// cut traces internally
-	err := instance.CutSnapshots(i.cfg.MaxTraceIdle, immediate)
+func (i *Ingester) sweepInstance(instance *tenantBlockManager, immediate bool) {
+	// cut snapshots internally
+	err := instance.CutSnapshots(i.cfg.MaxSnapshotIdle, immediate)
 	if err != nil {
-		level.Error(log.WithUserID(instance.instanceID, log.Logger)).Log("msg", "failed to cut traces", "err", err)
+		level.Error(log.WithUserID(instance.tenantID, log.Logger)).Log("msg", "failed to cut snapshots", "err", err)
 		return
 	}
 
 	// see if it's ready to cut a block
 	blockID, err := instance.CutBlockIfReady(i.cfg.MaxBlockDuration, i.cfg.MaxBlockBytes, immediate)
 	if err != nil {
-		level.Error(log.WithUserID(instance.instanceID, log.Logger)).Log("msg", "failed to cut block", "err", err)
+		level.Error(log.WithUserID(instance.tenantID, log.Logger)).Log("msg", "failed to cut block", "err", err)
 		return
 	}
 
 	if blockID != uuid.Nil {
-		level.Info(log.Logger).Log("msg", "head block cut. enqueueing flush op", "userid", instance.instanceID, "block", blockID)
+		level.Info(log.Logger).Log("msg", "head block cut. enqueueing flush op", "userid", instance.tenantID, "block", blockID)
 		// jitter to help when flushing many instances at the same time
 		// no jitter if immediate (initiated via /flush handler for example)
 		i.enqueue(&flushOp{
-			kind:    opKindComplete,
-			userID:  instance.instanceID,
-			blockID: blockID,
+			kind:     opKindComplete,
+			tenantID: instance.tenantID,
+			blockID:  blockID,
 		}, !immediate)
 	}
 
-	// dump any blocks that have been flushed for awhile
+	// dump any blocks that have been flushed for a while
 	err = instance.ClearFlushedBlocks(i.cfg.CompleteBlockTimeout)
 	if err != nil {
-		level.Error(log.WithUserID(instance.instanceID, log.Logger)).Log("msg", "failed to complete block", "err", err)
+		level.Error(log.WithUserID(instance.tenantID, log.Logger)).Log("msg", "failed to complete block", "err", err)
 	}
 }
 
@@ -210,17 +216,19 @@ func (i *Ingester) flushLoop(j int) {
 		if o == nil {
 			return
 		}
+
 		op := o.(*flushOp)
 		op.attempts++
 
 		var retry bool
 		var err error
-
+		start := time.Now()
 		if op.kind == opKindComplete {
 			retry, err = i.handleComplete(op)
 		} else {
-			retry, err = i.handleFlush(context.Background(), op.userID, op.blockID)
+			retry, err = i.handleFlush(context.Background(), op.tenantID, op.blockID)
 		}
+		metricFlushDuration.WithLabelValues(opName(op)).Observe(time.Since(start).Seconds())
 
 		if err != nil {
 			handleFailedOp(op, err)
@@ -235,17 +243,26 @@ func (i *Ingester) flushLoop(j int) {
 }
 
 func handleFailedOp(op *flushOp, err error) {
-	level.Error(log.WithUserID(op.userID, log.Logger)).Log("msg", "error performing op in flushQueue",
+	level.Error(log.WithUserID(op.tenantID, log.Logger)).Log("msg", "error performing op in flushQueue",
 		"op", op.kind, "block", op.blockID.String(), "attempts", op.attempts, "err", err)
-	metricFailedFlushes.Inc()
+	opName := opName(op)
+	metricFailedFlushes.WithLabelValues(opName).Inc()
 
 	if op.attempts > 1 {
-		metricFlushFailedRetries.Inc()
+		metricFlushFailedRetries.WithLabelValues(opName).Inc()
 	}
 }
 
+func opName(op *flushOp) string {
+	opName := "opKindComplete"
+	if op.kind != opKindComplete {
+		opName = "opKindFlush"
+	}
+	return opName
+}
+
 func handleAbandonedOp(op *flushOp) {
-	level.Info(log.WithUserID(op.userID, log.Logger)).Log("msg", "Abandoning op in flush queue because ingester is shutting down",
+	level.Info(log.WithUserID(op.tenantID, log.Logger)).Log("msg", "Abandoning op in flush queue because ingester is shutting down",
 		"op", op.kind, "block", op.blockID.String(), "attempts", op.attempts)
 }
 
@@ -258,20 +275,21 @@ func (i *Ingester) handleComplete(op *flushOp) (retry bool, err error) {
 	}
 
 	start := time.Now()
-	level.Info(log.Logger).Log("msg", "completing block", "userid", op.userID, "blockID", op.blockID)
-	instance, err := i.getOrCreateInstance(op.userID)
+	level.Info(log.Logger).Log("msg", "completing block", "userid", op.tenantID, "blockID", op.blockID)
+	instance, err := i.getOrCreateInstance(op.tenantID)
 	if err != nil {
 		return false, err
 	}
 
 	err = instance.CompleteBlock(op.blockID)
-	level.Info(log.Logger).Log("msg", "block completed", "userid", op.userID, "blockID", op.blockID, "duration", time.Since(start))
+	level.Info(log.Logger).Log("msg", "block completed", "userid", op.tenantID, "blockID", op.blockID, "duration", time.Since(start))
 	if err != nil {
 		handleFailedOp(op, err)
 
 		if op.attempts >= maxCompleteAttempts {
-			level.Error(log.WithUserID(op.userID, log.Logger)).Log("msg", "Block exceeded max completion errors. Deleting. POSSIBLE DATA LOSS",
-				"userID", op.userID, "attempts", op.attempts, "block", op.blockID.String())
+			// todo alerts?
+			level.Error(log.WithUserID(op.tenantID, log.Logger)).Log("msg", "Block exceeded max completion errors. Deleting. POSSIBLE DATA LOSS",
+				"userID", op.tenantID, "attempts", op.attempts, "block", op.blockID.String())
 
 			// Delete WAL and move on
 			err = instance.ClearCompletingBlock(op.blockID)
@@ -289,15 +307,15 @@ func (i *Ingester) handleComplete(op *flushOp) (retry bool, err error) {
 	// add a flushOp for the block we just completed
 	// No delay
 	i.enqueue(&flushOp{
-		kind:    opKindFlush,
-		userID:  instance.instanceID,
-		blockID: op.blockID,
+		kind:     opKindFlush,
+		tenantID: instance.tenantID,
+		blockID:  op.blockID,
 	}, false)
 
 	return false, nil
 }
 
-// withSpan adds snapshotId to a logger, if span is sampled
+// withSpan adds traceID to a logger, if span is sampled
 // TODO: move into some central trace/log package
 func withSpan(logger gklog.Logger, sp ot.Span) gklog.Logger {
 	if sp == nil {
@@ -308,31 +326,30 @@ func withSpan(logger gklog.Logger, sp ot.Span) gklog.Logger {
 		return logger
 	}
 
-	return gklog.With(logger, "snapshotId", sctx.TraceID().String())
+	return gklog.With(logger, "traceId", sctx.TraceID().String())
 }
 
-func (i *Ingester) handleFlush(ctx context.Context, userID string, blockID uuid.UUID) (retry bool, err error) {
-	sp, ctx := ot.StartSpanFromContext(ctx, "flush", ot.Tag{Key: "organization", Value: userID}, ot.Tag{Key: "blockID", Value: blockID.String()})
+func (i *Ingester) handleFlush(ctx context.Context, tenantID string, blockID uuid.UUID) (retry bool, err error) {
+	sp, ctx := ot.StartSpanFromContext(ctx, "flush", ot.Tag{Key: "organization", Value: tenantID}, ot.Tag{Key: "blockID", Value: blockID.String()})
 	defer sp.Finish()
-	withSpan(level.Info(log.Logger), sp).Log("msg", "flushing block", "userid", userID, "block", blockID.String())
+	withSpan(level.Info(log.Logger), sp).Log("msg", "flushing block", "tenantID", tenantID, "block", blockID.String())
 
-	instance, err := i.getOrCreateInstance(userID)
+	instance, err := i.getOrCreateInstance(tenantID)
 	if err != nil {
 		return true, err
 	}
 
 	if instance == nil {
-		return false, fmt.Errorf("instance id %s not found", userID)
+		return false, fmt.Errorf("tenantBlockManager id %s not found", tenantID)
 	}
 
 	if block := instance.GetBlockToBeFlushed(blockID); block != nil {
-		ctx := user.InjectOrgID(ctx, userID)
+		ctx := user.InjectOrgID(ctx, tenantID)
 		ctx, cancel := context.WithTimeout(ctx, i.cfg.FlushOpTimeout)
 		defer cancel()
 
-		start := time.Now()
 		err = i.store.WriteBlock(ctx, block)
-		metricFlushDuration.Observe(time.Since(start).Seconds())
+
 		metricFlushSize.Observe(float64(block.BlockMeta().Size))
 		if err != nil {
 			ext.Error.Set(sp, true)
@@ -384,7 +401,7 @@ func (i *Ingester) requeue(op *flushOp) {
 
 	op.at = time.Now().Add(op.backoff)
 
-	level.Info(log.WithUserID(op.userID, log.Logger)).Log("msg", "retrying op in flushQueue",
+	level.Info(log.WithUserID(op.tenantID, log.Logger)).Log("msg", "retrying op in flushQueue",
 		"op", op.kind, "block", op.blockID.String(), "backoff", op.backoff)
 
 	go func() {
@@ -396,7 +413,7 @@ func (i *Ingester) requeue(op *flushOp) {
 			return
 		}
 
-		metricFlushRetries.Inc()
+		metricFlushRetries.WithLabelValues(opName(op)).Inc()
 
 		err := i.flushQueues.Requeue(op)
 		if err != nil {

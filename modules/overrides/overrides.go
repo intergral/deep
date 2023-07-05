@@ -252,15 +252,15 @@ func (o *Overrides) IngestionRateStrategy() string {
 	return o.getOverridesForUser("").IngestionRateStrategy
 }
 
-// MaxLocalTracesPerUser returns the maximum number of traces a user is allowed to store
+// MaxLocalSnapshotsPerUser returns the maximum number of traces a user is allowed to store
 // in a single ingester.
-func (o *Overrides) MaxLocalTracesPerUser(userID string) int {
+func (o *Overrides) MaxLocalSnapshotsPerUser(userID string) int {
 	return o.getOverridesForUser(userID).MaxLocalTracesPerUser
 }
 
-// MaxGlobalTracesPerUser returns the maximum number of traces a user is allowed to store
+// MaxGlobalSnapshotsPerUser returns the maximum number of traces a user is allowed to store
 // across the cluster.
-func (o *Overrides) MaxGlobalTracesPerUser(userID string) int {
+func (o *Overrides) MaxGlobalSnapshotsPerUser(userID string) int {
 	return o.getOverridesForUser(userID).MaxGlobalTracesPerUser
 }
 
