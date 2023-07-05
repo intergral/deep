@@ -36,7 +36,7 @@ func IsSearchBlock(r *http.Request) bool {
 	return q.Get(urlParamBlockID) != ""
 }
 
-// IsTraceQLQuery returns true if the request contains a traceQL query.
-func IsTraceQLQuery(r *deeppb.SearchRequest) bool {
+// IsDeepQLQuery returns true if the request contains a deepQL query.
+func IsDeepQLQuery(r *deeppb.SearchRequest) bool {
 	return len(r.Query) > 0
 }

@@ -37,10 +37,10 @@ type Results struct {
 	started   atomic.Bool
 	wg        sync.WaitGroup
 
-	tracesInspected atomic.Uint32
-	bytesInspected  atomic.Uint64
-	blocksInspected atomic.Uint32
-	blocksSkipped   atomic.Uint32
+	snapshotsInspected atomic.Uint32
+	bytesInspected     atomic.Uint64
+	blocksInspected    atomic.Uint32
+	blocksSkipped      atomic.Uint32
 }
 
 func NewResults() *Results {
@@ -141,12 +141,12 @@ func (sr *Results) FinishWorker() {
 	sr.wg.Add(-1)
 }
 
-func (sr *Results) TracesInspected() uint32 {
-	return sr.tracesInspected.Load()
+func (sr *Results) SnapshotsInspected() uint32 {
+	return sr.snapshotsInspected.Load()
 }
 
-func (sr *Results) AddTraceInspected(c uint32) {
-	sr.tracesInspected.Add(c)
+func (sr *Results) AddSnapshotInspected(c uint32) {
+	sr.snapshotsInspected.Add(c)
 }
 
 func (sr *Results) BytesInspected() uint64 {

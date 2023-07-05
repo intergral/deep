@@ -17,6 +17,32 @@
 
 package ingester
 
+import (
+	"context"
+	"github.com/go-kit/log"
+	"github.com/grafana/dskit/flagext"
+	"github.com/grafana/dskit/kv/consul"
+	"github.com/grafana/dskit/ring"
+	"github.com/intergral/deep/modules/overrides"
+	"github.com/intergral/deep/modules/storage"
+	"github.com/intergral/deep/pkg/deepdb"
+	"github.com/intergral/deep/pkg/deepdb/backend"
+	"github.com/intergral/deep/pkg/deepdb/backend/local"
+	"github.com/intergral/deep/pkg/deepdb/encoding"
+	"github.com/intergral/deep/pkg/deepdb/encoding/common"
+	"github.com/intergral/deep/pkg/deepdb/wal"
+	"github.com/intergral/deep/pkg/deeppb"
+	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	"github.com/intergral/deep/pkg/model"
+	v1 "github.com/intergral/deep/pkg/model/v1"
+	"github.com/intergral/deep/pkg/util/test"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/stretchr/testify/require"
+	"github.com/weaveworks/common/user"
+	"testing"
+	"time"
+)
+
 //
 //import (
 //	"context"
@@ -50,7 +76,39 @@ package ingester
 //	v1 "github.com/intergral/deep/pkg/tempopb/trace/v1"
 //	"github.com/intergral/deep/pkg/util/test"
 //)
-//
+
+func TestPushQueryAllEncodings(t *testing.T) {
+	for _, e := range model.AllEncodings {
+		t.Run(e, func(t *testing.T) {
+			tempDir := t.TempDir()
+			ctx := user.InjectOrgID(context.Background(), "test")
+			ingester, snapshots, snapshotsIDs := defaultIngestWithPush(t, tempDir, pushBatchV1)
+
+			for pos, snapshotId := range snapshotsIDs {
+				byId, err := ingester.FindSnapshotByID(ctx, &deeppb.SnapshotByIDRequest{
+					ID: snapshotId,
+				})
+				require.NoError(t, err, "unexpect error querying")
+				require.Equal(t, byId.Snapshot.ID, snapshots[pos].ID)
+			}
+
+			for _, tenantBlockManager := range ingester.instances {
+				err := tenantBlockManager.CutSnapshots(0, true)
+				require.NoError(t, err, "unexpected error cutting snapshots")
+			}
+
+			for pos, snapshotId := range snapshotsIDs {
+				byId, err := ingester.FindSnapshotByID(ctx, &deeppb.SnapshotByIDRequest{
+					ID: snapshotId,
+				})
+				require.NoError(t, err, "unexpect error querying")
+				require.Equal(t, byId.Snapshot.ID, snapshots[pos].ID)
+			}
+
+		})
+	}
+}
+
 //func TestPushQueryAllEncodings(t *testing.T) {
 //	for _, e := range model.AllEncodings {
 //		t.Run(e, func(t *testing.T) {
@@ -79,8 +137,8 @@ package ingester
 //			}
 //
 //			// force cut all traces
-//			for _, instance := range ingester.instances {
-//				err := instance.CutSnapshots(0, true)
+//			for _, tenantBlockManager := range ingester.instances {
+//				err := tenantBlockManager.CutSnapshots(0, true)
 //				require.NoError(t, err, "unexpected error cutting traces")
 //			}
 //
@@ -112,8 +170,8 @@ package ingester
 //	pushBatchV2(t, ingester, testTrace.Batches[0], snapshotId)
 //
 //	// force cut all traces
-//	for _, instance := range ingester.instances {
-//		err = instance.CutSnapshots(0, true)
+//	for _, tenantBlockManager := range ingester.instances {
+//		err = tenantBlockManager.CutSnapshots(0, true)
 //		require.NoError(t, err, "unexpected error cutting traces")
 //	}
 //
@@ -128,8 +186,8 @@ package ingester
 //	require.True(t, proto.Equal(testTrace, foundTrace.Trace))
 //
 //	// force cut all traces
-//	for _, instance := range ingester.instances {
-//		err = instance.CutSnapshots(0, true)
+//	for _, tenantBlockManager := range ingester.instances {
+//		err = tenantBlockManager.CutSnapshots(0, true)
 //		require.NoError(t, err, "unexpected error cutting traces")
 //	}
 //
@@ -156,8 +214,8 @@ package ingester
 //	}
 //
 //	// force cut all traces
-//	for _, instance := range ingester.instances {
-//		err := instance.CutSnapshots(0, true)
+//	for _, tenantBlockManager := range ingester.instances {
+//		err := tenantBlockManager.CutSnapshots(0, true)
 //		require.NoError(t, err, "unexpected error cutting traces")
 //	}
 //
@@ -202,20 +260,20 @@ package ingester
 //	ingester, _, _ := defaultIngester(t, tmpDir)
 //
 //	// force cut all traces and wipe wal
-//	for _, instance := range ingester.instances {
-//		err := instance.CutSnapshots(0, true)
+//	for _, tenantBlockManager := range ingester.instances {
+//		err := tenantBlockManager.CutSnapshots(0, true)
 //		require.NoError(t, err, "unexpected error cutting traces")
 //
-//		blockID, err := instance.CutBlockIfReady(0, 0, true)
+//		blockID, err := tenantBlockManager.CutBlockIfReady(0, 0, true)
 //		require.NoError(t, err)
 //
-//		err = instance.CompleteBlock(blockID)
+//		err = tenantBlockManager.CompleteBlock(blockID)
 //		require.NoError(t, err)
 //
-//		err = instance.ClearCompletingBlock(blockID)
+//		err = tenantBlockManager.ClearCompletingBlock(blockID)
 //		require.NoError(t, err)
 //
-//		err = ingester.local.ClearBlock(blockID, instance.instanceID)
+//		err = ingester.local.ClearBlock(blockID, tenantBlockManager.instanceID)
 //		require.NoError(t, err)
 //	}
 //
@@ -243,7 +301,7 @@ package ingester
 //	b1, err := dec.PrepareForWrite(trace, 0, 0)
 //	require.NoError(t, err)
 //
-//	// push to instance
+//	// push to tenantBlockManager
 //	require.NoError(t, inst.PushBytes(context.Background(), id, b1))
 //
 //	// Write wal
@@ -324,7 +382,7 @@ package ingester
 //	require.NoError(t, err)
 //}
 //*/
-//
+
 //func TestFlush(t *testing.T) {
 //	tmpDir := t.TempDir()
 //
@@ -356,153 +414,107 @@ package ingester
 //		require.True(t, equal)
 //	}
 //}
-//
-//func defaultIngesterModule(t testing.TB, tmpDir string) *Ingester {
-//	ingesterConfig := defaultIngesterTestConfig()
-//	limits, err := overrides.NewOverrides(defaultLimitsTestConfig())
-//	require.NoError(t, err, "unexpected error creating overrides")
-//
-//	s, err := storage.NewStore(storage.Config{
-//		Trace: deepdb.Config{
-//			Backend: "local",
-//			Local: &local.Config{
-//				Path: tmpDir,
-//			},
-//			Block: &common.BlockConfig{
-//				IndexDownsampleBytes: 2,
-//				BloomFP:              0.01,
-//				BloomShardSizeBytes:  100_000,
-//				Version:              encoding.DefaultEncoding().Version(),
-//				Encoding:             backend.EncLZ4_1M,
-//				IndexPageSizeBytes:   1000,
-//			},
-//			WAL: &wal.Config{
-//				Filepath: tmpDir,
-//			},
-//		},
-//	}, log.NewNopLogger())
-//	require.NoError(t, err, "unexpected error store")
-//
-//	ingester, err := New(ingesterConfig, s, limits, prometheus.NewPedanticRegistry())
-//	require.NoError(t, err, "unexpected error creating ingester")
-//	ingester.replayJitter = false
-//
-//	err = ingester.starting(context.Background())
-//	require.NoError(t, err, "unexpected error starting ingester")
-//
-//	return ingester
-//}
+
+func defaultIngesterModule(t testing.TB, tmpDir string) *Ingester {
+	ingesterConfig := defaultIngesterTestConfig()
+	limits, err := overrides.NewOverrides(defaultLimitsTestConfig())
+	require.NoError(t, err, "unexpected error creating overrides")
+
+	s, err := storage.NewStore(storage.Config{
+		TracePoint: deepdb.Config{
+			Backend: "local",
+			Local: &local.Config{
+				Path: tmpDir,
+			},
+			Block: &common.BlockConfig{
+				BloomFP:             0.01,
+				BloomShardSizeBytes: 100_000,
+				Version:             encoding.DefaultEncoding().Version(),
+				Encoding:            backend.EncLZ4_1M,
+			},
+			WAL: &wal.Config{
+				Filepath: tmpDir,
+			},
+		},
+	}, log.NewNopLogger())
+	require.NoError(t, err, "unexpected error store")
+
+	ingester, err := New(ingesterConfig, s, limits, prometheus.NewPedanticRegistry())
+	require.NoError(t, err, "unexpected error creating ingester")
+	ingester.replayJitter = false
+
+	err = ingester.starting(context.Background())
+	require.NoError(t, err, "unexpected error starting ingester")
+
+	return ingester
+}
+
 //
 //func defaultIngester(t testing.TB, tmpDir string) (*Ingester, []*tempopb.Trace, [][]byte) {
 //	return defaultIngesterWithPush(t, tmpDir, pushBatchV2)
 //}
-//
-//func defaultIngesterWithPush(t testing.TB, tmpDir string, push func(testing.TB, *Ingester, *v1.ResourceSpans, []byte)) (*Ingester, []*tempopb.Trace, [][]byte) {
-//	ingester := defaultIngesterModule(t, tmpDir)
-//
-//	// make some fake traceIDs/requests
-//	traces := make([]*tempopb.Trace, 0)
-//
-//	traceIDs := make([][]byte, 0)
-//	for i := 0; i < 10; i++ {
-//		id := make([]byte, 16)
-//		_, err := rand.Read(id)
-//		require.NoError(t, err)
-//
-//		testTrace := test.MakeTrace(10, id)
-//		trace.SortTrace(testTrace)
-//
-//		traces = append(traces, testTrace)
-//		traceIDs = append(traceIDs, id)
-//	}
-//
-//	for i, trace := range traces {
-//		for _, batch := range trace.Batches {
-//			push(t, ingester, batch, traceIDs[i])
-//		}
-//	}
-//
-//	return ingester, traces, traceIDs
-//}
-//
-//func defaultIngesterTestConfig() Config {
-//	cfg := Config{}
-//
-//	flagext.DefaultValues(&cfg.LifecyclerConfig)
-//	mockStore, _ := consul.NewInMemoryClient(
-//		ring.GetCodec(),
-//		log.NewNopLogger(),
-//		nil,
-//	)
-//
-//	cfg.FlushCheckPeriod = 99999 * time.Hour
-//	cfg.MaxTraceIdle = 99999 * time.Hour
-//	cfg.ConcurrentFlushes = 1
-//	cfg.LifecyclerConfig.RingConfig.KVStore.Mock = mockStore
-//	cfg.LifecyclerConfig.NumTokens = 1
-//	cfg.LifecyclerConfig.ListenPort = 0
-//	cfg.LifecyclerConfig.Addr = "localhost"
-//	cfg.LifecyclerConfig.ID = "localhost"
-//	cfg.LifecyclerConfig.FinalSleep = 0
-//
-//	return cfg
-//}
-//
-//func defaultLimitsTestConfig() overrides.Limits {
-//	limits := overrides.Limits{}
-//	flagext.DefaultValues(&limits)
-//	return limits
-//}
-//
-//func pushBatchV2(t testing.TB, i *Ingester, batch *v1.ResourceSpans, id []byte) {
-//	ctx := user.InjectOrgID(context.Background(), "test")
-//	batchDecoder := model.MustNewSegmentDecoder(model_v2.Encoding)
-//
-//	pbTrace := &tempopb.Trace{
-//		Batches: []*v1.ResourceSpans{batch},
-//	}
-//
-//	buffer, err := batchDecoder.PrepareForWrite(pbTrace, 0, 0)
-//	require.NoError(t, err)
-//
-//	_, err = i.PushBytesV2(ctx, &tempopb.PushBytesRequest{
-//		Traces: []tempopb.PreallocBytes{
-//			{
-//				Slice: buffer,
-//			},
-//		},
-//		Ids: []tempopb.PreallocBytes{
-//			{
-//				Slice: id,
-//			},
-//		},
-//	})
-//	require.NoError(t, err)
-//}
-//
-//func pushBatchV1(t testing.TB, i *Ingester, batch *v1.ResourceSpans, id []byte) {
-//	ctx := user.InjectOrgID(context.Background(), "test")
-//
-//	batchDecoder := model.MustNewSegmentDecoder(model_v1.Encoding)
-//
-//	pbTrace := &tempopb.Trace{
-//		Batches: []*v1.ResourceSpans{batch},
-//	}
-//
-//	buffer, err := batchDecoder.PrepareForWrite(pbTrace, 0, 0)
-//	require.NoError(t, err)
-//
-//	_, err = i.PushBytes(ctx, &tempopb.PushBytesRequest{
-//		Traces: []tempopb.PreallocBytes{
-//			{
-//				Slice: buffer,
-//			},
-//		},
-//		Ids: []tempopb.PreallocBytes{
-//			{
-//				Slice: id,
-//			},
-//		},
-//	})
-//	require.NoError(t, err)
-//}
+
+func defaultIngestWithPush(t testing.TB, tmpDir string, push func(testing.TB, *Ingester, *tp.Snapshot, []byte)) (*Ingester, []*tp.Snapshot, [][]byte) {
+	ingester := defaultIngesterModule(t, tmpDir)
+
+	// make some fake traceIDs/requests
+	snapshots := make([]*tp.Snapshot, 0)
+
+	ids := make([][]byte, 0)
+	for i := 0; i < 10; i++ {
+		testSnapshot := test.GenerateSnapshot(i, nil)
+
+		snapshots = append(snapshots, testSnapshot)
+		ids = append(ids, testSnapshot.ID)
+	}
+
+	for i, snapshot := range snapshots {
+		push(t, ingester, snapshot, ids[i])
+	}
+
+	return ingester, snapshots, ids
+}
+
+func defaultIngesterTestConfig() Config {
+	cfg := Config{}
+
+	flagext.DefaultValues(&cfg.LifecyclerConfig)
+	mockStore, _ := consul.NewInMemoryClient(
+		ring.GetCodec(),
+		log.NewNopLogger(),
+		nil,
+	)
+
+	cfg.FlushCheckPeriod = 99999 * time.Hour
+	cfg.MaxSnapshotIdle = 99999 * time.Hour
+	cfg.ConcurrentFlushes = 1
+	cfg.LifecyclerConfig.RingConfig.KVStore.Mock = mockStore
+	cfg.LifecyclerConfig.NumTokens = 1
+	cfg.LifecyclerConfig.ListenPort = 0
+	cfg.LifecyclerConfig.Addr = "localhost"
+	cfg.LifecyclerConfig.ID = "localhost"
+	cfg.LifecyclerConfig.FinalSleep = 0
+
+	return cfg
+}
+
+func defaultLimitsTestConfig() overrides.Limits {
+	limits := overrides.Limits{}
+	flagext.DefaultValues(&limits)
+	return limits
+}
+
+func pushBatchV1(t testing.TB, i *Ingester, snapshot *tp.Snapshot, _ []byte) {
+	ctx := user.InjectOrgID(context.Background(), "test")
+
+	batchDecoder := model.MustNewSegmentDecoder(v1.Encoding)
+
+	buffer, err := batchDecoder.PrepareForWrite(snapshot, uint32(snapshot.TsNanos))
+	require.NoError(t, err)
+
+	_, err = i.PushBytes(ctx, &deeppb.PushBytesRequest{
+		Snapshot: buffer,
+		ID:       snapshot.ID,
+	})
+	require.NoError(t, err)
+}

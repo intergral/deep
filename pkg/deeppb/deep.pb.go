@@ -411,12 +411,12 @@ type SearchMetrics struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	InspectedTraces uint32 `protobuf:"varint,1,opt,name=inspectedTraces,proto3" json:"inspectedTraces,omitempty"`
-	InspectedBytes  uint64 `protobuf:"varint,2,opt,name=inspectedBytes,proto3" json:"inspectedBytes,omitempty"`
-	InspectedBlocks uint32 `protobuf:"varint,3,opt,name=inspectedBlocks,proto3" json:"inspectedBlocks,omitempty"`
-	SkippedBlocks   uint32 `protobuf:"varint,4,opt,name=skippedBlocks,proto3" json:"skippedBlocks,omitempty"`
-	SkippedTraces   uint32 `protobuf:"varint,5,opt,name=skippedTraces,proto3" json:"skippedTraces,omitempty"`
-	TotalBlockBytes uint64 `protobuf:"varint,6,opt,name=totalBlockBytes,proto3" json:"totalBlockBytes,omitempty"`
+	InspectedSnapshots uint32 `protobuf:"varint,1,opt,name=inspectedTraces,proto3" json:"inspectedTraces,omitempty"`
+	InspectedBytes     uint64 `protobuf:"varint,2,opt,name=inspectedBytes,proto3" json:"inspectedBytes,omitempty"`
+	InspectedBlocks    uint32 `protobuf:"varint,3,opt,name=inspectedBlocks,proto3" json:"inspectedBlocks,omitempty"`
+	SkippedBlocks      uint32 `protobuf:"varint,4,opt,name=skippedBlocks,proto3" json:"skippedBlocks,omitempty"`
+	SkippedTraces      uint32 `protobuf:"varint,5,opt,name=skippedTraces,proto3" json:"skippedTraces,omitempty"`
+	TotalBlockBytes    uint64 `protobuf:"varint,6,opt,name=totalBlockBytes,proto3" json:"totalBlockBytes,omitempty"`
 }
 
 func (x *SearchMetrics) Reset() {
@@ -453,7 +453,7 @@ func (*SearchMetrics) Descriptor() ([]byte, []int) {
 
 func (x *SearchMetrics) GetInspectedTraces() uint32 {
 	if x != nil {
-		return x.InspectedTraces
+		return x.InspectedSnapshots
 	}
 	return 0
 }

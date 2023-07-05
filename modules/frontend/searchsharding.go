@@ -264,7 +264,7 @@ func (s searchSharder) RoundTrip(r *http.Request) (*http.Response, error) {
 		"inspectedBlocks", overallResponse.resultsMetrics.InspectedBlocks,
 		"skippedBlocks", overallResponse.resultsMetrics.SkippedBlocks,
 		"inspectedBytes", overallResponse.resultsMetrics.InspectedBytes,
-		"inspectedTraces", overallResponse.resultsMetrics.InspectedTraces,
+		"inspectedTraces", overallResponse.resultsMetrics.InspectedSnapshots,
 		"skippedTraces", overallResponse.resultsMetrics.SkippedTraces,
 		"totalBlockBytes", overallResponse.resultsMetrics.TotalBlockBytes)
 
@@ -272,7 +272,7 @@ func (s searchSharder) RoundTrip(r *http.Request) (*http.Response, error) {
 	span.SetTag("inspectedBlocks", overallResponse.resultsMetrics.InspectedBlocks)
 	span.SetTag("skippedBlocks", overallResponse.resultsMetrics.SkippedBlocks)
 	span.SetTag("inspectedBytes", overallResponse.resultsMetrics.InspectedBytes)
-	span.SetTag("inspectedTraces", overallResponse.resultsMetrics.InspectedTraces)
+	span.SetTag("inspectedTraces", overallResponse.resultsMetrics.InspectedSnapshots)
 	span.SetTag("skippedTraces", overallResponse.resultsMetrics.SkippedTraces)
 	span.SetTag("totalBlockBytes", overallResponse.resultsMetrics.TotalBlockBytes)
 

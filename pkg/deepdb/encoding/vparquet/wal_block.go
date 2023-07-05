@@ -326,7 +326,7 @@ func (b *walBlock) Append(id common.ID, buff []byte, start uint32) error {
 	b.ids.Set(id, int64(b.ids.Len())) // Next row number
 
 	// This is actually the protobuf size but close enough
-	// for this purpose and only deeprary until next flush.
+	// for this purpose and only temporary until next flush.
 	b.unflushedSize += int64(len(buff))
 
 	return nil
@@ -362,6 +362,7 @@ func (b *walBlock) openWriter() (err error) {
 	return nil
 }
 
+// Flush will write this block to disk, updating any metadata
 func (b *walBlock) Flush() (err error) {
 
 	if b.ids.Len() == 0 {
@@ -445,9 +446,13 @@ func (b *walBlock) Clear() error {
 	return errs.Err()
 }
 
-func (b *walBlock) FindSnapshotByID(ctx context.Context, id common.ID, _ common.SearchOptions) (*deep_tp.Snapshot, error) {
+// FindSnapshotByID looks in this wal block for the snapshot with the id. We scan each of the flushed live snapshot
+// sets (which become the numbered block files).
+func (b *walBlock) FindSnapshotByID(_ context.Context, id common.ID, _ common.SearchOptions) (*deep_tp.Snapshot, error) {
 	for _, page := range b.flushed {
+		// page has a list of ids it should contain, if the id is in that list try to load snapshot
 		if rowNumber, ok := page.ids.Get(id); ok {
+			// load snapshot data from this page
 			trp, err := b.findInPage(page, rowNumber)
 			if trp != nil || err != nil {
 				return trp, err
@@ -458,6 +463,7 @@ func (b *walBlock) FindSnapshotByID(ctx context.Context, id common.ID, _ common.
 	return nil, nil
 }
 
+// findInPage will look for the snapshot in the walBlockFlush
 func (b *walBlock) findInPage(page *walBlockFlush, rowNumber int64) (*deep_tp.Snapshot, error) {
 	file, err := page.file()
 	if err != nil {
@@ -468,7 +474,9 @@ func (b *walBlock) findInPage(page *walBlockFlush, rowNumber int64) (*deep_tp.Sn
 	pf := file.parquetFile
 
 	r := parquet.NewReader(pf)
-	defer r.Close()
+	defer func(r *parquet.Reader) {
+		_ = r.Close()
+	}(r)
 
 	err = r.SeekToRow(rowNumber)
 	if err != nil {
@@ -486,7 +494,7 @@ func (b *walBlock) findInPage(page *walBlockFlush, rowNumber int64) (*deep_tp.Sn
 	return trp, nil
 }
 
-func (b *walBlock) Search(ctx context.Context, req *deeppb.SearchRequest, opts common.SearchOptions) (*deeppb.SearchResponse, error) {
+func (b *walBlock) Search(ctx context.Context, req *deeppb.SearchRequest, _ common.SearchOptions) (*deeppb.SearchResponse, error) {
 	results := &deeppb.SearchResponse{
 		Metrics: &deeppb.SearchMetrics{
 			InspectedBlocks: 1,
@@ -509,7 +517,7 @@ func (b *walBlock) Search(ctx context.Context, req *deeppb.SearchRequest, opts c
 
 		results.Snapshots = append(results.Snapshots, r.Snapshots...)
 		results.Metrics.InspectedBytes += uint64(pf.Size())
-		results.Metrics.InspectedTraces += uint32(pf.NumRows())
+		results.Metrics.InspectedSnapshots += uint32(pf.NumRows())
 		if len(results.Snapshots) >= int(req.Limit) {
 			break
 		}
@@ -518,7 +526,7 @@ func (b *walBlock) Search(ctx context.Context, req *deeppb.SearchRequest, opts c
 	return results, nil
 }
 
-func (b *walBlock) SearchTags(ctx context.Context, cb common.TagCallback, opts common.SearchOptions) error {
+func (b *walBlock) SearchTags(ctx context.Context, cb common.TagCallback, _ common.SearchOptions) error {
 	for i, page := range b.readFlushes() {
 		file, err := page.file()
 		if err != nil {
@@ -552,7 +560,7 @@ func (b *walBlock) SearchTagValues(ctx context.Context, tag string, cb common.Ta
 	return b.SearchTagValuesV2(ctx, att, cb2, opts)
 }
 
-func (b *walBlock) SearchTagValuesV2(ctx context.Context, tag deepql.Attribute, cb common.TagCallbackV2, opts common.SearchOptions) error {
+func (b *walBlock) SearchTagValuesV2(ctx context.Context, tag deepql.Attribute, cb common.TagCallbackV2, _ common.SearchOptions) error {
 	for i, page := range b.readFlushes() {
 		file, err := page.file()
 		if err != nil {
@@ -571,7 +579,7 @@ func (b *walBlock) SearchTagValuesV2(ctx context.Context, tag deepql.Attribute, 
 	return nil
 }
 
-func (b *walBlock) Fetch(ctx context.Context, req deepql.FetchSnapshotRequest, opts common.SearchOptions) (deepql.FetchSnapshotResponse, error) {
+func (b *walBlock) Fetch(context.Context, deepql.FetchSnapshotRequest, common.SearchOptions) (deepql.FetchSnapshotResponse, error) {
 	// todo: this same method is called in backendBlock.Fetch. is there anyway to share this?
 	//err := checkConditions(req.Conditions)
 	//if err != nil {
@@ -659,7 +667,7 @@ func newRowIterator(r *parquet.Reader, pageFile *pageFile, rowNumbers []common.I
 	}
 }
 
-func (i *rowIterator) peekNextID(ctx context.Context) (common.ID, error) { //nolint:unused //this is being marked as unused, but it's required to satisfy the bookmarkIterator interface
+func (i *rowIterator) peekNextID(context.Context) (common.ID, error) { //nolint:unused //this is being marked as unused, but it's required to satisfy the bookmarkIterator interface
 	if len(i.rowNumbers) == 0 {
 		return nil, nil
 	}
@@ -667,7 +675,7 @@ func (i *rowIterator) peekNextID(ctx context.Context) (common.ID, error) { //nol
 	return i.rowNumbers[0].ID, nil
 }
 
-func (i *rowIterator) Next(ctx context.Context) (common.ID, parquet.Row, error) {
+func (i *rowIterator) Next(context.Context) (common.ID, parquet.Row, error) {
 	if len(i.rowNumbers) == 0 {
 		return nil, nil, nil
 	}
@@ -699,7 +707,7 @@ func (i *rowIterator) Next(ctx context.Context) (common.ID, parquet.Row, error) 
 }
 
 func (i *rowIterator) Close() {
-	i.reader.Close()
+	_ = i.reader.Close()
 	i.pageFile.Close()
 }
 
