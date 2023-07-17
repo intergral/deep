@@ -39,7 +39,7 @@ var (
 	metricOverridesLimitsDesc = prometheus.NewDesc(
 		"deep_limits_overrides",
 		"Resource limit overrides applied to tenants",
-		[]string{"limit_name", "user"},
+		[]string{"limit_name", "tenant"},
 		nil,
 	)
 )
@@ -49,9 +49,9 @@ type perTenantOverrides struct {
 	TenantLimits map[string]*Limits `yaml:"overrides"`
 }
 
-// forUser returns limits for a given tenant, or nil if there are no tenant-specific limits.
-func (o *perTenantOverrides) forUser(userID string) *Limits {
-	l, ok := o.TenantLimits[userID]
+// forTenant returns limits for a given tenant, or nil if there are no tenant-specific limits.
+func (o *perTenantOverrides) forTenant(tenantID string) *Limits {
+	l, ok := o.TenantLimits[tenantID]
 	if !ok || l == nil {
 		return nil
 	}
@@ -249,133 +249,133 @@ func (o *Overrides) TenantIDs() []string {
 func (o *Overrides) IngestionRateStrategy() string {
 	// The ingestion rate strategy can't be overridden on a per-tenant basis,
 	// so here we just pick the value for a not-existing user ID (empty string).
-	return o.getOverridesForUser("").IngestionRateStrategy
+	return o.getOverridesForTenant("").IngestionRateStrategy
 }
 
-// MaxLocalSnapshotsPerUser returns the maximum number of traces a user is allowed to store
+// MaxLocalSnapshotsPerTenant returns the maximum number of traces a user is allowed to store
 // in a single ingester.
-func (o *Overrides) MaxLocalSnapshotsPerUser(userID string) int {
-	return o.getOverridesForUser(userID).MaxLocalTracesPerUser
+func (o *Overrides) MaxLocalSnapshotsPerTenant(tenantID string) int {
+	return o.getOverridesForTenant(tenantID).MaxLocalSnapshotsPerTenant
 }
 
-// MaxGlobalSnapshotsPerUser returns the maximum number of traces a user is allowed to store
+// MaxGlobalSnapshotsPerTenant returns the maximum number of traces a user is allowed to store
 // across the cluster.
-func (o *Overrides) MaxGlobalSnapshotsPerUser(userID string) int {
-	return o.getOverridesForUser(userID).MaxGlobalTracesPerUser
+func (o *Overrides) MaxGlobalSnapshotsPerTenant(tenantID string) int {
+	return o.getOverridesForTenant(tenantID).MaxGlobalSnapshotsPerTenant
 }
 
 // MaxBytesPerSnapshot returns the maximum size of a single trace in bytes allowed for a user.
-func (o *Overrides) MaxBytesPerSnapshot(userID string) int {
-	return o.getOverridesForUser(userID).MaxBytesPerSnapshot
+func (o *Overrides) MaxBytesPerSnapshot(tenantID string) int {
+	return o.getOverridesForTenant(tenantID).MaxBytesPerSnapshot
 }
 
 // Forwarders returns the list of forwarder IDs for a user.
-func (o *Overrides) Forwarders(userID string) []string {
-	return o.getOverridesForUser(userID).Forwarders
+func (o *Overrides) Forwarders(tenantID string) []string {
+	return o.getOverridesForTenant(tenantID).Forwarders
 }
 
 // MaxBytesPerTagValuesQuery returns the maximum size of a response to a tag-values query allowed for a user.
-func (o *Overrides) MaxBytesPerTagValuesQuery(userID string) int {
-	return o.getOverridesForUser(userID).MaxBytesPerTagValuesQuery
+func (o *Overrides) MaxBytesPerTagValuesQuery(tenantID string) int {
+	return o.getOverridesForTenant(tenantID).MaxBytesPerTagValuesQuery
 }
 
 // IngestionRateLimitBytes is the number of spans per second allowed for this tenant.
-func (o *Overrides) IngestionRateLimitBytes(userID string) float64 {
-	return float64(o.getOverridesForUser(userID).IngestionRateLimitBytes)
+func (o *Overrides) IngestionRateLimitBytes(tenantID string) float64 {
+	return float64(o.getOverridesForTenant(tenantID).IngestionRateLimitBytes)
 }
 
 // IngestionBurstSizeBytes is the burst size in spans allowed for this tenant.
-func (o *Overrides) IngestionBurstSizeBytes(userID string) int {
-	return o.getOverridesForUser(userID).IngestionBurstSizeBytes
+func (o *Overrides) IngestionBurstSizeBytes(tenantID string) int {
+	return o.getOverridesForTenant(tenantID).IngestionBurstSizeBytes
 }
 
 // MetricsGeneratorRingSize is the desired size of the metrics-generator ring for this tenant.
 // Using shuffle sharding, a tenant can use a smaller ring than the entire ring.
-func (o *Overrides) MetricsGeneratorRingSize(userID string) int {
-	return o.getOverridesForUser(userID).MetricsGeneratorRingSize
+func (o *Overrides) MetricsGeneratorRingSize(tenantID string) int {
+	return o.getOverridesForTenant(tenantID).MetricsGeneratorRingSize
 }
 
 // MetricsGeneratorProcessors returns the metrics-generator processors enabled for this tenant.
-func (o *Overrides) MetricsGeneratorProcessors(userID string) map[string]struct{} {
-	return o.getOverridesForUser(userID).MetricsGeneratorProcessors.GetMap()
+func (o *Overrides) MetricsGeneratorProcessors(tenantID string) map[string]struct{} {
+	return o.getOverridesForTenant(tenantID).MetricsGeneratorProcessors.GetMap()
 }
 
 // MetricsGeneratorMaxActiveSeries is the maximum amount of active series in the metrics-generator
 // registry for this tenant. Note this is a local limit enforced in every instance separately.
-func (o *Overrides) MetricsGeneratorMaxActiveSeries(userID string) uint32 {
-	return o.getOverridesForUser(userID).MetricsGeneratorMaxActiveSeries
+func (o *Overrides) MetricsGeneratorMaxActiveSeries(tenantID string) uint32 {
+	return o.getOverridesForTenant(tenantID).MetricsGeneratorMaxActiveSeries
 }
 
 // MetricsGeneratorCollectionInterval is the collection interval of the metrics-generator registry
 // for this tenant.
-func (o *Overrides) MetricsGeneratorCollectionInterval(userID string) time.Duration {
-	return o.getOverridesForUser(userID).MetricsGeneratorCollectionInterval
+func (o *Overrides) MetricsGeneratorCollectionInterval(tenantID string) time.Duration {
+	return o.getOverridesForTenant(tenantID).MetricsGeneratorCollectionInterval
 }
 
 // MetricsGeneratorDisableCollection controls whether metrics are remote written for this tenant.
-func (o *Overrides) MetricsGeneratorDisableCollection(userID string) bool {
-	return o.getOverridesForUser(userID).MetricsGeneratorDisableCollection
+func (o *Overrides) MetricsGeneratorDisableCollection(tenantID string) bool {
+	return o.getOverridesForTenant(tenantID).MetricsGeneratorDisableCollection
 }
 
 // MetricsGeneratorForwarderQueueSize is the size of the buffer of requests to send to the metrics-generator
 // from the distributor for this tenant.
-func (o *Overrides) MetricsGeneratorForwarderQueueSize(userID string) int {
-	return o.getOverridesForUser(userID).MetricsGeneratorForwarderQueueSize
+func (o *Overrides) MetricsGeneratorForwarderQueueSize(tenantID string) int {
+	return o.getOverridesForTenant(tenantID).MetricsGeneratorForwarderQueueSize
 }
 
 // MetricsGeneratorForwarderWorkers is the number of workers to send metrics to the metrics-generator
-func (o *Overrides) MetricsGeneratorForwarderWorkers(userID string) int {
-	return o.getOverridesForUser(userID).MetricsGeneratorForwarderWorkers
+func (o *Overrides) MetricsGeneratorForwarderWorkers(tenantID string) int {
+	return o.getOverridesForTenant(tenantID).MetricsGeneratorForwarderWorkers
 }
 
 // MetricsGeneratorProcessorServiceGraphsHistogramBuckets controls the histogram buckets to be used
 // by the service graphs processor.
-func (o *Overrides) MetricsGeneratorProcessorServiceGraphsHistogramBuckets(userID string) []float64 {
-	return o.getOverridesForUser(userID).MetricsGeneratorProcessorServiceGraphsHistogramBuckets
+func (o *Overrides) MetricsGeneratorProcessorServiceGraphsHistogramBuckets(tenantID string) []float64 {
+	return o.getOverridesForTenant(tenantID).MetricsGeneratorProcessorServiceGraphsHistogramBuckets
 }
 
 // MetricsGeneratorProcessorServiceGraphsDimensions controls the dimensions that are added to the
 // service graphs processor.
-func (o *Overrides) MetricsGeneratorProcessorServiceGraphsDimensions(userID string) []string {
-	return o.getOverridesForUser(userID).MetricsGeneratorProcessorServiceGraphsDimensions
+func (o *Overrides) MetricsGeneratorProcessorServiceGraphsDimensions(tenantID string) []string {
+	return o.getOverridesForTenant(tenantID).MetricsGeneratorProcessorServiceGraphsDimensions
 }
 
 // MetricsGeneratorProcessorSpanMetricsHistogramBuckets controls the histogram buckets to be used
 // by the span metrics processor.
-func (o *Overrides) MetricsGeneratorProcessorSpanMetricsHistogramBuckets(userID string) []float64 {
-	return o.getOverridesForUser(userID).MetricsGeneratorProcessorSpanMetricsHistogramBuckets
+func (o *Overrides) MetricsGeneratorProcessorSpanMetricsHistogramBuckets(tenantID string) []float64 {
+	return o.getOverridesForTenant(tenantID).MetricsGeneratorProcessorSpanMetricsHistogramBuckets
 }
 
 // MetricsGeneratorProcessorSpanMetricsDimensions controls the dimensions that are added to the
 // span metrics processor.
-func (o *Overrides) MetricsGeneratorProcessorSpanMetricsDimensions(userID string) []string {
-	return o.getOverridesForUser(userID).MetricsGeneratorProcessorSpanMetricsDimensions
+func (o *Overrides) MetricsGeneratorProcessorSpanMetricsDimensions(tenantID string) []string {
+	return o.getOverridesForTenant(tenantID).MetricsGeneratorProcessorSpanMetricsDimensions
 }
 
 // MetricsGeneratorProcessorSpanMetricsIntrinsicDimensions controls the intrinsic dimensions such as service, span_kind, or
 // span_name that are activated or deactivated on the span metrics processor.
-func (o *Overrides) MetricsGeneratorProcessorSpanMetricsIntrinsicDimensions(userID string) map[string]bool {
-	return o.getOverridesForUser(userID).MetricsGeneratorProcessorSpanMetricsIntrinsicDimensions
+func (o *Overrides) MetricsGeneratorProcessorSpanMetricsIntrinsicDimensions(tenantID string) map[string]bool {
+	return o.getOverridesForTenant(tenantID).MetricsGeneratorProcessorSpanMetricsIntrinsicDimensions
 }
 
 // BlockRetention is the duration of the block retention for this tenant.
-func (o *Overrides) BlockRetention(userID string) time.Duration {
-	return time.Duration(o.getOverridesForUser(userID).BlockRetention)
+func (o *Overrides) BlockRetention(tenantID string) time.Duration {
+	return time.Duration(o.getOverridesForTenant(tenantID).BlockRetention)
 }
 
 // MaxSearchDuration is the duration of the max search duration for this tenant.
-func (o *Overrides) MaxSearchDuration(userID string) time.Duration {
-	return time.Duration(o.getOverridesForUser(userID).MaxSearchDuration)
+func (o *Overrides) MaxSearchDuration(tenantID string) time.Duration {
+	return time.Duration(o.getOverridesForTenant(tenantID).MaxSearchDuration)
 }
 
-func (o *Overrides) getOverridesForUser(userID string) *Limits {
+func (o *Overrides) getOverridesForTenant(tenantID string) *Limits {
 	if tenantOverrides := o.tenantOverrides(); tenantOverrides != nil {
-		l := tenantOverrides.forUser(userID)
+		l := tenantOverrides.forTenant(tenantID)
 		if l != nil {
 			return l
 		}
 
-		l = tenantOverrides.forUser(wildcardTenant)
+		l = tenantOverrides.forTenant(wildcardTenant)
 		if l != nil {
 			return l
 		}
@@ -395,9 +395,9 @@ func (o *Overrides) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	for tenant, limits := range overrides.TenantLimits {
-		ch <- prometheus.MustNewConstMetric(metricOverridesLimitsDesc, prometheus.GaugeValue, float64(limits.MaxLocalTracesPerUser), MetricMaxLocalTracesPerUser, tenant)
-		ch <- prometheus.MustNewConstMetric(metricOverridesLimitsDesc, prometheus.GaugeValue, float64(limits.MaxGlobalTracesPerUser), MetricMaxGlobalTracesPerUser, tenant)
-		ch <- prometheus.MustNewConstMetric(metricOverridesLimitsDesc, prometheus.GaugeValue, float64(limits.MaxBytesPerSnapshot), MetricMaxBytesPerTrace, tenant)
+		ch <- prometheus.MustNewConstMetric(metricOverridesLimitsDesc, prometheus.GaugeValue, float64(limits.MaxLocalSnapshotsPerTenant), MetricMaxLocalSnapshotsPerTenant, tenant)
+		ch <- prometheus.MustNewConstMetric(metricOverridesLimitsDesc, prometheus.GaugeValue, float64(limits.MaxGlobalSnapshotsPerTenant), MetricMaxGlobalSnapshotsPerTenant, tenant)
+		ch <- prometheus.MustNewConstMetric(metricOverridesLimitsDesc, prometheus.GaugeValue, float64(limits.MaxBytesPerSnapshot), MetricMaxBytesPerSnapshot, tenant)
 		ch <- prometheus.MustNewConstMetric(metricOverridesLimitsDesc, prometheus.GaugeValue, float64(limits.IngestionRateLimitBytes), MetricIngestionRateLimitBytes, tenant)
 		ch <- prometheus.MustNewConstMetric(metricOverridesLimitsDesc, prometheus.GaugeValue, float64(limits.IngestionBurstSizeBytes), MetricIngestionBurstSizeBytes, tenant)
 		ch <- prometheus.MustNewConstMetric(metricOverridesLimitsDesc, prometheus.GaugeValue, float64(limits.BlockRetention), MetricBlockRetention, tenant)

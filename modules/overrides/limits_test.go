@@ -56,8 +56,8 @@ ingestion_rate_strategy: global
 ingestion_rate_limit_bytes: 100_000
 ingestion_burst_size_bytes: 100_000
 
-max_traces_per_user: 1000
-max_global_traces_per_user: 1000
+max_snapshots_per_tenant: 1000
+max_global_snapshots_per_tenant: 1000
 max_bytes_per_snapshot: 100_000
 
 block_retention: 24h
@@ -76,8 +76,8 @@ max_search_duration: 5m
 	"ingestion_rate_limit_bytes": 100000,
 	"ingestion_burst_size_bytes": 100000,
 
-	"max_traces_per_user": 1000,
-	"max_global_traces_per_user": 1000,
+	"max_snapshots_per_tenant": 1000,
+	"max_global_snapshots_per_tenant": 1000,
 	"max_bytes_per_snapshot": 100000,
 
 	"block_retention": "24h",

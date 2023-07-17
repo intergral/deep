@@ -176,7 +176,7 @@ func (i *tenantBlockManager) PushBytes(ctx context.Context, id []byte, snapshotB
 	}
 
 	// check for max snapshots before grabbing the lock to better load shed
-	err := i.limiter.AssertMaxSnapshotsPerUser(i.tenantID, int(i.snapshotCount.Load()))
+	err := i.limiter.AssertMaxSnapshotsPerTenant(i.tenantID, int(i.snapshotCount.Load()))
 	if err != nil {
 		return status.Errorf(codes.FailedPrecondition, "%s max live snapshots exceeded for tenant %s: %v", overrides.ErrorPrefixLiveSnapshotsExceeded, i.tenantID, err)
 	}

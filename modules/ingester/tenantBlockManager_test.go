@@ -231,7 +231,7 @@ package ingester
 //func TestInstanceLimits(t *testing.T) {
 //	limits, err := overrides.NewOverrides(overrides.Limits{
 //		MaxBytesPerSnapshot:   1000,
-//		MaxLocalSnapshotsPerUser: 4,
+//		MaxLocalSnapshotsPerTenant: 4,
 //	})
 //	require.NoError(t, err, "unexpected error creating limits")
 //	limiter := NewLimiter(limits, &ringCountMock{count: 1}, 1)
