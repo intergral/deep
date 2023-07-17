@@ -73,54 +73,64 @@ const (
 var (
 	metricDiscardedSnapshots = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
+		Subsystem: "distributor",
 		Name:      "discarded_snapshots_total",
 		Help:      "The total number of samples that were discarded.",
 	}, []string{discardReasonLabel, "tenant"})
 	metricSnapshotBytesIngested = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "distributor_snapshot_bytes_received_total",
+		Subsystem: "distributor",
+		Name:      "snapshot_bytes_received_total",
 		Help:      "The total number of snapshot proto bytes received per tenant",
 	}, []string{"tenant"})
 	metricPollBytesIngested = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "distributor_poll_bytes_received_total",
+		Subsystem: "distributor",
+		Name:      "poll_bytes_received_total",
 		Help:      "The total number of poll proto bytes received per tenant",
 	}, []string{"tenant"})
 	metricPollBytesResponded = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "distributor_poll_bytes_sent_total",
+		Subsystem: "distributor",
+		Name:      "poll_bytes_sent_total",
 		Help:      "The total number of poll proto bytes sent in response per tenant",
 	}, []string{"tenant"})
 
 	metricIngesterAppends = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "distributor_ingester_appends_total",
+		Subsystem: "distributor",
+		Name:      "ingester_appends_total",
 		Help:      "The total number of batch appends sent to ingesters.",
 	}, []string{"ingester"})
 	metricIngesterAppendFailures = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "distributor_ingester_append_failures_total",
+		Subsystem: "distributor",
+		Name:      "ingester_append_failures_total",
 		Help:      "The total number of failed batch appends sent to ingesters.",
 	}, []string{"ingester"})
 
 	metricGeneratorPushes = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "distributor_metrics_generator_pushes_total",
+		Subsystem: "distributor",
+		Name:      "metrics_generator_pushes_total",
 		Help:      "The total number of span pushes sent to metrics-generators.",
 	}, []string{"metrics_generator"})
 	metricGeneratorPushesFailures = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "distributor_metrics_generator_pushes_failures_total",
+		Subsystem: "distributor",
+		Name:      "metrics_generator_pushes_failures_total",
 		Help:      "The total number of failed span pushes sent to metrics-generators.",
 	}, []string{"metrics_generator"})
 	metricIngesterClients = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "deep",
-		Name:      "distributor_ingester_clients",
+		Subsystem: "distributor",
+		Name:      "ingester_clients",
 		Help:      "The current number of ingester clients.",
 	})
 	metricGeneratorClients = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "deep",
-		Name:      "distributor_metrics_generator_clients",
+		Subsystem: "distributor",
+		Name:      "metrics_generator_clients",
 		Help:      "The current number of metrics-generator clients.",
 	})
 )

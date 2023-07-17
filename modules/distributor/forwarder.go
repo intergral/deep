@@ -42,12 +42,14 @@ const (
 var (
 	metricForwarderPushes = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "distributor_forwarder_pushes_total",
+		Subsystem: "distributor",
+		Name:      "forwarder_pushes_total",
 		Help:      "Total number of successful requests queued up for a tenant to the generatorForwarder. This metric is now deprecated in favor of deep_distributor_queue_pushes_total.",
 	}, []string{"tenant"})
 	metricForwarderPushesFailures = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "distributor_forwarder_pushes_failures_total",
+		Subsystem: "distributor",
+		Name:      "forwarder_pushes_failures_total",
 		Help:      "Total number of failed pushes to the queue for a tenant to the generatorForwarder. This metric is now deprecated in favor of deep_distributor_queue_pushes_failures_total.",
 	}, []string{"tenant"})
 )
