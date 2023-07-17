@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/util"
 	"io"
 	"net/http"
 	"net/url"
@@ -121,7 +122,7 @@ func (s searchSharder) RoundTrip(r *http.Request) (*http.Response, error) {
 	searchReq.Limit = adjustLimit(searchReq.Limit, s.cfg.DefaultLimit, s.cfg.MaxLimit)
 
 	ctx := r.Context()
-	tenantID, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
 		return &http.Response{
 			StatusCode: http.StatusBadRequest,

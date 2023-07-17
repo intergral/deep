@@ -85,7 +85,7 @@ var (
 )
 
 type TracepointWriter interface {
-	WriteTracepointBlock(ctx context.Context, orgId string, reader *bytes.Reader, size int64) error
+	WriteTracepointBlock(ctx context.Context, tenantID string, reader *bytes.Reader, size int64) error
 }
 
 type Writer interface {
@@ -98,7 +98,7 @@ type Writer interface {
 type IterateObjectCallback func(id common.ID, obj []byte) bool
 
 type TracepointReader interface {
-	ReadTracepointBlock(ctx context.Context, orgId string) (io.ReadCloser, int64, error)
+	ReadTracepointBlock(ctx context.Context, tenantID string) (io.ReadCloser, int64, error)
 }
 
 type Reader interface {
@@ -228,8 +228,8 @@ func New(cfg *Config, logger gkLog.Logger) (Reader, Writer, TracepointReader, Tr
 	return rw, rw, rw, rw, rw, nil
 }
 
-func (rw *readerWriter) WriteTracepointBlock(ctx context.Context, orgId string, data *bytes.Reader, size int64) error {
-	return rw.tw.WriteTracepointBlock(ctx, orgId, data, size)
+func (rw *readerWriter) WriteTracepointBlock(ctx context.Context, tenantID string, data *bytes.Reader, size int64) error {
+	return rw.tw.WriteTracepointBlock(ctx, tenantID, data, size)
 }
 
 func (rw *readerWriter) WriteBlock(ctx context.Context, c WriteableBlock) error {
@@ -300,8 +300,8 @@ func (rw *readerWriter) BlockMetas(tenantID string) []*backend.BlockMeta {
 	return rw.blocklist.Metas(tenantID)
 }
 
-func (rw *readerWriter) ReadTracepointBlock(ctx context.Context, orgId string) (io.ReadCloser, int64, error) {
-	return rw.tr.ReadTracepointBlock(ctx, orgId)
+func (rw *readerWriter) ReadTracepointBlock(ctx context.Context, tenantID string) (io.ReadCloser, int64, error) {
+	return rw.tr.ReadTracepointBlock(ctx, tenantID)
 }
 
 func (rw *readerWriter) FindSnapshot(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) (*deep_tp.Snapshot, []error, error) {

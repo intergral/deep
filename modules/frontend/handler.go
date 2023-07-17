@@ -20,6 +20,7 @@ package frontend
 import (
 	"context"
 	"errors"
+	"github.com/intergral/deep/pkg/util"
 	"io"
 	"net/http"
 	"strconv"
@@ -33,7 +34,6 @@ import (
 	"github.com/weaveworks/common/httpgrpc"
 	"github.com/weaveworks/common/httpgrpc/server"
 	"github.com/weaveworks/common/tracing"
-	"github.com/weaveworks/common/user"
 )
 
 const (
@@ -74,18 +74,18 @@ func (f *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	start := time.Now()
-	orgID, _ := user.ExtractOrgID(ctx)
+	tenantID, _ := util.ExtractTenantID(ctx)
 	traceID, _ := tracing.ExtractTraceID(ctx)
 
 	var statusCode int
 	defer func(status int) {
-		f.queriesPerTenant.WithLabelValues(orgID, strconv.Itoa(status)).Inc()
+		f.queriesPerTenant.WithLabelValues(tenantID, strconv.Itoa(status)).Inc()
 	}(statusCode)
 
-	// add orgid to existing spans
+	// add tenantID to existing spans
 	span := opentracing.SpanFromContext(r.Context())
 	if span != nil {
-		span.SetTag("orgID", orgID)
+		span.SetTag("tenantID", tenantID)
 	}
 
 	resp, err := f.roundTripper.RoundTrip(r)
@@ -93,7 +93,7 @@ func (f *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		statusCode = http.StatusInternalServerError
 		err = writeError(w, err)
 		level.Info(f.logger).Log(
-			"tenant", orgID,
+			"tenant", tenantID,
 			"method", r.Method,
 			"traceID", traceID,
 			"url", r.URL.RequestURI(),
@@ -109,7 +109,7 @@ func (f *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		statusCode = http.StatusInternalServerError
 		err = writeError(w, errors.New(NilResponseError))
 		level.Info(f.logger).Log(
-			"tenant", orgID,
+			"tenant", tenantID,
 			"method", r.Method,
 			"traceID", traceID,
 			"url", r.URL.RequestURI(),
@@ -139,7 +139,7 @@ func (f *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	level.Info(f.logger).Log(
-		"tenant", orgID,
+		"tenant", tenantID,
 		"method", r.Method,
 		"traceID", traceID,
 		"url", r.URL.RequestURI(),

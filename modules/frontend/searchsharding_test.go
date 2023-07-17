@@ -579,7 +579,7 @@ package frontend
 //
 //			req := httptest.NewRequest("GET", "/?start=1000&end=1500", nil)
 //			ctx := req.Context()
-//			ctx = user.InjectOrgID(ctx, "blerg")
+//			ctx = util.InjectTenantID(ctx, "blerg")
 //			req = req.WithContext(ctx)
 //
 //			resp, err := testRT.RoundTrip(req)
@@ -630,7 +630,7 @@ package frontend
 //
 //	// start/end outside of max duration
 //	req = httptest.NewRequest("GET", "/?start=1000&end=1500", nil)
-//	req = req.WithContext(user.InjectOrgID(req.Context(), "blerg"))
+//	req = req.WithContext(util.InjectTenantID(req.Context(), "blerg"))
 //	resp, err = testRT.RoundTrip(req)
 //	testBadRequest(t, resp, err, "range specified by start and end exceeds 5m0s. received start=1000 end=1500")
 //
@@ -653,7 +653,7 @@ package frontend
 //	testRT = NewRoundTripper(next, sharder)
 //
 //	req = httptest.NewRequest("GET", "/?start=1000&end=1500", nil)
-//	req = req.WithContext(user.InjectOrgID(req.Context(), "blerg"))
+//	req = req.WithContext(util.InjectTenantID(req.Context(), "blerg"))
 //	resp, err = testRT.RoundTrip(req)
 //	testBadRequest(t, resp, err, "range specified by start and end exceeds 1m0s. received start=1000 end=1500")
 //}

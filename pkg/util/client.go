@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	orgIDHeader = "X-Scope-OrgID"
+	orgIDHeader = TenantIDHeaderName
 
 	QueryTraceEndpoint = "/api/traces"
 
@@ -44,21 +44,21 @@ const (
 
 // Client is client to the Tempo API.
 type Client struct {
-	BaseURL string
-	OrgID   string
-	client  *http.Client
+	BaseURL  string
+	TenantID string
+	client   *http.Client
 }
 
-func NewClient(baseURL, orgID string) *Client {
+func NewClient(baseURL, tenantID string) *Client {
 	return &Client{
-		BaseURL: baseURL,
-		OrgID:   orgID,
-		client:  http.DefaultClient,
+		BaseURL:  baseURL,
+		TenantID: tenantID,
+		client:   http.DefaultClient,
 	}
 }
 
-func NewClientWithCompression(baseURL, orgID string) *Client {
-	c := NewClient(baseURL, orgID)
+func NewClientWithCompression(baseURL, tenantID string) *Client {
+	c := NewClient(baseURL, tenantID)
 	c.WithTransport(gzhttp.Transport(http.DefaultTransport))
 	return c
 }
@@ -77,8 +77,8 @@ func (c *Client) getFor(url string, m proto.Message) (*http.Response, error) {
 		return nil, err
 	}
 
-	if len(c.OrgID) > 0 {
-		req.Header.Set(orgIDHeader, c.OrgID)
+	if len(c.TenantID) > 0 {
+		req.Header.Set(orgIDHeader, c.TenantID)
 	}
 
 	marshallingFormat := applicationJSON

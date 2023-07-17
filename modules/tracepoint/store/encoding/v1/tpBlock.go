@@ -25,7 +25,7 @@ import (
 
 type tpBlock struct {
 	tps       []*deep_tp.TracePointConfig
-	orgID     string
+	tenantID  string
 	lastFlush int64
 }
 
@@ -41,8 +41,8 @@ func (t *tpBlock) ForResource(resource []*cp.KeyValue) ([]*deep_tp.TracePointCon
 	return tps, nil
 }
 
-func (t *tpBlock) OrgId() string {
-	return t.orgID
+func (t *tpBlock) TenantID() string {
+	return t.tenantID
 }
 
 func (t *tpBlock) Tps() []*deep_tp.TracePointConfig {

@@ -202,7 +202,7 @@ package ingester
 //
 //	_, expectedTagValues := writeTracesForSearch(t, i, tagKey, tagValue, true)
 //
-//	userCtx := user.InjectOrgID(context.Background(), "fake")
+//	userCtx := util.InjectTenantID(context.Background(), "fake")
 //
 //	// Test after appending to WAL
 //	testSearchTagsAndValues(t, userCtx, i, tagKey, expectedTagValues)
@@ -255,7 +255,7 @@ package ingester
 //
 //	_, _ = writeTracesForSearch(t, i, tagKey, tagValue, true)
 //
-//	userCtx := user.InjectOrgID(context.Background(), "fake")
+//	userCtx := util.InjectTenantID(context.Background(), "fake")
 //	resp, err := i.SearchTagValues(userCtx, tagKey)
 //	require.NoError(t, err)
 //	require.Equal(t, 2, len(resp.TagValues)) // Only two values of the form "bar123" fit in the 10 byte limit above.
@@ -402,14 +402,14 @@ package ingester
 //
 //	go concurrent(func() {
 //		// SearchTags queries now require userID in ctx
-//		ctx := user.InjectOrgID(context.Background(), "test")
+//		ctx := util.InjectTenantID(context.Background(), "test")
 //		_, err := i.SearchTags(ctx)
 //		require.NoError(t, err, "error getting search tags")
 //	})
 //
 //	go concurrent(func() {
 //		// SearchTagValues queries now require userID in ctx
-//		ctx := user.InjectOrgID(context.Background(), "test")
+//		ctx := util.InjectTenantID(context.Background(), "test")
 //		_, err := i.SearchTagValues(ctx, tagKey)
 //		require.NoError(t, err, "error getting search tag values")
 //	})

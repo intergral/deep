@@ -25,7 +25,7 @@ import (
 
 type TPBlock interface {
 	ForResource(resource []*cp.KeyValue) ([]*deeptp.TracePointConfig, error)
-	OrgId() string
+	TenantID() string
 	Tps() []*deeptp.TracePointConfig
 	Flushed()
 	AddTracepoint(config *deeptp.TracePointConfig)
@@ -34,5 +34,5 @@ type TPBlock interface {
 
 type TPBackend interface {
 	Flush(ctx context.Context, block TPBlock) error
-	LoadBlock(ctx context.Context, orgId string) (TPBlock, error)
+	LoadBlock(ctx context.Context, tenantID string) (TPBlock, error)
 }

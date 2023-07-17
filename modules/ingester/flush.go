@@ -20,6 +20,7 @@ package ingester
 import (
 	"context"
 	"fmt"
+	"github.com/intergral/deep/pkg/util"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -29,6 +30,7 @@ import (
 	"github.com/go-kit/log/level"
 	"github.com/google/uuid"
 	"github.com/grafana/dskit/services"
+	"github.com/intergral/deep/pkg/util/log"
 	ot "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	otlog "github.com/opentracing/opentracing-go/log"
@@ -36,9 +38,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/uber/jaeger-client-go"
-	"github.com/weaveworks/common/user"
-
-	"github.com/intergral/deep/pkg/util/log"
 )
 
 var (
@@ -344,7 +343,7 @@ func (i *Ingester) handleFlush(ctx context.Context, tenantID string, blockID uui
 	}
 
 	if block := instance.GetBlockToBeFlushed(blockID); block != nil {
-		ctx := user.InjectOrgID(ctx, tenantID)
+		ctx := util.InjectTenantID(ctx, tenantID)
 		ctx, cancel := context.WithTimeout(ctx, i.cfg.FlushOpTimeout)
 		defer cancel()
 

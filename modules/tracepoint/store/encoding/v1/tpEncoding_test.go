@@ -48,7 +48,9 @@ func (rw mockTracepointReaderWriter) WriteTracepointBlock(ctx context.Context, o
 
 func TestFlush(t *testing.T) {
 	fakeTracesFile, err := os.CreateTemp("/tmp", "")
-	defer os.Remove(fakeTracesFile.Name())
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(fakeTracesFile.Name())
 	assert.NoError(t, err, "unexpected error creating temp file")
 
 	r, w, _, err := local.New(&local.Config{
@@ -66,7 +68,7 @@ func TestFlush(t *testing.T) {
 	}
 
 	block := tpBlock{
-		orgID: "test-id",
+		tenantID: "test-id",
 		tps: []*deeptp.TracePointConfig{
 			{
 				ID:         "iamatest",
@@ -83,7 +85,7 @@ func TestFlush(t *testing.T) {
 	}
 
 	blockOut, err := encoder.LoadBlock(context.Background(), "test-id")
-	assert.Equal(t, blockOut.OrgId(), "test-id")
+	assert.Equal(t, blockOut.TenantID(), "test-id")
 	assert.Equal(t, len(blockOut.Tps()), 1)
 
 	assert.Equal(t, blockOut.Tps()[0].ID, "iamatest")

@@ -44,7 +44,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	httpgrpc_server "github.com/weaveworks/common/httpgrpc/server"
-	"github.com/weaveworks/common/user"
 	"go.uber.org/multierr"
 	"golang.org/x/sync/semaphore"
 
@@ -208,9 +207,9 @@ func (q *Querier) FindSnapshotByID(ctx context.Context, req *deeppb.SnapshotByID
 		return nil, fmt.Errorf("invalid snapshot id")
 	}
 
-	userID, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Querier.FindSnapshotByID")
+		return nil, errors.Wrap(err, "error extracting tenant id in Querier.FindSnapshotByID")
 	}
 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "Querier.FindSnapshotByID")
@@ -222,7 +221,7 @@ func (q *Querier) FindSnapshotByID(ctx context.Context, req *deeppb.SnapshotByID
 		var replicationSet ring.ReplicationSet
 		var err error
 		if q.cfg.QueryRelevantIngesters {
-			traceKey := util.TokenFor(userID, req.ID)
+			traceKey := util.TokenFor(tenantID, req.ID)
 			replicationSet, err = q.ring.Get(traceKey, ring.Read, nil, nil, nil)
 		} else {
 			replicationSet, err = q.ring.GetReplicationSetForOperation(ring.Read)
@@ -267,7 +266,7 @@ func (q *Querier) FindSnapshotByID(ctx context.Context, req *deeppb.SnapshotByID
 		span.LogFields(ot_log.String("msg", "searching store"))
 		span.LogFields(ot_log.String("timeStart", fmt.Sprint(timeStart)))
 		span.LogFields(ot_log.String("timeEnd", fmt.Sprint(timeEnd)))
-		findResults, blockErrs, err := q.store.FindSnapshot(ctx, userID, req.ID, req.BlockStart, req.BlockEnd, timeStart, timeEnd)
+		findResults, blockErrs, err := q.store.FindSnapshot(ctx, tenantID, req.ID, req.BlockStart, req.BlockEnd, timeStart, timeEnd)
 		if err != nil {
 			retErr := errors.Wrap(err, "error querying store in Querier.FindTraceByID")
 			ot_log.Error(retErr)
@@ -338,9 +337,9 @@ func (q *Querier) forGivenIngesters(ctx context.Context, replicationSet ring.Rep
 }
 
 func (q *Querier) SearchRecent(ctx context.Context, req *deeppb.SearchRequest) (*deeppb.SearchResponse, error) {
-	_, err := user.ExtractOrgID(ctx)
+	_, err := util.ExtractTenantID(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Querier.Search")
+		return nil, errors.Wrap(err, "error extracting tenant id in Querier.Search")
 	}
 
 	replicationSet, err := q.ring.GetReplicationSetForOperation(ring.Read)
@@ -359,12 +358,12 @@ func (q *Querier) SearchRecent(ctx context.Context, req *deeppb.SearchRequest) (
 }
 
 func (q *Querier) SearchTags(ctx context.Context, req *deeppb.SearchTagsRequest) (*deeppb.SearchTagsResponse, error) {
-	userID, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Querier.SearchTags")
+		return nil, errors.Wrap(err, "error extracting tenant id in Querier.SearchTags")
 	}
 
-	limit := q.limits.MaxBytesPerTagValuesQuery(userID)
+	limit := q.limits.MaxBytesPerTagValuesQuery(tenantID)
 	distinctValues := util.NewDistinctStringCollector(limit)
 
 	// Get results from all ingesters
@@ -385,7 +384,7 @@ func (q *Querier) SearchTags(ctx context.Context, req *deeppb.SearchTagsRequest)
 	}
 
 	if distinctValues.Exceeded() {
-		level.Warn(log.Logger).Log("msg", "size of tags in instance exceeded limit, reduce cardinality or size of tags", "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
+		level.Warn(log.Logger).Log("msg", "size of tags in instance exceeded limit, reduce cardinality or size of tags", "tenantID", tenantID, "limit", limit, "total", distinctValues.TotalDataSize())
 	}
 
 	resp := &deeppb.SearchTagsResponse{
@@ -396,12 +395,12 @@ func (q *Querier) SearchTags(ctx context.Context, req *deeppb.SearchTagsRequest)
 }
 
 func (q *Querier) SearchTagValues(ctx context.Context, req *deeppb.SearchTagValuesRequest) (*deeppb.SearchTagValuesResponse, error) {
-	userID, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Querier.SearchTagValues")
+		return nil, errors.Wrap(err, "error extracting tenant id in Querier.SearchTagValues")
 	}
 
-	limit := q.limits.MaxBytesPerTagValuesQuery(userID)
+	limit := q.limits.MaxBytesPerTagValuesQuery(tenantID)
 	distinctValues := util.NewDistinctStringCollector(limit)
 
 	// Virtual tags values. Get these first.
@@ -427,7 +426,7 @@ func (q *Querier) SearchTagValues(ctx context.Context, req *deeppb.SearchTagValu
 	}
 
 	if distinctValues.Exceeded() {
-		level.Warn(log.Logger).Log("msg", "size of tag values in instance exceeded limit, reduce cardinality or size of tags", "tag", req.TagName, "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
+		level.Warn(log.Logger).Log("msg", "size of tag values in instance exceeded limit, reduce cardinality or size of tags", "tag", req.TagName, "tenantID", tenantID, "limit", limit, "total", distinctValues.TotalDataSize())
 	}
 
 	resp := &deeppb.SearchTagValuesResponse{
@@ -438,12 +437,12 @@ func (q *Querier) SearchTagValues(ctx context.Context, req *deeppb.SearchTagValu
 }
 
 func (q *Querier) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagValuesRequest) (*deeppb.SearchTagValuesV2Response, error) {
-	userID, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Querier.SearchTagValues")
+		return nil, errors.Wrap(err, "error extracting tenant id in Querier.SearchTagValues")
 	}
 
-	limit := q.limits.MaxBytesPerTagValuesQuery(userID)
+	limit := q.limits.MaxBytesPerTagValuesQuery(tenantID)
 	distinctValues := util.NewDistinctValueCollector(limit, func(v *deeppb.TagValue) int { return len(v.Type) + len(v.Value) })
 
 	// Virtual tags values. Get these first.
@@ -475,7 +474,7 @@ func (q *Querier) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagVa
 	}
 
 	if distinctValues.Exceeded() {
-		level.Warn(log.Logger).Log("msg", "size of tag values in instance exceeded limit, reduce cardinality or size of tags", "tag", req.TagName, "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
+		level.Warn(log.Logger).Log("msg", "size of tag values in instance exceeded limit, reduce cardinality or size of tags", "tag", req.TagName, "tenantID", tenantID, "limit", limit, "total", distinctValues.TotalDataSize())
 	}
 
 	return valuesToV2Response(distinctValues), nil
@@ -505,9 +504,9 @@ func (q *Querier) SearchBlock(ctx context.Context, req *deeppb.SearchBlockReques
 	}
 
 	// proxy externally!
-	tenantID, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id for externalEndpoint")
+		return nil, errors.Wrap(err, "error extracting tenant id for externalEndpoint")
 	}
 	maxBytes := q.limits.MaxBytesPerSnapshot(tenantID)
 
@@ -516,9 +515,9 @@ func (q *Querier) SearchBlock(ctx context.Context, req *deeppb.SearchBlockReques
 }
 
 func (q *Querier) internalSearchBlock(ctx context.Context, req *deeppb.SearchBlockRequest) (*deeppb.SearchResponse, error) {
-	tenantID, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Querier.BackendSearch")
+		return nil, errors.Wrap(err, "error extracting tenant id in Querier.BackendSearch")
 	}
 
 	blockID, err := uuid.Parse(req.BlockID)
@@ -610,7 +609,7 @@ func (q *Querier) searchExternalEndpoint(ctx context.Context, externalEndpoint s
 		return nil, fmt.Errorf("external endpoint failed to build search block request: %w", err)
 	}
 	req = api.AddServerlessParams(req, maxBytes)
-	err = user.InjectOrgIDIntoHTTPRequest(ctx, req)
+	err = util.InjectTenantIDIntoHTTPRequest(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("external endpoint failed to inject tenant id: %w", err)
 	}

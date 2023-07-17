@@ -688,7 +688,7 @@ package ingester
 //	require.Equal(b, 1, len(tenantBlockManager.completeBlocks))
 //
 //	ctx := context.Background()
-//	ctx = user.InjectOrgID(ctx, testTenantID)
+//	ctx = util.InjectTenantID(ctx, testTenantID)
 //
 //	if rt, ok := b.(*testing.B); ok {
 //		rt.ResetTimer()

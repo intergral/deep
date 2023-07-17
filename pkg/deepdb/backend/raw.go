@@ -75,8 +75,8 @@ func NewWriter(w RawWriter) Writer {
 	}
 }
 
-func (w *writer) WriteTracepointBlock(ctx context.Context, orgId string, data *bytes.Reader, size int64) error {
-	return w.w.Write(ctx, "tracepoints", []string{orgId}, data, size, false)
+func (w *writer) WriteTracepointBlock(ctx context.Context, tenantID string, data *bytes.Reader, size int64) error {
+	return w.w.Write(ctx, "tracepoints", []string{tenantID}, data, size, false)
 }
 
 func (w *writer) Write(ctx context.Context, name string, blockID uuid.UUID, tenantID string, buffer []byte, shouldCache bool) error {
@@ -134,8 +134,8 @@ func NewReader(r RawReader) Reader {
 	}
 }
 
-func (r *reader) ReadTracepointBlock(ctx context.Context, orgId string) (io.ReadCloser, int64, error) {
-	return r.r.Read(ctx, "tracepoints", []string{orgId}, false)
+func (r *reader) ReadTracepointBlock(ctx context.Context, tenantID string) (io.ReadCloser, int64, error) {
+	return r.r.Read(ctx, "tracepoints", []string{tenantID}, false)
 }
 
 func (r *reader) Read(ctx context.Context, name string, blockID uuid.UUID, tenantID string, shouldCache bool) ([]byte, error) {
@@ -143,7 +143,9 @@ func (r *reader) Read(ctx context.Context, name string, blockID uuid.UUID, tenan
 	if err != nil {
 		return nil, err
 	}
-	defer objReader.Close()
+	defer func(objReader io.ReadCloser) {
+		_ = objReader.Close()
+	}(objReader)
 	return deep_io.ReadAllWithEstimate(objReader, size)
 }
 
@@ -183,11 +185,11 @@ func (r *reader) Blocks(ctx context.Context, tenantID string) ([]uuid.UUID, erro
 		if id == TenantIndexName || id == "" {
 			continue
 		}
-		uuid, err := uuid.Parse(id)
+		blockUuid, err := uuid.Parse(id)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse %s: %w", id, err)
 		}
-		blockIDs = append(blockIDs, uuid)
+		blockIDs = append(blockIDs, blockUuid)
 	}
 
 	return blockIDs, nil
@@ -198,15 +200,17 @@ func (r *reader) BlockMeta(ctx context.Context, blockID uuid.UUID, tenantID stri
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
+	defer func(reader io.ReadCloser) {
+		_ = reader.Close()
+	}(reader)
 
-	bytes, err := deep_io.ReadAllWithEstimate(reader, size)
+	indexBytes, err := deep_io.ReadAllWithEstimate(reader, size)
 	if err != nil {
 		return nil, err
 	}
 
 	out := &BlockMeta{}
-	err = json.Unmarshal(bytes, out)
+	err = json.Unmarshal(indexBytes, out)
 	if err != nil {
 		return nil, err
 	}
@@ -220,15 +224,17 @@ func (r *reader) TenantIndex(ctx context.Context, tenantID string) (*TenantIndex
 		return nil, err
 	}
 
-	defer reader.Close()
+	defer func(reader io.ReadCloser) {
+		_ = reader.Close()
+	}(reader)
 
-	bytes, err := deep_io.ReadAllWithEstimate(reader, size)
+	indexBytes, err := deep_io.ReadAllWithEstimate(reader, size)
 	if err != nil {
 		return nil, err
 	}
 
 	i := &TenantIndex{}
-	err = i.unmarshal(bytes)
+	err = i.unmarshal(indexBytes)
 	if err != nil {
 		return nil, err
 	}

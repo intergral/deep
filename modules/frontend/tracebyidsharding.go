@@ -24,6 +24,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/intergral/deep/pkg/model/snapshot"
+	"github.com/intergral/deep/pkg/util"
 	"io"
 	"net/http"
 	"strings"
@@ -37,7 +38,6 @@ import (
 	"github.com/intergral/deep/pkg/api"
 	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/opentracing/opentracing-go"
-	"github.com/weaveworks/common/user"
 )
 
 const (
@@ -73,7 +73,7 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "frontend.ShardQuery")
 	defer span.Finish()
 
-	tenantID, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
 		return &http.Response{
 			StatusCode: http.StatusBadRequest,
@@ -244,7 +244,7 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 // block boundaries
 func (s *shardQuery) buildShardedRequests(parent *http.Request) ([]*http.Request, error) {
 	ctx := parent.Context()
-	userID, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +265,7 @@ func (s *shardQuery) buildShardedRequests(parent *http.Request) ([]*http.Request
 			q.Add(querier.QueryModeKey, querier.QueryModeBlocks)
 		}
 
-		reqs[i].Header.Set(user.OrgIDHeaderName, userID)
+		reqs[i].Header.Set(util.TenantIDHeaderName, tenantID)
 		uri := buildUpstreamRequestURI(reqs[i].URL.Path, q)
 		reqs[i].RequestURI = uri
 	}

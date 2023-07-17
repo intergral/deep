@@ -35,10 +35,10 @@ import (
 	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/model"
 	v1 "github.com/intergral/deep/pkg/model/v1"
+	"github.com/intergral/deep/pkg/util"
 	"github.com/intergral/deep/pkg/util/test"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
-	"github.com/weaveworks/common/user"
 	"testing"
 	"time"
 )
@@ -81,7 +81,7 @@ func TestPushQueryAllEncodings(t *testing.T) {
 	for _, e := range model.AllEncodings {
 		t.Run(e, func(t *testing.T) {
 			tempDir := t.TempDir()
-			ctx := user.InjectOrgID(context.Background(), "test")
+			ctx := util.InjectTenantID(context.Background(), "test")
 			ingester, snapshots, snapshotsIDs := defaultIngestWithPush(t, tempDir, pushBatchV1)
 
 			for pos, snapshotId := range snapshotsIDs {
@@ -124,7 +124,7 @@ func TestPushQueryAllEncodings(t *testing.T) {
 //			}
 //
 //			tmpDir := t.TempDir()
-//			ctx := user.InjectOrgID(context.Background(), "test")
+//			ctx := util.InjectTenantID(context.Background(), "test")
 //			ingester, traces, traceIDs := defaultIngesterWithPush(t, tmpDir, push)
 //
 //			// live trace search
@@ -157,7 +157,7 @@ func TestPushQueryAllEncodings(t *testing.T) {
 //}
 //
 //func TestFullTraceReturned(t *testing.T) {
-//	ctx := user.InjectOrgID(context.Background(), "test")
+//	ctx := util.InjectTenantID(context.Background(), "test")
 //	ingester, _, _ := defaultIngester(t, t.TempDir())
 //
 //	snapshotId := make([]byte, 16)
@@ -202,7 +202,7 @@ func TestPushQueryAllEncodings(t *testing.T) {
 //func TestWal(t *testing.T) {
 //	tmpDir := t.TempDir()
 //
-//	ctx := user.InjectOrgID(context.Background(), "test")
+//	ctx := util.InjectTenantID(context.Background(), "test")
 //	ingester, traces, traceIDs := defaultIngester(t, tmpDir)
 //
 //	for pos, snapshotId := range traceIDs {
@@ -308,7 +308,7 @@ func TestPushQueryAllEncodings(t *testing.T) {
 //	require.NoError(t, inst.CutSnapshots(0, true))
 //
 //	// search WAL
-//	ctx := user.InjectOrgID(context.Background(), "test")
+//	ctx := util.InjectTenantID(context.Background(), "test")
 //	searchReq := &tempopb.SearchRequest{Tags: map[string]string{
 //		"foo": "bar",
 //	}}
@@ -386,7 +386,7 @@ func TestPushQueryAllEncodings(t *testing.T) {
 //func TestFlush(t *testing.T) {
 //	tmpDir := t.TempDir()
 //
-//	ctx := user.InjectOrgID(context.Background(), "test")
+//	ctx := util.InjectTenantID(context.Background(), "test")
 //	ingester, traces, traceIDs := defaultIngester(t, tmpDir)
 //
 //	for pos, snapshotId := range traceIDs {
@@ -505,7 +505,7 @@ func defaultLimitsTestConfig() overrides.Limits {
 }
 
 func pushBatchV1(t testing.TB, i *Ingester, snapshot *tp.Snapshot, _ []byte) {
-	ctx := user.InjectOrgID(context.Background(), "test")
+	ctx := util.InjectTenantID(context.Background(), "test")
 
 	batchDecoder := model.MustNewSegmentDecoder(v1.Encoding)
 

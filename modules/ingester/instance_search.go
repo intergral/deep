@@ -32,7 +32,6 @@ import (
 	"github.com/intergral/deep/pkg/util/log"
 	"github.com/opentracing/opentracing-go"
 	ot_log "github.com/opentracing/opentracing-go/log"
-	"github.com/weaveworks/common/user"
 )
 
 func (i *tenantBlockManager) Search(ctx context.Context, req *deeppb.SearchRequest) (*deeppb.SearchResponse, error) {
@@ -220,7 +219,7 @@ func (i *tenantBlockManager) searchLocalBlocks(ctx context.Context, req *deeppb.
 }
 
 func (i *tenantBlockManager) SearchTags(ctx context.Context) (*deeppb.SearchTagsResponse, error) {
-	userID, err := user.ExtractOrgID(ctx)
+	userID, err := util.ExtractTenantID(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +270,7 @@ func (i *tenantBlockManager) SearchTags(ctx context.Context) (*deeppb.SearchTags
 }
 
 func (i *tenantBlockManager) SearchTagValues(ctx context.Context, tagName string) (*deeppb.SearchTagValuesResponse, error) {
-	userID, err := user.ExtractOrgID(ctx)
+	userID, err := util.ExtractTenantID(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -338,7 +337,7 @@ func (ctv ComparableTagValue) asTagValue() *deeppb.TagValue {
 }
 
 func (i *tenantBlockManager) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagValuesRequest) (*deeppb.SearchTagValuesV2Response, error) {
-	userID, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -348,7 +347,7 @@ func (i *tenantBlockManager) SearchTagValuesV2(ctx context.Context, req *deeppb.
 		return nil, err
 	}
 
-	limit := i.limiter.limits.MaxBytesPerTagValuesQuery(userID)
+	limit := i.limiter.limits.MaxBytesPerTagValuesQuery(tenantID)
 	distinctValues := util.NewDistinctValueCollector[ComparableTagValue](limit, func(v ComparableTagValue) int { return v.size() })
 
 	cb := func(v deepql.Static) bool {
@@ -413,7 +412,7 @@ func (i *tenantBlockManager) SearchTagValuesV2(ctx context.Context, req *deeppb.
 	}
 
 	if distinctValues.Exceeded() {
-		level.Warn(log.Logger).Log("msg", "size of tag values in tenantBlockManager exceeded limit, reduce cardinality or size of tags", "tag", req.TagName, "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
+		level.Warn(log.Logger).Log("msg", "size of tag values in tenantBlockManager exceeded limit, reduce cardinality or size of tags", "tag", req.TagName, "tenantID", tenantID, "limit", limit, "total", distinctValues.TotalDataSize())
 	}
 
 	resp := &deeppb.SearchTagValuesV2Response{}

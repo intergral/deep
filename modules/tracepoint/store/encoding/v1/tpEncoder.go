@@ -60,7 +60,7 @@ func (t *TPEncoder) Flush(ctx context.Context, block types.TPBlock) error {
 
 	reader := bytes.NewReader(data)
 
-	err := t.Writer.WriteTracepointBlock(ctx, block.OrgId(), reader, int64(len(data)))
+	err := t.Writer.WriteTracepointBlock(ctx, block.TenantID(), reader, int64(len(data)))
 	if err != nil {
 		return err
 	}
@@ -69,15 +69,15 @@ func (t *TPEncoder) Flush(ctx context.Context, block types.TPBlock) error {
 	return nil
 }
 
-func (t *TPEncoder) LoadBlock(ctx context.Context, orgId string) (types.TPBlock, error) {
-	read, i, err := t.Reader.ReadTracepointBlock(ctx, orgId)
+func (t *TPEncoder) LoadBlock(ctx context.Context, tenantID string) (types.TPBlock, error) {
+	read, i, err := t.Reader.ReadTracepointBlock(ctx, tenantID)
 
 	if err != nil {
 		if err == backend.ErrDoesNotExist {
 			// block doesn't exist so create new
 			return &tpBlock{
-				tps:   []*deeptp.TracePointConfig{},
-				orgID: orgId,
+				tps:      []*deeptp.TracePointConfig{},
+				tenantID: tenantID,
 			}, nil
 		}
 		return nil, err
@@ -104,8 +104,8 @@ func (t *TPEncoder) LoadBlock(ctx context.Context, orgId string) (types.TPBlock,
 	// the block is empty
 	if positionSize == 0 {
 		return &tpBlock{
-			tps:   []*deeptp.TracePointConfig{},
-			orgID: orgId,
+			tps:      []*deeptp.TracePointConfig{},
+			tenantID: tenantID,
 		}, nil
 	}
 
@@ -138,7 +138,7 @@ func (t *TPEncoder) LoadBlock(ctx context.Context, orgId string) (types.TPBlock,
 	}
 
 	return &tpBlock{
-		orgID: orgId,
-		tps:   tps,
+		tenantID: tenantID,
+		tps:      tps,
 	}, nil
 }

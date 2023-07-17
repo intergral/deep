@@ -25,13 +25,13 @@ import (
 	"github.com/grafana/dskit/services"
 	"github.com/intergral/deep/pkg/receivers"
 	"github.com/intergral/deep/pkg/receivers/types"
+	"github.com/intergral/deep/pkg/util"
 	"github.com/intergral/deep/pkg/util/log"
 	pb "github.com/intergral/go-deep-proto/poll/v1"
 	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
 	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/weaveworks/common/user"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
@@ -124,13 +124,13 @@ func (sr *snapshotReceiver) Poll(ctx context.Context, pollRequest *pb.PollReques
 	metricPollDuration.Observe(time.Since(start).Seconds())
 
 	// we always have a tenant ID by this point
-	userID, _ := user.ExtractOrgID(ctx)
+	tenantID, _ := util.ExtractTenantID(ctx)
 
 	if err != nil {
 		sr.logger.Log("msg", "pusher failed to consume trace data", "err", err)
-		metricPollRefused.WithLabelValues(userID, name).Inc()
+		metricPollRefused.WithLabelValues(tenantID, name).Inc()
 	}
-	metricPollAccepted.WithLabelValues(userID, name).Inc()
+	metricPollAccepted.WithLabelValues(tenantID, name).Inc()
 	return pollResponse, err
 }
 
@@ -147,14 +147,14 @@ func (sr *snapshotReceiver) Send(ctx context.Context, in *tp.Snapshot) (*tp.Snap
 	metricPushDuration.Observe(time.Since(start).Seconds())
 
 	// we always have a tenant ID by this point
-	userID, _ := user.ExtractOrgID(ctx)
+	tenantID, _ := util.ExtractTenantID(ctx)
 
 	if err != nil {
 		sr.logger.Log("msg", "pusher failed to consume trace data", "err", err)
-		metricDistributorRefused.WithLabelValues(userID, name).Inc()
+		metricDistributorRefused.WithLabelValues(tenantID, name).Inc()
 	}
 
-	metricDistributorAccepted.WithLabelValues(userID, name).Inc()
+	metricDistributorAccepted.WithLabelValues(tenantID, name).Inc()
 	return snapshotResponse, err
 }
 

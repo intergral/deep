@@ -106,7 +106,7 @@ func (s *TPStore) ForOrg(ctx context.Context, id string) (OrgTPStore, error) {
 		return nil, err
 	}
 
-	s.orgStores[id] = &orgStore{id: id, userStores: map[string]*resourceStore{}, block: block}
+	s.orgStores[id] = &orgStore{tenantID: id, userStores: map[string]*resourceStore{}, block: block}
 
 	return s.orgStores[id], nil
 }
@@ -114,7 +114,7 @@ func (s *TPStore) ForOrg(ctx context.Context, id string) (OrgTPStore, error) {
 // orgStore is the link to the block in storage
 // this is what is read and written to storage when needed
 type orgStore struct {
-	id         string
+	tenantID   string
 	userStores map[string]*resourceStore
 	block      types.TPBlock
 	mu         sync.Mutex
@@ -154,7 +154,7 @@ func (os *orgStore) DeleteTracepoint(tpID string) error {
 // this simple creates a sublist of the org tracepoints that have targeting that affect ths resource provided
 // the resourceStore is not persisted to disk
 func (os *orgStore) forResource(resource []*cp.KeyValue) (ResourceTPStore, error) {
-	key := os.keyForResource(os.id, resource)
+	key := os.keyForResource(os.tenantID, resource)
 	if os.userStores[key] != nil {
 		return os.userStores[key], nil
 	}
@@ -163,12 +163,12 @@ func (os *orgStore) forResource(resource []*cp.KeyValue) (ResourceTPStore, error
 		return nil, err
 	}
 
-	os.userStores[key] = &resourceStore{orgId: os.id, resource: resource, tps: tps, os: os}
+	os.userStores[key] = &resourceStore{tenantID: os.tenantID, resource: resource, tps: tps, os: os}
 
 	return os.userStores[key], nil
 }
 
-// keyForResource creates a key from the user/org id and the client resources. This identifies all resource with
+// keyForResource creates a key from the tenantID and the client resources. This identifies all resource with
 // the same tags as the same thing. Allowing us to cache the values easier.
 func (os *orgStore) keyForResource(id string, resource []*cp.KeyValue) string {
 	h := fnv.New32()
@@ -201,7 +201,7 @@ func (os *orgStore) keyForResource(id string, resource []*cp.KeyValue) string {
 // they are not always kept in memory and will be recreated from storage
 // when needed
 type resourceStore struct {
-	orgId       string
+	tenantID    string
 	tps         []*tp.TracePointConfig
 	currentHash string
 	resource    []*cp.KeyValue

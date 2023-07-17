@@ -19,6 +19,7 @@ package querier
 
 import (
 	"context"
+	"github.com/intergral/deep/pkg/util"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -29,7 +30,6 @@ import (
 	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/atomic"
-	"github.com/weaveworks/common/user"
 )
 
 func TestQuerierUsesSearchExternalEndpoint(t *testing.T) {
@@ -75,7 +75,7 @@ func TestQuerierUsesSearchExternalEndpoint(t *testing.T) {
 		// },
 	}
 
-	ctx := user.InjectOrgID(context.Background(), "blerg")
+	ctx := util.InjectTenantID(context.Background(), "blerg")
 
 	for _, tc := range tests {
 		numExternalRequests.Store(0)

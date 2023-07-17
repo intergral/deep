@@ -45,14 +45,14 @@ func FakeTenantMiddleware() Middleware {
 
 func (m *fakeTenantMiddleware) WrapPoll(poll receivers.ProcessPoll) receivers.ProcessPoll {
 	return func(ctx context.Context, pollRequest *pb.PollRequest) (*pb.PollResponse, error) {
-		ctx = user.InjectOrgID(ctx, util.FakeTenantID)
+		ctx = util.InjectTenantID(ctx, util.FakeTenantID)
 		return poll(ctx, pollRequest)
 	}
 }
 
 func (m *fakeTenantMiddleware) WrapSnapshots(snap receivers.ProcessSnapshots) receivers.ProcessSnapshots {
 	return func(ctx context.Context, in *tp.Snapshot) (*tp.SnapshotResponse, error) {
-		ctx = user.InjectOrgID(ctx, util.FakeTenantID)
+		ctx = util.InjectTenantID(ctx, util.FakeTenantID)
 		return snap(ctx, in)
 	}
 }
@@ -67,7 +67,7 @@ func MultiTenancyMiddleware() Middleware {
 
 func (m *multiTenancyMiddleware) WrapPoll(poll receivers.ProcessPoll) receivers.ProcessPoll {
 	return func(ctx context.Context, pollRequest *pb.PollRequest) (*pb.PollResponse, error) {
-		idCtx, err := m.findAttachOrgId(ctx)
+		idCtx, err := m.findAttachTenantId(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -77,7 +77,7 @@ func (m *multiTenancyMiddleware) WrapPoll(poll receivers.ProcessPoll) receivers.
 
 func (m *multiTenancyMiddleware) WrapSnapshots(snap receivers.ProcessSnapshots) receivers.ProcessSnapshots {
 	return func(ctx context.Context, in *tp.Snapshot) (*tp.SnapshotResponse, error) {
-		idCtx, err := m.findAttachOrgId(ctx)
+		idCtx, err := m.findAttachTenantId(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -85,24 +85,24 @@ func (m *multiTenancyMiddleware) WrapSnapshots(snap receivers.ProcessSnapshots) 
 	}
 }
 
-func (m *multiTenancyMiddleware) findAttachOrgId(ctx context.Context) (context.Context, error) {
+func (m *multiTenancyMiddleware) findAttachTenantId(ctx context.Context) (context.Context, error) {
 	var err error
 	_, ctx, err = user.ExtractFromGRPCRequest(ctx)
 	if err != nil {
 		// Maybe its a HTTP request.
 		info := client.FromContext(ctx)
-		orgIDs := info.Metadata.Get(user.OrgIDHeaderName)
-		if len(orgIDs) == 0 {
-			log.Logger.Log("msg", "failed to extract org id from both grpc and HTTP", "err", err)
+		tenantIDs := info.Metadata.Get(util.TenantIDHeaderName)
+		if len(tenantIDs) == 0 {
+			log.Logger.Log("msg", "failed to extract tenant id from both grpc and HTTP", "err", err)
 			return ctx, err
 		}
 
-		if len(orgIDs) > 1 {
-			log.Logger.Log("msg", "more than one orgID found", "orgIDs", orgIDs)
+		if len(tenantIDs) > 1 {
+			log.Logger.Log("msg", "more than one tenantID found", "tenantIDs", tenantIDs)
 			return ctx, err
 		}
 
-		ctx = user.InjectOrgID(ctx, orgIDs[0])
+		ctx = util.InjectTenantID(ctx, tenantIDs[0])
 		return ctx, nil
 	}
 	return ctx, err

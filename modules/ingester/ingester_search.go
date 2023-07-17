@@ -20,13 +20,13 @@ package ingester
 import (
 	"context"
 	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/util"
 
 	"github.com/pkg/errors"
-	"github.com/weaveworks/common/user"
 )
 
 func (i *Ingester) SearchRecent(ctx context.Context, req *deeppb.SearchRequest) (*deeppb.SearchResponse, error) {
-	tenantID, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (i *Ingester) SearchRecent(ctx context.Context, req *deeppb.SearchRequest) 
 }
 
 func (i *Ingester) SearchTags(ctx context.Context, _ *deeppb.SearchTagsRequest) (*deeppb.SearchTagsResponse, error) {
-	tenantID, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (i *Ingester) SearchTags(ctx context.Context, _ *deeppb.SearchTagsRequest) 
 }
 
 func (i *Ingester) SearchTagValues(ctx context.Context, req *deeppb.SearchTagValuesRequest) (*deeppb.SearchTagValuesResponse, error) {
-	tenantID, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (i *Ingester) SearchTagValues(ctx context.Context, req *deeppb.SearchTagVal
 }
 
 func (i *Ingester) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagValuesRequest) (*deeppb.SearchTagValuesV2Response, error) {
-	tenantID, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
 		return nil, err
 	}
