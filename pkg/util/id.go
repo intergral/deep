@@ -43,5 +43,5 @@ func InjectTenantID(ctx context.Context, tenantID string) context.Context {
 // InjectTenantIDIntoHTTPRequest will inject the tenant ID into the request
 func InjectTenantIDIntoHTTPRequest(ctx context.Context, r *http.Request) error {
 	// we wrap the get org ID, so we can keep a consistent naming in Deep. Everything should be tenantID, never orgID or userID.
-	return user.InjectUserIDIntoHTTPRequest(ctx, r)
+	return user.InjectOrgIDIntoHTTPRequest(ctx, r)
 }

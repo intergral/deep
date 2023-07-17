@@ -110,6 +110,6 @@ func TestMultiTenancyMiddleware(t *testing.T) {
 		ctx := context.Background()
 
 		_, err := m.WrapSnapshots(consumer)(ctx, nil)
-		require.EqualError(t, err, "no tenant id")
+		require.EqualError(t, err, "no org id")
 	})
 }
