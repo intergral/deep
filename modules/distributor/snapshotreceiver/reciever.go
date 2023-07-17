@@ -45,36 +45,42 @@ const (
 var (
 	metricPollDuration = promauto.NewHistogram(prometheus.HistogramOpts{
 		Namespace: "deep",
-		Name:      "distributor_poll_duration_seconds",
+		Subsystem: "distributor",
+		Name:      "poll_duration_seconds",
 		Help:      "Records the amount of time to poll a config from tracepoint.",
 		Buckets:   prometheus.DefBuckets,
 	})
 	metricPushDuration = promauto.NewHistogram(prometheus.HistogramOpts{
 		Namespace: "deep",
-		Name:      "distributor_push_duration_seconds",
+		Subsystem: "distributor",
+		Name:      "push_duration_seconds",
 		Help:      "Records the amount of time to push a batch to the ingester.",
 		Buckets:   prometheus.DefBuckets,
 	})
 
 	metricDistributorAccepted = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "distributor_snapshots_requests",
+		Subsystem: "distributor",
+		Name:      "snapshots_requests",
 		Help:      "Number of snapshots successfully pushed into the pipeline.",
 	}, []string{"tenant", "receiver"})
 	metricPollAccepted = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "distributor_poll_requests",
+		Subsystem: "distributor",
+		Name:      "poll_requests",
 		Help:      "Number of completed poll requests.",
 	}, []string{"tenant", "receiver"})
 
 	metricDistributorRefused = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "distributor_failed_snapshots_requests",
+		Subsystem: "distributor",
+		Name:      "failed_snapshots_requests",
 		Help:      "Number of snapshots that could not be pushed into the pipeline.",
 	}, []string{"tenant", "receiver"})
 	metricPollRefused = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "distributor_failed_poll_requests",
+		Subsystem: "distributor",
+		Name:      "failed_poll_requests",
 		Help:      "Number of failed poll requests.",
 	}, []string{"tenant", "receiver"})
 )
