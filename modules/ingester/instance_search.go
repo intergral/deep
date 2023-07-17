@@ -35,8 +35,8 @@ import (
 	"github.com/weaveworks/common/user"
 )
 
-func (i *instance) Search(ctx context.Context, req *deeppb.SearchRequest) (*deeppb.SearchResponse, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "instance.Search")
+func (i *tenantBlockManager) Search(ctx context.Context, req *deeppb.SearchRequest) (*deeppb.SearchResponse, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "tenantBlockManager.Search")
 	defer span.Finish()
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -105,19 +105,19 @@ func (i *instance) Search(ctx context.Context, req *deeppb.SearchRequest) (*deep
 	return &deeppb.SearchResponse{
 		Snapshots: results,
 		Metrics: &deeppb.SearchMetrics{
-			InspectedTraces: sr.TracesInspected(),
-			InspectedBytes:  sr.BytesInspected(),
-			InspectedBlocks: sr.BlocksInspected(),
-			SkippedBlocks:   sr.BlocksSkipped(),
+			InspectedSnapshots: sr.SnapshotsInspected(),
+			InspectedBytes:     sr.BytesInspected(),
+			InspectedBlocks:    sr.BlocksInspected(),
+			SkippedBlocks:      sr.BlocksSkipped(),
 		},
 	}, nil
 }
 
 // searchWAL starts a search task for every WAL block. Must be called under lock.
-func (i *instance) searchWAL(ctx context.Context, req *deeppb.SearchRequest, sr *search.Results) {
+func (i *tenantBlockManager) searchWAL(ctx context.Context, req *deeppb.SearchRequest, sr *search.Results) {
 	searchWalBlock := func(b common.WALBlock) {
 		blockID := b.BlockMeta().BlockID.String()
-		span, ctx := opentracing.StartSpanFromContext(ctx, "instance.searchWALBlock", opentracing.Tags{
+		span, ctx := opentracing.StartSpanFromContext(ctx, "tenantBlockManager.searchWALBlock", opentracing.Tags{
 			"blockID": blockID,
 		})
 		defer span.Finish()
@@ -127,7 +127,7 @@ func (i *instance) searchWAL(ctx context.Context, req *deeppb.SearchRequest, sr 
 		var err error
 
 		opts := common.DefaultSearchOptions()
-		if api.IsTraceQLQuery(req) {
+		if api.IsDeepQLQuery(req) {
 			// note: we are creating new engine for each wal block,
 			// and engine.Execute is parsing the query for each block
 			resp, err = deepql.NewEngine().Execute(ctx, req, deepql.NewSnapshotResultFetcherWrapper(func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
@@ -149,7 +149,7 @@ func (i *instance) searchWAL(ctx context.Context, req *deeppb.SearchRequest, sr 
 
 		sr.AddBlockInspected()
 		sr.AddBytesInspected(resp.Metrics.InspectedBytes)
-		sr.AddTraceInspected(resp.Metrics.InspectedTraces)
+		sr.AddSnapshotInspected(resp.Metrics.InspectedSnapshots)
 		for _, r := range resp.Snapshots {
 			sr.AddResult(ctx, r)
 		}
@@ -169,14 +169,14 @@ func (i *instance) searchWAL(ctx context.Context, req *deeppb.SearchRequest, sr 
 }
 
 // searchLocalBlocks starts a search task for every local block. Must be called under lock.
-func (i *instance) searchLocalBlocks(ctx context.Context, req *deeppb.SearchRequest, sr *search.Results) {
+func (i *tenantBlockManager) searchLocalBlocks(ctx context.Context, req *deeppb.SearchRequest, sr *search.Results) {
 	// next check all complete blocks to see if they were not searched, if they weren't then attempt to search them
 	for _, e := range i.completeBlocks {
 		sr.StartWorker()
 		go func(e *localBlock) {
 			defer sr.FinishWorker()
 
-			span, ctx := opentracing.StartSpanFromContext(ctx, "instance.searchLocalBlocks")
+			span, ctx := opentracing.StartSpanFromContext(ctx, "tenantBlockManager.searchLocalBlocks")
 			defer span.Finish()
 
 			blockID := e.BlockMeta().BlockID.String()
@@ -188,7 +188,7 @@ func (i *instance) searchLocalBlocks(ctx context.Context, req *deeppb.SearchRequ
 			var err error
 
 			opts := common.DefaultSearchOptions()
-			if api.IsTraceQLQuery(req) {
+			if api.IsDeepQLQuery(req) {
 				// note: we are creating new engine for each wal block,
 				// and engine.Execute is parsing the query for each block
 				resp, err = deepql.NewEngine().Execute(ctx, req, deepql.NewSnapshotResultFetcherWrapper(func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
@@ -214,12 +214,12 @@ func (i *instance) searchLocalBlocks(ctx context.Context, req *deeppb.SearchRequ
 			sr.AddBlockInspected()
 
 			sr.AddBytesInspected(resp.Metrics.InspectedBytes)
-			sr.AddTraceInspected(resp.Metrics.InspectedTraces)
+			sr.AddSnapshotInspected(resp.Metrics.InspectedSnapshots)
 		}(e)
 	}
 }
 
-func (i *instance) SearchTags(ctx context.Context) (*deeppb.SearchTagsResponse, error) {
+func (i *tenantBlockManager) SearchTags(ctx context.Context) (*deeppb.SearchTagsResponse, error) {
 	userID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
@@ -228,7 +228,7 @@ func (i *instance) SearchTags(ctx context.Context) (*deeppb.SearchTagsResponse, 
 	limit := i.limiter.limits.MaxBytesPerTagValuesQuery(userID)
 	distinctValues := util.NewDistinctStringCollector(limit)
 
-	search := func(s common.Searcher, dv *util.DistinctStringCollector) error {
+	searchFunc := func(s common.Searcher, dv *util.DistinctStringCollector) error {
 		if s == nil {
 			return nil
 		}
@@ -247,22 +247,22 @@ func (i *instance) SearchTags(ctx context.Context) (*deeppb.SearchTagsResponse, 
 	defer i.blocksMtx.RUnlock()
 
 	// search parquet wal/completing blocks/completed blocks
-	if err = search(i.headBlock, distinctValues); err != nil {
+	if err = searchFunc(i.headBlock, distinctValues); err != nil {
 		return nil, fmt.Errorf("unexpected error searching head block (%s): %w", i.headBlock.BlockMeta().BlockID, err)
 	}
 	for _, b := range i.completingBlocks {
-		if err = search(b, distinctValues); err != nil {
+		if err = searchFunc(b, distinctValues); err != nil {
 			return nil, fmt.Errorf("unexpected error searching completing block (%s): %w", b.BlockMeta().BlockID, err)
 		}
 	}
 	for _, b := range i.completeBlocks {
-		if err = search(b, distinctValues); err != nil {
+		if err = searchFunc(b, distinctValues); err != nil {
 			return nil, fmt.Errorf("unexpected error searching complete block (%s): %w", b.BlockMeta().BlockID, err)
 		}
 	}
 
 	if distinctValues.Exceeded() {
-		level.Warn(log.Logger).Log("msg", "size of tags in instance exceeded limit, reduce cardinality or size of tags", "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
+		level.Warn(log.Logger).Log("msg", "size of tags in tenantBlockManager exceeded limit, reduce cardinality or size of tags", "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
 	}
 
 	return &deeppb.SearchTagsResponse{
@@ -270,7 +270,7 @@ func (i *instance) SearchTags(ctx context.Context) (*deeppb.SearchTagsResponse, 
 	}, nil
 }
 
-func (i *instance) SearchTagValues(ctx context.Context, tagName string) (*deeppb.SearchTagValuesResponse, error) {
+func (i *tenantBlockManager) SearchTagValues(ctx context.Context, tagName string) (*deeppb.SearchTagValuesResponse, error) {
 	userID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
@@ -279,7 +279,7 @@ func (i *instance) SearchTagValues(ctx context.Context, tagName string) (*deeppb
 	limit := i.limiter.limits.MaxBytesPerTagValuesQuery(userID)
 	distinctValues := util.NewDistinctStringCollector(limit)
 
-	search := func(s common.Searcher, dv *util.DistinctStringCollector) error {
+	searchFunc := func(s common.Searcher, dv *util.DistinctStringCollector) error {
 		if s == nil {
 			return nil
 		}
@@ -298,22 +298,22 @@ func (i *instance) SearchTagValues(ctx context.Context, tagName string) (*deeppb
 	defer i.blocksMtx.RUnlock()
 
 	// search parquet wal/completing blocks/completed blocks
-	if err = search(i.headBlock, distinctValues); err != nil {
+	if err = searchFunc(i.headBlock, distinctValues); err != nil {
 		return nil, fmt.Errorf("unexpected error searching head block (%s): %w", i.headBlock.BlockMeta().BlockID, err)
 	}
 	for _, b := range i.completingBlocks {
-		if err = search(b, distinctValues); err != nil {
+		if err = searchFunc(b, distinctValues); err != nil {
 			return nil, fmt.Errorf("unexpected error searching completing block (%s): %w", b.BlockMeta().BlockID, err)
 		}
 	}
 	for _, b := range i.completeBlocks {
-		if err = search(b, distinctValues); err != nil {
+		if err = searchFunc(b, distinctValues); err != nil {
 			return nil, fmt.Errorf("unexpected error searching complete block (%s): %w", b.BlockMeta().BlockID, err)
 		}
 	}
 
 	if distinctValues.Exceeded() {
-		level.Warn(log.Logger).Log("msg", "size of tag values in instance exceeded limit, reduce cardinality or size of tags", "tag", tagName, "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
+		level.Warn(log.Logger).Log("msg", "size of tag values in tenantBlockManager exceeded limit, reduce cardinality or size of tags", "tag", tagName, "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
 	}
 
 	return &deeppb.SearchTagValuesResponse{
@@ -337,7 +337,7 @@ func (ctv ComparableTagValue) asTagValue() *deeppb.TagValue {
 	}
 }
 
-func (i *instance) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagValuesRequest) (*deeppb.SearchTagValuesV2Response, error) {
+func (i *tenantBlockManager) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagValuesRequest) (*deeppb.SearchTagValuesV2Response, error) {
 	userID, err := user.ExtractOrgID(ctx)
 	if err != nil {
 		return nil, err
@@ -379,7 +379,7 @@ func (i *instance) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagV
 		return distinctValues.Collect(ComparableTagValue{Type: tv.Type, Value: tv.Value})
 	}
 
-	search := func(s common.Searcher, dv *util.DistinctValueCollector[ComparableTagValue]) error {
+	searchFunc := func(s common.Searcher, dv *util.DistinctValueCollector[ComparableTagValue]) error {
 		if s == nil || dv.Exceeded() {
 			return nil
 		}
@@ -394,26 +394,26 @@ func (i *instance) SearchTagValuesV2(ctx context.Context, req *deeppb.SearchTagV
 	i.blocksMtx.RLock()
 	defer i.blocksMtx.RUnlock()
 	// head block
-	if err = search(i.headBlock, distinctValues); err != nil {
+	if err = searchFunc(i.headBlock, distinctValues); err != nil {
 		return nil, fmt.Errorf("unexpected error searching head block (%s): %w", i.headBlock.BlockMeta().BlockID, err)
 	}
 
 	// completing blocks
 	for _, b := range i.completingBlocks {
-		if err = search(b, distinctValues); err != nil {
+		if err = searchFunc(b, distinctValues); err != nil {
 			return nil, fmt.Errorf("unexpected error searching completing block (%s): %w", b.BlockMeta().BlockID, err)
 		}
 	}
 
 	// completed blocks
 	for _, b := range i.completeBlocks {
-		if err = search(b, distinctValues); err != nil {
+		if err = searchFunc(b, distinctValues); err != nil {
 			return nil, fmt.Errorf("unexpected error searching complete block (%s): %w", b.BlockMeta().BlockID, err)
 		}
 	}
 
 	if distinctValues.Exceeded() {
-		level.Warn(log.Logger).Log("msg", "size of tag values in instance exceeded limit, reduce cardinality or size of tags", "tag", req.TagName, "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
+		level.Warn(log.Logger).Log("msg", "size of tag values in tenantBlockManager exceeded limit, reduce cardinality or size of tags", "tag", req.TagName, "userID", userID, "limit", limit, "total", distinctValues.TotalDataSize())
 	}
 
 	resp := &deeppb.SearchTagValuesV2Response{}

@@ -148,11 +148,11 @@ func TestOverrides(t *testing.T) {
 			require.NoError(t, err)
 
 			for user, expectedVal := range tt.expectedMaxLocalTraces {
-				assert.Equal(t, expectedVal, overrides.MaxLocalTracesPerUser(user))
+				assert.Equal(t, expectedVal, overrides.MaxLocalSnapshotsPerUser(user))
 			}
 
 			for user, expectedVal := range tt.expectedMaxGlobalTraces {
-				assert.Equal(t, expectedVal, overrides.MaxGlobalTracesPerUser(user))
+				assert.Equal(t, expectedVal, overrides.MaxGlobalSnapshotsPerUser(user))
 			}
 
 			for user, expectedVal := range tt.expectedIngestionBurstSpans {

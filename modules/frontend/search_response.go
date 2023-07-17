@@ -95,9 +95,9 @@ func (r *searchResponse) addResponse(res *deeppb.SearchResponse) {
 
 	// purposefully ignoring InspectedBlocks as that value is set by the sharder
 	r.resultsMetrics.InspectedBytes += res.Metrics.InspectedBytes
-	r.resultsMetrics.InspectedTraces += res.Metrics.InspectedTraces
+	r.resultsMetrics.InspectedSnapshots += res.Metrics.InspectedSnapshots
 	r.resultsMetrics.SkippedBlocks += res.Metrics.SkippedBlocks
-	r.resultsMetrics.SkippedTraces += res.Metrics.SkippedTraces
+	r.resultsMetrics.SkippedSnapshots += res.Metrics.SkippedSnapshots
 
 	// count this request as finished
 	r.finishedRequests++

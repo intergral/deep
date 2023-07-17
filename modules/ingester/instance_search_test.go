@@ -222,7 +222,7 @@ package ingester
 //}
 //
 //// nolint:revive,unparam
-//func testSearchTagsAndValues(t *testing.T, ctx context.Context, i *instance, tagName string, expectedTagValues []string) {
+//func testSearchTagsAndValues(t *testing.T, ctx context.Context, i *tenantBlockManager, tagName string, expectedTagValues []string) {
 //	sr, err := i.SearchTags(ctx)
 //	require.NoError(t, err)
 //	srv, err := i.SearchTagValues(ctx, tagName)
@@ -248,7 +248,7 @@ package ingester
 //	ingester, _, _ := defaultIngester(t, tempDir)
 //	ingester.limiter = limiter
 //	i, err := ingester.getOrCreateInstance("fake")
-//	assert.NoError(t, err, "unexpected error creating new instance")
+//	assert.NoError(t, err, "unexpected error creating new tenantBlockManager")
 //
 //	var tagKey = "foo"
 //	var tagValue = "bar"
@@ -261,13 +261,13 @@ package ingester
 //	require.Equal(t, 2, len(resp.TagValues)) // Only two values of the form "bar123" fit in the 10 byte limit above.
 //}
 //
-//// writes traces to the given instance along with search data. returns
+//// writes traces to the given tenantBlockManager along with search data. returns
 //// ids expected to be returned from a tag search and strings expected to
 //// be returned from a tag value search
 //// nolint:revive,unparam
-//func writeTracesForSearch(t *testing.T, i *instance, tagKey string, tagValue string, postFixValue bool) ([][]byte, []string) {
+//func writeTracesForSearch(t *testing.T, i *tenantBlockManager, tagKey string, tagValue string, postFixValue bool) ([][]byte, []string) {
 //	// This matches the encoding for live traces, since
-//	// we are pushing to the instance directly it must match.
+//	// we are pushing to the tenantBlockManager directly it must match.
 //	dec := model.MustNewSegmentDecoder(model.CurrentEncoding)
 //
 //	numTraces := 100
@@ -326,7 +326,7 @@ package ingester
 //	require.NoError(t, err)
 //
 //	// This matches the encoding for live traces, since
-//	// we are pushing to the instance directly it must match.
+//	// we are pushing to the tenantBlockManager directly it must match.
 //	dec := model.MustNewSegmentDecoder(model.CurrentEncoding)
 //
 //	// add dummy search data
@@ -425,7 +425,7 @@ package ingester
 //	i, _ := defaultInstance(t)
 //
 //	// This matches the encoding for live traces, since
-//	// we are pushing to the instance directly it must match.
+//	// we are pushing to the tenantBlockManager directly it must match.
 //	dec := model.MustNewSegmentDecoder(model.CurrentEncoding)
 //
 //	end := make(chan struct{})
@@ -487,7 +487,7 @@ package ingester
 //	i, _ := defaultInstance(t)
 //
 //	// This matches the encoding for live traces, since
-//	// we are pushing to the instance directly it must match.
+//	// we are pushing to the tenantBlockManager directly it must match.
 //	dec := model.MustNewSegmentDecoder(model.CurrentEncoding)
 //
 //	numTraces := uint32(500)
@@ -553,7 +553,7 @@ package ingester
 //	i, _ := defaultInstance(b)
 //
 //	// This matches the encoding for live traces, since
-//	// we are pushing to the instance directly it must match.
+//	// we are pushing to the tenantBlockManager directly it must match.
 //	dec := model.MustNewSegmentDecoder(model.CurrentEncoding)
 //
 //	end := make(chan struct{})

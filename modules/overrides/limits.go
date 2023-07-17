@@ -31,10 +31,10 @@ const (
 	// GlobalIngestionRateStrategy indicates that an attempt should be made to consider this limit across the entire Tempo cluster
 	GlobalIngestionRateStrategy = "global"
 
-	// ErrorPrefixLiveTracesExceeded is used to flag batches from the ingester that were rejected b/c they had too many traces
-	ErrorPrefixLiveTracesExceeded = "LIVE_TRACES_EXCEEDED:"
-	// ErrorPrefixTraceTooLarge is used to flag batches from the ingester that were rejected b/c they exceeded the single trace limit
-	ErrorPrefixTraceTooLarge = "TRACE_TOO_LARGE:"
+	// ErrorPrefixLiveSnapshotsExceeded is used to flag batches from the ingester that were rejected b/c they had too many traces
+	ErrorPrefixLiveSnapshotsExceeded = "LIVE_SNAPSHOTS_EXCEEDED:"
+	// ErrorPrefixSnapshotTooLarge is used to flag batches from the ingester that were rejected b/c they exceeded the single trace limit
+	ErrorPrefixSnapshotTooLarge = "SNAPSHOT_TOO_LARGE:"
 	// ErrorPrefixRateLimited is used to flag batches that have exceeded the spans/second of the tenant
 	ErrorPrefixRateLimited = "RATE_LIMITED:"
 

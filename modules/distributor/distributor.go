@@ -539,9 +539,9 @@ func recordDiscardedSnapshots(err error, userID string) {
 	desc := s.Message()
 
 	var reason = reasonInternalError
-	if strings.HasPrefix(desc, overrides.ErrorPrefixLiveTracesExceeded) {
+	if strings.HasPrefix(desc, overrides.ErrorPrefixLiveSnapshotsExceeded) {
 		reason = reasonLiveTracesExceeded
-	} else if strings.HasPrefix(desc, overrides.ErrorPrefixTraceTooLarge) {
+	} else if strings.HasPrefix(desc, overrides.ErrorPrefixSnapshotTooLarge) {
 		reason = reasonTraceTooLarge
 	}
 

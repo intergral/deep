@@ -116,16 +116,21 @@ func (w *WAL) RescanBlocks(additionalStartSlack time.Duration, log log.Logger) (
 	encodings := encoding.AllEncodings()
 	blocks := make([]common.WALBlock, 0, len(files))
 	for _, f := range files {
-		// find owner
-		var owner encoding.VersionedEncoding
+		// we don't want to replay the blocks directory
+		if f.Name() == "blocks" {
+			continue
+		}
+
+		// find encoding
+		var encoder encoding.VersionedEncoding
 		for _, e := range encodings {
 			if e.OwnsWALBlock(f) {
-				owner = e
+				encoder = e
 				break
 			}
 		}
 
-		if owner == nil {
+		if encoder == nil {
 			level.Warn(log).Log("msg", "unowned file entry ignored during wal replay", "file", f.Name(), "err", err)
 			continue
 		}
@@ -137,7 +142,7 @@ func (w *WAL) RescanBlocks(additionalStartSlack time.Duration, log log.Logger) (
 		}
 
 		level.Info(log).Log("msg", "beginning replay", "file", f.Name(), "size", fileInfo.Size())
-		b, warning, err := owner.OpenWALBlock(f.Name(), w.c.Filepath, w.c.IngestionSlack, additionalStartSlack)
+		b, warning, err := encoder.OpenWALBlock(f.Name(), w.c.Filepath, w.c.IngestionSlack, additionalStartSlack)
 
 		remove := false
 		if err != nil {
