@@ -97,7 +97,7 @@ func (r *searchResponse) addResponse(res *deeppb.SearchResponse) {
 	r.resultsMetrics.InspectedBytes += res.Metrics.InspectedBytes
 	r.resultsMetrics.InspectedSnapshots += res.Metrics.InspectedSnapshots
 	r.resultsMetrics.SkippedBlocks += res.Metrics.SkippedBlocks
-	r.resultsMetrics.SkippedTraces += res.Metrics.SkippedTraces
+	r.resultsMetrics.SkippedSnapshots += res.Metrics.SkippedSnapshots
 
 	// count this request as finished
 	r.finishedRequests++

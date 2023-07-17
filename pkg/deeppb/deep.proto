@@ -76,11 +76,11 @@ message SnapshotSearchMetadata {
 }
 
 message SearchMetrics {
-  uint32 inspectedTraces = 1;
+  uint32 inspectedSnapshots = 1;
   uint64 inspectedBytes = 2;
   uint32 inspectedBlocks = 3;
   uint32 skippedBlocks = 4;
-  uint32 skippedTraces = 5;
+  uint32 skippedSnapshots = 5;
   uint64 totalBlockBytes = 6;
 }
 
