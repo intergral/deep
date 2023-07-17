@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	errMaxSnapshotsPerUserLimitExceeded = "per-user snapshots limit (local: %d global: %d actual local: %d) exceeded"
+	errMaxSnapshotsPerTenantLimitExceeded = "per-tenant snapshots limit (local: %d global: %d actual local: %d) exceeded"
 )
 
 // RingCount is the interface exposed by a ring implementation which allows
@@ -51,26 +51,26 @@ func NewLimiter(limits *overrides.Overrides, ring RingCount, replicationFactor i
 	}
 }
 
-// AssertMaxSnapshotsPerUser ensures limit has not been reached compared to the current
+// AssertMaxSnapshotsPerTenant ensures limit has not been reached compared to the current
 // number of streams in input and returns an error if so.
-func (l *Limiter) AssertMaxSnapshotsPerUser(userID string, snapshots int) error {
-	actualLimit := l.maxSnapshotsPerUser(userID)
+func (l *Limiter) AssertMaxSnapshotsPerTenant(tenantID string, snapshots int) error {
+	actualLimit := l.maxSnapshotsPerTenant(tenantID)
 	if snapshots < actualLimit {
 		return nil
 	}
 
-	localLimit := l.limits.MaxLocalSnapshotsPerUser(userID)
-	globalLimit := l.limits.MaxGlobalSnapshotsPerUser(userID)
+	localLimit := l.limits.MaxLocalSnapshotsPerTenant(tenantID)
+	globalLimit := l.limits.MaxGlobalSnapshotsPerTenant(tenantID)
 
-	return fmt.Errorf(errMaxSnapshotsPerUserLimitExceeded, localLimit, globalLimit, actualLimit)
+	return fmt.Errorf(errMaxSnapshotsPerTenantLimitExceeded, localLimit, globalLimit, actualLimit)
 }
 
-func (l *Limiter) maxSnapshotsPerUser(userID string) int {
-	localLimit := l.limits.MaxLocalSnapshotsPerUser(userID)
+func (l *Limiter) maxSnapshotsPerTenant(tenantID string) int {
+	localLimit := l.limits.MaxLocalSnapshotsPerTenant(tenantID)
 
 	// We can assume that snapshots are evenly distributed across ingesters
 	// so we do convert the global limit into a local limit
-	globalLimit := l.limits.MaxGlobalSnapshotsPerUser(userID)
+	globalLimit := l.limits.MaxGlobalSnapshotsPerTenant(tenantID)
 	localLimit = l.minNonZero(localLimit, l.convertGlobalToLocalLimit(globalLimit))
 
 	// If both the local and global limits are disabled, we just

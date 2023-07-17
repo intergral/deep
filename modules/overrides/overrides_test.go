@@ -48,11 +48,11 @@ func TestOverrides(t *testing.T) {
 		{
 			name: "limits only",
 			limits: Limits{
-				MaxGlobalTracesPerUser:  1,
-				MaxLocalTracesPerUser:   2,
-				MaxBytesPerSnapshot:     3,
-				IngestionBurstSizeBytes: 4,
-				IngestionRateLimitBytes: 5,
+				MaxGlobalSnapshotsPerTenant: 1,
+				MaxLocalSnapshotsPerTenant:  2,
+				MaxBytesPerSnapshot:         3,
+				IngestionBurstSizeBytes:     4,
+				IngestionRateLimitBytes:     5,
 			},
 			expectedMaxGlobalTraces:     map[string]int{"user1": 1, "user2": 1},
 			expectedMaxLocalTraces:      map[string]int{"user1": 2, "user2": 2},
@@ -64,21 +64,21 @@ func TestOverrides(t *testing.T) {
 		{
 			name: "basic overrides",
 			limits: Limits{
-				MaxGlobalTracesPerUser:  1,
-				MaxLocalTracesPerUser:   2,
-				MaxBytesPerSnapshot:     3,
-				IngestionBurstSizeBytes: 4,
-				IngestionRateLimitBytes: 5,
+				MaxGlobalSnapshotsPerTenant: 1,
+				MaxLocalSnapshotsPerTenant:  2,
+				MaxBytesPerSnapshot:         3,
+				IngestionBurstSizeBytes:     4,
+				IngestionRateLimitBytes:     5,
 			},
 			overrides: &perTenantOverrides{
 				TenantLimits: map[string]*Limits{
 					"user1": {
-						MaxGlobalTracesPerUser:  6,
-						MaxLocalTracesPerUser:   7,
-						MaxBytesPerSnapshot:     8,
-						IngestionBurstSizeBytes: 9,
-						IngestionRateLimitBytes: 10,
-						MaxSearchDuration:       model.Duration(11 * time.Second),
+						MaxGlobalSnapshotsPerTenant: 6,
+						MaxLocalSnapshotsPerTenant:  7,
+						MaxBytesPerSnapshot:         8,
+						IngestionBurstSizeBytes:     9,
+						IngestionRateLimitBytes:     10,
+						MaxSearchDuration:           model.Duration(11 * time.Second),
 					},
 				},
 			},
@@ -92,28 +92,28 @@ func TestOverrides(t *testing.T) {
 		{
 			name: "wildcard override",
 			limits: Limits{
-				MaxGlobalTracesPerUser:  1,
-				MaxLocalTracesPerUser:   2,
-				MaxBytesPerSnapshot:     3,
-				IngestionBurstSizeBytes: 4,
-				IngestionRateLimitBytes: 5,
+				MaxGlobalSnapshotsPerTenant: 1,
+				MaxLocalSnapshotsPerTenant:  2,
+				MaxBytesPerSnapshot:         3,
+				IngestionBurstSizeBytes:     4,
+				IngestionRateLimitBytes:     5,
 			},
 			overrides: &perTenantOverrides{
 				TenantLimits: map[string]*Limits{
 					"user1": {
-						MaxGlobalTracesPerUser:  6,
-						MaxLocalTracesPerUser:   7,
-						MaxBytesPerSnapshot:     8,
-						IngestionBurstSizeBytes: 9,
-						IngestionRateLimitBytes: 10,
+						MaxGlobalSnapshotsPerTenant: 6,
+						MaxLocalSnapshotsPerTenant:  7,
+						MaxBytesPerSnapshot:         8,
+						IngestionBurstSizeBytes:     9,
+						IngestionRateLimitBytes:     10,
 					},
 					"*": {
-						MaxGlobalTracesPerUser:  11,
-						MaxLocalTracesPerUser:   12,
-						MaxBytesPerSnapshot:     13,
-						IngestionBurstSizeBytes: 14,
-						IngestionRateLimitBytes: 15,
-						MaxSearchDuration:       model.Duration(16 * time.Second),
+						MaxGlobalSnapshotsPerTenant: 11,
+						MaxLocalSnapshotsPerTenant:  12,
+						MaxBytesPerSnapshot:         13,
+						IngestionBurstSizeBytes:     14,
+						IngestionRateLimitBytes:     15,
+						MaxSearchDuration:           model.Duration(16 * time.Second),
 					},
 				},
 			},
@@ -148,11 +148,11 @@ func TestOverrides(t *testing.T) {
 			require.NoError(t, err)
 
 			for user, expectedVal := range tt.expectedMaxLocalTraces {
-				assert.Equal(t, expectedVal, overrides.MaxLocalSnapshotsPerUser(user))
+				assert.Equal(t, expectedVal, overrides.MaxLocalSnapshotsPerTenant(user))
 			}
 
 			for user, expectedVal := range tt.expectedMaxGlobalTraces {
-				assert.Equal(t, expectedVal, overrides.MaxGlobalSnapshotsPerUser(user))
+				assert.Equal(t, expectedVal, overrides.MaxGlobalSnapshotsPerTenant(user))
 			}
 
 			for user, expectedVal := range tt.expectedIngestionBurstSpans {

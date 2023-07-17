@@ -35,13 +35,13 @@ const (
 	ErrorPrefixLiveSnapshotsExceeded = "LIVE_SNAPSHOTS_EXCEEDED:"
 	// ErrorPrefixSnapshotTooLarge is used to flag batches from the ingester that were rejected b/c they exceeded the single trace limit
 	ErrorPrefixSnapshotTooLarge = "SNAPSHOT_TOO_LARGE:"
-	// ErrorPrefixRateLimited is used to flag batches that have exceeded the spans/second of the tenant
+	// ErrorPrefixRateLimited is used to flag batches that have exceeded the snapshot/second of the tenant
 	ErrorPrefixRateLimited = "RATE_LIMITED:"
 
 	// metrics
-	MetricMaxLocalTracesPerUser           = "max_local_traces_per_user"
-	MetricMaxGlobalTracesPerUser          = "max_global_traces_per_user"
-	MetricMaxBytesPerTrace                = "max_bytes_per_snapshot"
+	MetricMaxLocalSnapshotsPerTenant      = "max_local_snapshots_per_tenant"
+	MetricMaxGlobalSnapshotsPerTenant     = "max_global_snapshots_per_tenant"
+	MetricMaxBytesPerSnapshot             = "max_bytes_per_snapshot"
 	MetricMaxBytesPerTagValuesQuery       = "max_bytes_per_tag_values_query"
 	MetricIngestionRateLimitBytes         = "ingestion_rate_limit_bytes"
 	MetricIngestionBurstSizeBytes         = "ingestion_burst_size_bytes"
@@ -67,8 +67,8 @@ type Limits struct {
 	IngestionBurstSizeBytes int    `yaml:"ingestion_burst_size_bytes" json:"ingestion_burst_size_bytes"`
 
 	// Ingester enforced limits.
-	MaxLocalTracesPerUser  int `yaml:"max_traces_per_user" json:"max_traces_per_user"`
-	MaxGlobalTracesPerUser int `yaml:"max_global_traces_per_user" json:"max_global_traces_per_user"`
+	MaxLocalSnapshotsPerTenant  int `yaml:"max_snapshots_per_tenant" json:"max_snapshots_per_tenant"`
+	MaxGlobalSnapshotsPerTenant int `yaml:"max_global_snapshots_per_tenant" json:"max_global_snapshots_per_tenant"`
 
 	// Forwarders
 	Forwarders []string `yaml:"forwarders" json:"forwarders"`
@@ -100,8 +100,9 @@ type Limits struct {
 	//  is not used when doing a trace by id lookup.
 	MaxBytesPerSnapshot int `yaml:"max_bytes_per_snapshot" json:"max_bytes_per_snapshot"`
 
-	// Configuration for overrides, convenient if it goes here.
-	PerTenantOverrideConfig string         `yaml:"per_tenant_override_config" json:"per_tenant_override_config"`
+	// PerTenantOverrideConfig is the path to the per-tenant config
+	PerTenantOverrideConfig string `yaml:"per_tenant_override_config" json:"per_tenant_override_config"`
+	// PerTenantOverridePeriod the time between reloads of the override file
 	PerTenantOverridePeriod model.Duration `yaml:"per_tenant_override_period" json:"per_tenant_override_period"`
 }
 
@@ -113,16 +114,16 @@ func (l *Limits) RegisterFlags(f *flag.FlagSet) {
 	f.IntVar(&l.IngestionBurstSizeBytes, "distributor.ingestion-burst-size-bytes", 20e6, "Per-user ingestion burst size in bytes. Should be set to the expected size (in bytes) of a single push request.")
 
 	// Ingester limits
-	f.IntVar(&l.MaxLocalTracesPerUser, "ingester.max-traces-per-user", 10e3, "Maximum number of active traces per user, per ingester. 0 to disable.")
-	f.IntVar(&l.MaxGlobalTracesPerUser, "ingester.max-global-traces-per-user", 0, "Maximum number of active traces per user, across the cluster. 0 to disable.")
-	f.IntVar(&l.MaxBytesPerSnapshot, "ingester.max-bytes-per-trace", 50e5, "Maximum size of a trace in bytes.  0 to disable.")
+	f.IntVar(&l.MaxLocalSnapshotsPerTenant, "ingester.max-snapshots-per-tenant", 10e3, "Maximum number of active snapshots per tenant, per ingester. 0 to disable.")
+	f.IntVar(&l.MaxGlobalSnapshotsPerTenant, "ingester.max-global-snapshots-per-tenant", 0, "Maximum number of active snapshots per tenant, across the cluster. 0 to disable.")
+	f.IntVar(&l.MaxBytesPerSnapshot, "ingester.max-bytes-per-snapshot", 50e5, "Maximum size of a snapshots in bytes.  0 to disable.")
 
 	// Querier limits
 	f.IntVar(&l.MaxBytesPerTagValuesQuery, "querier.max-bytes-per-tag-values-query", 50e5, "Maximum size of response for a tag-values query. Used mainly to limit large the number of values associated with a particular tag")
 
-	f.StringVar(&l.PerTenantOverrideConfig, "limits.per-user-override-config", "", "File name of per-user overrides.")
+	f.StringVar(&l.PerTenantOverrideConfig, "limits.per-tenant-override-config", "", "File name of per tenant overrides.")
 	_ = l.PerTenantOverridePeriod.Set("10s")
-	f.Var(&l.PerTenantOverridePeriod, "limits.per-user-override-period", "Period with this to reload the overrides.")
+	f.Var(&l.PerTenantOverridePeriod, "limits.per-tenant-override-period", "Period with this to reload the overrides.")
 }
 
 func (l *Limits) Describe(ch chan<- *prometheus.Desc) {
@@ -130,9 +131,9 @@ func (l *Limits) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (l *Limits) Collect(ch chan<- prometheus.Metric) {
-	ch <- prometheus.MustNewConstMetric(metricLimitsDesc, prometheus.GaugeValue, float64(l.MaxLocalTracesPerUser), MetricMaxLocalTracesPerUser)
-	ch <- prometheus.MustNewConstMetric(metricLimitsDesc, prometheus.GaugeValue, float64(l.MaxGlobalTracesPerUser), MetricMaxGlobalTracesPerUser)
-	ch <- prometheus.MustNewConstMetric(metricLimitsDesc, prometheus.GaugeValue, float64(l.MaxBytesPerSnapshot), MetricMaxBytesPerTrace)
+	ch <- prometheus.MustNewConstMetric(metricLimitsDesc, prometheus.GaugeValue, float64(l.MaxLocalSnapshotsPerTenant), MetricMaxLocalSnapshotsPerTenant)
+	ch <- prometheus.MustNewConstMetric(metricLimitsDesc, prometheus.GaugeValue, float64(l.MaxGlobalSnapshotsPerTenant), MetricMaxGlobalSnapshotsPerTenant)
+	ch <- prometheus.MustNewConstMetric(metricLimitsDesc, prometheus.GaugeValue, float64(l.MaxBytesPerSnapshot), MetricMaxBytesPerSnapshot)
 	ch <- prometheus.MustNewConstMetric(metricLimitsDesc, prometheus.GaugeValue, float64(l.MaxBytesPerTagValuesQuery), MetricMaxBytesPerTagValuesQuery)
 	ch <- prometheus.MustNewConstMetric(metricLimitsDesc, prometheus.GaugeValue, float64(l.IngestionRateLimitBytes), MetricIngestionRateLimitBytes)
 	ch <- prometheus.MustNewConstMetric(metricLimitsDesc, prometheus.GaugeValue, float64(l.IngestionBurstSizeBytes), MetricIngestionBurstSizeBytes)
