@@ -84,7 +84,7 @@ package frontend
 //		blockBoundaries: createBlockBoundaries(queryShards - 1),
 //	}
 //
-//	ctx := user.InjectOrgID(context.Background(), "blerg")
+//	ctx := util.InjectTenantID(context.Background(), "blerg")
 //	req := httptest.NewRequest("GET", "/", nil).WithContext(ctx)
 //
 //	shardedReqs, err := sharder.buildShardedRequests(req)
@@ -335,7 +335,7 @@ package frontend
 //
 //			req := httptest.NewRequest("GET", "/api/traces/1234", nil)
 //			ctx := req.Context()
-//			ctx = user.InjectOrgID(ctx, "blerg")
+//			ctx = util.InjectTenantID(ctx, "blerg")
 //			req = req.WithContext(ctx)
 //
 //			resp, err := testRT.RoundTrip(req)

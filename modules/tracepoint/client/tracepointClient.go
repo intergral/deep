@@ -26,12 +26,12 @@ import (
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/intergral/deep/pkg/deeppb"
 	pb "github.com/intergral/deep/pkg/deeppb/poll/v1"
+	"github.com/intergral/deep/pkg/util"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/weaveworks/common/middleware"
-	"github.com/weaveworks/common/user"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -75,7 +75,7 @@ func New(clientCfg Config, tracepointRing ring.ReadRing, logger log.Logger) (*TP
 	return &client, nil
 }
 
-func (ts *TPClient) starting(ctx context.Context) error {
+func (ts *TPClient) starting(context.Context) error {
 	return nil
 }
 
@@ -86,7 +86,7 @@ func (ts *TPClient) running(ctx context.Context) error {
 	}
 }
 
-func (ts *TPClient) stopping(err error) error {
+func (ts *TPClient) stopping(error) error {
 	return nil
 }
 
@@ -124,12 +124,12 @@ func instrumentation() ([]grpc.UnaryClientInterceptor, []grpc.StreamClientInterc
 }
 
 func (ts *TPClient) CreateTracepoint(ctx context.Context, req *deeppb.CreateTracepointRequest) (*deeppb.CreateTracepointResponse, error) {
-	orgId, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Querier.Search")
+		return nil, errors.Wrap(err, "error extracting tenant id in Querier.Search")
 	}
 
-	tokenFor := TokenFor(orgId)
+	tokenFor := TokenFor(tenantID)
 
 	get, err := ts.ring.Get(tokenFor, ring.Read, nil, nil, nil)
 	_, err = get.Do(ctx, 0, func(funCtx context.Context, desc *ring.InstanceDesc) (interface{}, error) {
@@ -149,12 +149,12 @@ func (ts *TPClient) CreateTracepoint(ctx context.Context, req *deeppb.CreateTrac
 }
 
 func (ts *TPClient) DeleteTracepoint(ctx context.Context, req *deeppb.DeleteTracepointRequest) (*deeppb.DeleteTracepointResponse, error) {
-	orgId, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Querier.Search")
+		return nil, errors.Wrap(err, "error extracting tenant id in Querier.Search")
 	}
 
-	tokenFor := TokenFor(orgId)
+	tokenFor := TokenFor(tenantID)
 
 	get, err := ts.ring.Get(tokenFor, ring.Read, nil, nil, nil)
 	_, err = get.Do(ctx, 0, func(funCtx context.Context, desc *ring.InstanceDesc) (interface{}, error) {
@@ -174,12 +174,12 @@ func (ts *TPClient) DeleteTracepoint(ctx context.Context, req *deeppb.DeleteTrac
 }
 
 func (ts *TPClient) LoadTracepoints(ctx context.Context, req *deeppb.LoadTracepointRequest) (*deeppb.LoadTracepointResponse, error) {
-	orgId, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Tracepoint.LoadTracepoints")
+		return nil, errors.Wrap(err, "error extracting tenant id in Tracepoint.LoadTracepoints")
 	}
 
-	tokenFor := TokenFor(orgId)
+	tokenFor := TokenFor(tenantID)
 
 	get, err := ts.ring.Get(tokenFor, ring.Read, nil, nil, nil)
 
@@ -229,8 +229,8 @@ func (ts *TPClient) LoadTracepoints(ctx context.Context, req *deeppb.LoadTracepo
 }
 
 // TokenFor generates a token used for finding ingesters from ring
-func TokenFor(userID string) uint32 {
+func TokenFor(tenantID string) uint32 {
 	h := fnv.New32()
-	_, _ = h.Write([]byte(userID))
+	_, _ = h.Write([]byte(tenantID))
 	return h.Sum32()
 }

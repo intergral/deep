@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/util"
 	"sync"
 	"time"
 
@@ -40,7 +41,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/weaveworks/common/user"
 )
 
 // ErrReadOnly is returned when the ingester is shutting down and a push was
@@ -193,7 +193,7 @@ func (i *Ingester) PushBytes(ctx context.Context, req *deeppb.PushBytesRequest) 
 		return nil, ErrReadOnly
 	}
 
-	tenantID, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -221,11 +221,11 @@ func (i *Ingester) FindSnapshotByID(ctx context.Context, req *deeppb.SnapshotByI
 	span, ctx := opentracing.StartSpanFromContext(ctx, "Ingester.FindSnapshotByID")
 	defer span.Finish()
 
-	instanceID, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
 		return nil, err
 	}
-	inst, ok := i.getInstanceByID(instanceID)
+	inst, ok := i.getInstanceByID(tenantID)
 	if !ok || inst == nil {
 		return &deeppb.SnapshotByIDResponse{}, nil
 	}

@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/util"
 	"io"
 	"net/http"
 	"net/url"
@@ -31,16 +32,14 @@ import (
 	"github.com/go-kit/log/level"
 	"github.com/golang/protobuf/jsonpb" //nolint:all //deprecated
 	"github.com/golang/protobuf/proto"  //nolint:all //deprecated
-	"github.com/opentracing/opentracing-go"
-	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/weaveworks/common/user"
-
 	"github.com/intergral/deep/modules/overrides"
 	"github.com/intergral/deep/modules/storage"
 	"github.com/intergral/deep/pkg/api"
 	"github.com/intergral/deep/pkg/deepdb"
+	"github.com/opentracing/opentracing-go"
+	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
@@ -95,7 +94,7 @@ func New(cfg Config, next http.RoundTripper, tpNext http.RoundTripper, o *overri
 	snapshots := traceByIDMiddleware.Wrap(next)
 	search := searchMiddleware.Wrap(next)
 
-	tpMiddleware := newTracepointForwardMiddleware(cfg, logger)
+	tpMiddleware := newTracepointForwardMiddleware()
 	tpHandler := tpMiddleware.Wrap(tpNext)
 
 	return &QueryFrontend{
@@ -108,7 +107,7 @@ func New(cfg Config, next http.RoundTripper, tpNext http.RoundTripper, o *overri
 	}, nil
 }
 
-func newTracepointForwardMiddleware(cfg Config, logger log.Logger) Middleware {
+func newTracepointForwardMiddleware() Middleware {
 	return MiddlewareFunc(func(next http.RoundTripper) http.RoundTripper {
 		return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
 			// We just need to modify the uri to match the api expectation
@@ -167,7 +166,7 @@ func newTraceByIDMiddleware(cfg Config, logger log.Logger) Middleware {
 			// todo : should all of this request/response content type be up a level and be used for all query types?
 			if resp != nil && resp.StatusCode == http.StatusOK {
 				body, err := io.ReadAll(resp.Body)
-				resp.Body.Close()
+				_ = resp.Body.Close()
 				if err != nil {
 					return nil, errors.Wrap(err, "error reading response body at query frontend")
 				}
@@ -220,9 +219,9 @@ func newSearchMiddleware(cfg Config, o *overrides.Overrides, reader deepdb.Reade
 			}
 
 			// ingester search queries only need to be proxied to a single querier
-			orgID, _ := user.ExtractOrgID(r.Context())
+			tenantID, _ := util.ExtractTenantID(r.Context())
 
-			r.Header.Set(user.OrgIDHeaderName, orgID)
+			r.Header.Set(util.TenantIDHeaderName, tenantID)
 			r.RequestURI = buildUpstreamRequestURI(r.RequestURI, nil)
 
 			return ingesterSearchRT.RoundTrip(r)

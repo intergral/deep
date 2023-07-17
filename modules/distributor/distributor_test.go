@@ -64,7 +64,7 @@ package distributor
 //)
 //
 //var (
-//	ctx = user.InjectOrgID(context.Background(), "test")
+//	ctx = util.InjectTenantID(context.Background(), "test")
 //)
 //
 ////func batchesToTraces(t *testing.T, batches []*v1.ResourceSpans) ptrace.Traces {

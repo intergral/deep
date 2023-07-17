@@ -27,7 +27,6 @@ import (
 
 	"github.com/intergral/deep/pkg/util"
 	"github.com/stretchr/testify/require"
-	"github.com/weaveworks/common/user"
 )
 
 type assertFunc func(*testing.T, context.Context)
@@ -44,22 +43,19 @@ func newAssertingConsumer(t *testing.T, assertFunc assertFunc) receivers.Process
 	}.ConsumeTraces
 }
 
-func (tc testConsumer) ConsumeTraces(ctx context.Context, in *tp.Snapshot) (*tp.SnapshotResponse, error) {
+func (tc testConsumer) ConsumeTraces(ctx context.Context, _ *tp.Snapshot) (*tp.SnapshotResponse, error) {
 	tc.assertFunc(tc.t, ctx)
 	return nil, nil
 }
 
-//type ProcessSnapshots func(ctx context.Context, in *tp.Snapshot) (*tp.SnapshotResponse, error)
-//type ProcessPoll func(ctx context.Context, pollRequest *pb.PollRequest) (*pb.PollResponse, error)
-
 func TestFakeTenantMiddleware(t *testing.T) {
 	m := FakeTenantMiddleware()
 
-	t.Run("injects org id", func(t *testing.T) {
+	t.Run("injects tenant id", func(t *testing.T) {
 		consumer := newAssertingConsumer(t, func(t *testing.T, ctx context.Context) {
-			orgID, err := user.ExtractOrgID(ctx)
+			tenantID, err := util.ExtractTenantID(ctx)
 			require.NoError(t, err)
-			require.Equal(t, orgID, util.FakeTenantID)
+			require.Equal(t, tenantID, util.FakeTenantID)
 		})
 
 		ctx := context.Background()
@@ -71,35 +67,35 @@ func TestFakeTenantMiddleware(t *testing.T) {
 func TestMultiTenancyMiddleware(t *testing.T) {
 	m := MultiTenancyMiddleware()
 
-	t.Run("injects org id grpc", func(t *testing.T) {
+	t.Run("injects tenant id grpc", func(t *testing.T) {
 		tenantID := "test-tenant-id"
 
 		consumer := newAssertingConsumer(t, func(t *testing.T, ctx context.Context) {
-			orgID, err := user.ExtractOrgID(ctx)
+			extractTenantID, err := util.ExtractTenantID(ctx)
 			require.NoError(t, err)
-			require.Equal(t, orgID, tenantID)
+			require.Equal(t, tenantID, extractTenantID)
 		})
 
 		ctx := metadata.NewIncomingContext(
 			context.Background(),
-			metadata.Pairs("X-Scope-OrgID", tenantID),
+			metadata.Pairs(util.TenantIDHeaderName, tenantID),
 		)
 		_, err := m.WrapSnapshots(consumer)(ctx, nil)
 		require.NoError(t, err)
 	})
 
-	t.Run("injects org id http", func(t *testing.T) {
+	t.Run("injects tenant id http", func(t *testing.T) {
 		tenantID := "test-tenant-id"
 
 		consumer := newAssertingConsumer(t, func(t *testing.T, ctx context.Context) {
-			orgID, err := user.ExtractOrgID(ctx)
+			extractTenantID, err := util.ExtractTenantID(ctx)
 			require.NoError(t, err)
-			require.Equal(t, orgID, tenantID)
+			require.Equal(t, extractTenantID, tenantID)
 		})
 
 		info := client.Info{
 			Metadata: client.NewMetadata(map[string][]string{
-				"x-scope-OrgID": {tenantID},
+				util.TenantIDHeaderName: {tenantID},
 			}),
 		}
 
@@ -108,7 +104,7 @@ func TestMultiTenancyMiddleware(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("returns error if org id cannot be extracted", func(t *testing.T) {
+	t.Run("returns error if tenant id cannot be extracted", func(t *testing.T) {
 		// no need to assert anything, because the wrapped function is never called
 		consumer := newAssertingConsumer(t, func(t *testing.T, ctx context.Context) {})
 		ctx := context.Background()

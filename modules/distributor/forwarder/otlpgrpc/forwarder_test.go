@@ -19,12 +19,12 @@ package otlpgrpc
 
 import (
 	"context"
+	"github.com/intergral/deep/pkg/util"
 	"net"
 	"testing"
 
 	"github.com/go-kit/log"
 	"github.com/stretchr/testify/require"
-	"github.com/weaveworks/common/user"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.uber.org/atomic"
@@ -273,7 +273,7 @@ func Test_Forwarder_ForwardTraces_ReturnsNoErrorAndSentTracesMatchReceivedTraces
 	require.NoError(t, err)
 	traces := ptrace.NewTraces()
 	traces.ResourceSpans().AppendEmpty().SetSchemaUrl("testURL")
-	ctx := user.InjectOrgID(context.Background(), "123")
+	ctx := util.InjectTenantID(context.Background(), "123")
 
 	// When
 	err = f.ForwardTraces(ctx, traces)

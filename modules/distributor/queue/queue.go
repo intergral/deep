@@ -20,6 +20,7 @@ package queue
 import (
 	"context"
 	"fmt"
+	"github.com/intergral/deep/pkg/util"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -27,7 +28,6 @@ import (
 	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/weaveworks/common/user"
 )
 
 var (
@@ -188,7 +188,7 @@ func (m *Queue[T]) forwardRequest(req T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	ctx = user.InjectOrgID(ctx, m.tenantID)
+	ctx = util.InjectTenantID(ctx, m.tenantID)
 
 	m.fn(ctx, req)
 }

@@ -28,10 +28,10 @@ import (
 	tp_store "github.com/intergral/deep/modules/tracepoint/store"
 	"github.com/intergral/deep/pkg/deeppb"
 	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
+	"github.com/intergral/deep/pkg/util"
 	"github.com/intergral/deep/pkg/util/log"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/weaveworks/common/user"
 )
 
 const (
@@ -55,7 +55,7 @@ func (ts *TPService) Flush() {
 	}
 }
 
-func (ts *TPService) TransferOut(ctx context.Context) error {
+func (ts *TPService) TransferOut(context.Context) error {
 	return ring.ErrTransferDisabled
 }
 
@@ -108,9 +108,9 @@ func (ts *TPService) stopping(_ error) error {
 }
 
 func (ts *TPService) LoadTracepoints(ctx context.Context, req *deeppb.LoadTracepointRequest) (*deeppb.LoadTracepointResponse, error) {
-	orgId, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Tracepoint.LoadTracepoints")
+		return nil, errors.Wrap(err, "error extracting tenant id in Tracepoint.LoadTracepoints")
 	}
 
 	attributes := make([]*cp.KeyValue, 0)
@@ -118,7 +118,7 @@ func (ts *TPService) LoadTracepoints(ctx context.Context, req *deeppb.LoadTracep
 		attributes = req.Request.Resource.Attributes
 	}
 
-	tpStore, err := ts.store.ForResource(ctx, orgId, attributes)
+	tpStore, err := ts.store.ForResource(ctx, tenantID, attributes)
 	if err != nil {
 		return nil, err
 	}
@@ -127,12 +127,12 @@ func (ts *TPService) LoadTracepoints(ctx context.Context, req *deeppb.LoadTracep
 }
 
 func (ts *TPService) CreateTracepoint(ctx context.Context, req *deeppb.CreateTracepointRequest) (*deeppb.CreateTracepointResponse, error) {
-	orgId, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Tracepoint.LoadTracepoints")
+		return nil, errors.Wrap(err, "error extracting tenant id in Tracepoint.LoadTracepoints")
 	}
 
-	tpStore, err := ts.store.ForOrg(ctx, orgId)
+	tpStore, err := ts.store.ForOrg(ctx, tenantID)
 	if err != nil {
 		return nil, err
 	}
@@ -145,12 +145,12 @@ func (ts *TPService) CreateTracepoint(ctx context.Context, req *deeppb.CreateTra
 }
 
 func (ts *TPService) DeleteTracepoint(ctx context.Context, req *deeppb.DeleteTracepointRequest) (*deeppb.DeleteTracepointResponse, error) {
-	orgId, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "error extracting org id in Tracepoint.LoadTracepoints")
+		return nil, errors.Wrap(err, "error extracting tenant id in Tracepoint.LoadTracepoints")
 	}
 
-	tpStore, err := ts.store.ForOrg(ctx, orgId)
+	tpStore, err := ts.store.ForOrg(ctx, tenantID)
 	if err != nil {
 		return nil, err
 	}

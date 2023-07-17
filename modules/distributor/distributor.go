@@ -24,6 +24,7 @@ import (
 	"github.com/intergral/deep/modules/distributor/snapshotreceiver"
 	"github.com/intergral/deep/modules/tracepoint/client"
 	deeppb_poll "github.com/intergral/deep/pkg/deeppb/poll/v1"
+	"github.com/intergral/deep/pkg/util"
 	pb "github.com/intergral/go-deep-proto/poll/v1"
 	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
 	"google.golang.org/grpc/status"
@@ -41,7 +42,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/prometheus/util/strutil"
-	"github.com/weaveworks/common/user"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
@@ -156,7 +156,7 @@ type Distributor struct {
 	// Generic Forwarder
 	forwardersManager *forwarder.Manager
 
-	// Per-user rate limiter.
+	// Per-tenant rate limiter.
 	ingestionRateLimiter *limiter.RateLimiter
 
 	// Manager for subservices
@@ -311,7 +311,7 @@ func (d *Distributor) PushPoll(ctx context.Context, pollRequest *pb.PollRequest)
 	span, ctx := opentracing.StartSpanFromContext(ctx, "distributor.PushPoll")
 	defer span.Finish()
 
-	orgId, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
 		// can't record as we have no tenant
 		return nil, err
@@ -335,7 +335,7 @@ func (d *Distributor) PushPoll(ctx context.Context, pollRequest *pb.PollRequest)
 	request := &deeppb.LoadTracepointRequest{Request: req}
 
 	size := proto.Size(pollRequest)
-	metricPollBytesIngested.WithLabelValues(orgId).Add(float64(size))
+	metricPollBytesIngested.WithLabelValues(tenantID).Add(float64(size))
 
 	tracepoints, err := d.tpClient.LoadTracepoints(ctx, request)
 	if err != nil {
@@ -345,7 +345,7 @@ func (d *Distributor) PushPoll(ctx context.Context, pollRequest *pb.PollRequest)
 	response := tracepoints.GetResponse()
 
 	responseSize := proto.Size(response)
-	metricPollBytesResponded.WithLabelValues(orgId).Add(float64(responseSize))
+	metricPollBytesResponded.WithLabelValues(tenantID).Add(float64(responseSize))
 
 	marshal, err := proto.Marshal(response)
 	if err != nil {
@@ -362,7 +362,7 @@ func (d *Distributor) PushSnapshot(ctx context.Context, in *tp.Snapshot) (*tp.Sn
 	span, ctx := opentracing.StartSpanFromContext(ctx, "distributor.PushSnapshot")
 	defer span.Finish()
 
-	orgId, err := user.ExtractOrgID(ctx)
+	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
 		// can't record discarded spans here b/c there's no tenant
 		return nil, err
@@ -392,37 +392,37 @@ func (d *Distributor) PushSnapshot(ctx context.Context, in *tp.Snapshot) (*tp.Sn
 	}
 
 	size := proto.Size(snapshot)
-	metricSnapshotBytesIngested.WithLabelValues(orgId).Add(float64(size))
+	metricSnapshotBytesIngested.WithLabelValues(tenantID).Add(float64(size))
 
 	// check limits
 	now := time.Now()
-	if !d.ingestionRateLimiter.AllowN(now, orgId, size) {
-		metricDiscardedSnapshots.WithLabelValues(reasonRateLimited, orgId).Add(1)
+	if !d.ingestionRateLimiter.AllowN(now, tenantID, size) {
+		metricDiscardedSnapshots.WithLabelValues(reasonRateLimited, tenantID).Add(1)
 		return nil, status.Errorf(codes.ResourceExhausted,
 			"%s ingestion rate limit (%d bytes) exceeded while adding %d bytes",
 			overrides.ErrorPrefixRateLimited,
-			int(d.ingestionRateLimiter.Limit(now, orgId)),
+			int(d.ingestionRateLimiter.Limit(now, tenantID)),
 			size)
 	}
 
-	keys, err := extractKeys(snapshot, orgId)
+	keys, err := extractKeys(snapshot, tenantID)
 	if err != nil {
-		metricDiscardedSnapshots.WithLabelValues(reasonInternalError, orgId).Add(1)
+		metricDiscardedSnapshots.WithLabelValues(reasonInternalError, tenantID).Add(1)
 		return nil, err
 	}
 
-	err = d.sendToIngester(ctx, orgId, keys, snapshot)
+	err = d.sendToIngester(ctx, tenantID, keys, snapshot)
 	if err != nil {
-		recordDiscardedSnapshots(err, orgId)
+		recordDiscardedSnapshots(err, tenantID)
 		return nil, err
 	}
 
-	if len(d.overrides.MetricsGeneratorProcessors(orgId)) > 0 {
-		d.generatorForwarder.SendSnapshot(ctx, orgId, keys, snapshot)
+	if len(d.overrides.MetricsGeneratorProcessors(tenantID)) > 0 {
+		d.generatorForwarder.SendSnapshot(ctx, tenantID, keys, snapshot)
 	}
 
-	if err := d.forwardersManager.ForTenant(orgId).ForwardSnapshot(ctx, snapshot); err != nil {
-		_ = level.Warn(d.logger).Log("msg", "failed to forward batches for tenant=%s: %w", orgId, err)
+	if err := d.forwardersManager.ForTenant(tenantID).ForwardSnapshot(ctx, snapshot); err != nil {
+		_ = level.Warn(d.logger).Log("msg", "failed to forward batches for tenant=%s: %w", tenantID, err)
 	}
 
 	return &tp.SnapshotResponse{}, nil
@@ -476,7 +476,7 @@ func (d *Distributor) sendToGenerators(ctx context.Context, userID string, keys 
 	err := ring.DoBatch(ctx, op, readRing, keys, func(generator ring.InstanceDesc, indexes []int) error {
 		localCtx, cancel := context.WithTimeout(ctx, d.generatorClientCfg.RemoteTimeout)
 		defer cancel()
-		localCtx = user.InjectOrgID(localCtx, userID)
+		localCtx = util.InjectTenantID(localCtx, userID)
 
 		req := deeppb.PushSnapshotRequest{
 			Snapshot: snapshot,
@@ -518,7 +518,7 @@ func (d *Distributor) sendToIngester(ctx context.Context, userID string, keys []
 	err = ring.DoBatch(ctx, op, d.ingestersRing, keys, func(ingester ring.InstanceDesc, indexes []int) error {
 		localCtx, cancel := context.WithTimeout(ctx, d.clientCfg.RemoteTimeout)
 		defer cancel()
-		localCtx = user.InjectOrgID(localCtx, userID)
+		localCtx = util.InjectTenantID(localCtx, userID)
 
 		req := deeppb.PushBytesRequest{
 			Snapshot: bytes,
