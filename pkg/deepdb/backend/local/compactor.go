@@ -45,10 +45,10 @@ func (rw *Backend) ClearBlock(blockID uuid.UUID, tenantID string) error {
 		return errors.New("empty block id")
 	}
 
-	path := rw.rootPath(backend.KeyPathForBlock(blockID, tenantID))
-	err := os.RemoveAll(path)
+	rootPath := rw.rootPath(backend.KeyPathForBlock(blockID, tenantID))
+	err := os.RemoveAll(rootPath)
 	if err != nil {
-		return fmt.Errorf("failed to remove keypath for block %s: %w", path, err)
+		return fmt.Errorf("failed to remove keypath for block %s: %w", rootPath, err)
 	}
 
 	return nil

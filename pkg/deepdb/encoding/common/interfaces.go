@@ -54,17 +54,17 @@ type CacheControl struct {
 }
 
 type SearchOptions struct {
-	ChunkSizeBytes     uint32 // Buffer size to read from backend storage.
-	StartPage          int    // Controls searching only a subset of the block. Which page to begin searching at.
-	TotalPages         int    // Controls searching only a subset of the block. How many pages to search.
-	MaxBytes           int    // Max allowable trace size in bytes. Traces exceeding this are not searched.
-	PrefetchTraceCount int    // How many traces to prefetch async.
-	ReadBufferCount    int
-	ReadBufferSize     int
-	CacheControl       CacheControl
+	ChunkSizeBytes        uint32 // Buffer size to read from backend storage.
+	StartPage             int    // Controls searching only a subset of the block. Which page to begin searching at.
+	TotalPages            int    // Controls searching only a subset of the block. How many pages to search.
+	MaxBytes              int    // Max allowable trace size in bytes. Traces exceeding this are not searched.
+	PrefetchSnapshotCount int    // How many traces to prefetch async.
+	ReadBufferCount       int
+	ReadBufferSize        int
+	CacheControl          CacheControl
 }
 
-// DefaultSearchOptions() is used in a lot of places such as local ingester searches. It is important
+// DefaultSearchOptions is used in a lot of places such as local ingester searches. It is important
 // in these cases to set a reasonable read buffer size and count to prevent constant tiny readranges
 // against the local backend.
 // TODO: Note that there is another method of creating "default search options" that looks like this:
@@ -82,18 +82,18 @@ type Compactor interface {
 }
 
 type CompactionOptions struct {
-	ChunkSizeBytes     uint32
-	FlushSizeBytes     uint32
-	IteratorBufferSize int // How many traces to prefetch async.
-	MaxBytesPerTrace   int
-	OutputBlocks       uint8
-	BlockConfig        BlockConfig
-	Combiner           model.ObjectCombiner
+	ChunkSizeBytes      uint32
+	FlushSizeBytes      uint32
+	IteratorBufferSize  int // How many traces to prefetch async.
+	MaxBytesPerSnapshot int
+	OutputBlocks        uint8
+	BlockConfig         BlockConfig
+	Combiner            model.ObjectCombiner
 
-	ObjectsCombined func(compactionLevel, objects int)
-	ObjectsWritten  func(compactionLevel, objects int)
-	BytesWritten    func(compactionLevel, bytes int)
-	SpansDiscarded  func(traceID string, spans int)
+	ObjectsCombined    func(compactionLevel, objects int)
+	ObjectsWritten     func(compactionLevel, objects int)
+	BytesWritten       func(compactionLevel, bytes int)
+	SnapshotsDiscarded func(traceID string, spans int)
 }
 
 type Iterator interface {

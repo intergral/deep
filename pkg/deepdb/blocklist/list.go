@@ -117,7 +117,7 @@ func (l *List) ApplyPollResults(m PerTenant, c PerTenantCompacted) {
 }
 
 // Update Adds and removes regular or compacted blocks from the in-memory blocklist.
-// Changes are deeprary and will be preserved only for one poll
+// Changes are temporary and will be preserved only for one poll
 func (l *List) Update(tenantID string, add []*backend.BlockMeta, remove []*backend.BlockMeta, compactedAdd []*backend.CompactedBlockMeta, compactedRemove []*backend.CompactedBlockMeta) {
 	if tenantID == "" {
 		return

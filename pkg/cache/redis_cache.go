@@ -78,20 +78,19 @@ func (c *RedisCache) Fetch(ctx context.Context, keys []string) (found []string, 
 	var items [][]byte
 	// Run a tracked request, using c.requestDuration to monitor requests.
 	err := instr.CollectedRequest(ctx, method, c.requestDuration, redisStatusCode, func(ctx context.Context) error {
-		log, _ := spanlogger.New(ctx, method)
-		defer log.Finish()
-		log.LogFields(otlog.Int("keys requested", len(keys)))
+		spanLog, _ := spanlogger.New(ctx, method)
+		defer spanLog.Finish()
+		spanLog.LogFields(otlog.Int("keys requested", len(keys)))
 
 		var err error
 		items, err = c.redis.MGet(ctx, keys)
 		if err != nil {
-			// nolint:errcheck
-			log.Error(err)
+			_ = spanLog.Error(err)
 			level.Error(c.logger).Log("msg", "failed to get from redis", "name", c.name, "err", err)
 			return err
 		}
 
-		log.LogFields(otlog.Int("keys found", len(items)))
+		spanLog.LogFields(otlog.Int("keys found", len(items)))
 
 		return nil
 	})

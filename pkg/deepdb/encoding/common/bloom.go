@@ -101,7 +101,7 @@ func ShardKeyForTraceID(traceID []byte, shardCount int) int {
 	return int(util.TokenForTraceID(traceID)) % ValidateShardCount(shardCount)
 }
 
-// For backward compatibility
+// ValidateShardCount For backward compatibility
 func ValidateShardCount(shardCount int) int {
 	if shardCount == 0 {
 		return legacyShardCount

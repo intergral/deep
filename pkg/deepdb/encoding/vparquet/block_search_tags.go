@@ -95,7 +95,9 @@ func searchTags(_ context.Context, cb common.TagCallback, pf *parquet.File) erro
 			cc := rg.ColumnChunks()[idx]
 			err = func() error {
 				pgs := cc.Pages()
-				defer pgs.Close()
+				defer func(pgs parquet.Pages) {
+					_ = pgs.Close()
+				}(pgs)
 				for {
 					pg, err := pgs.ReadPage()
 					if err == io.EOF || pg == nil {
@@ -132,7 +134,9 @@ func searchTags(_ context.Context, cb common.TagCallback, pf *parquet.File) erro
 			cc := rg.ColumnChunks()[idx]
 			err = func() error {
 				pgs := cc.Pages()
-				defer pgs.Close()
+				defer func(pgs parquet.Pages) {
+					_ = pgs.Close()
+				}(pgs)
 
 				// normally we'd loop here calling read page for every page in the column chunk, but
 				// there is only one dictionary per column chunk, so just read it from the first page
@@ -279,7 +283,7 @@ func searchKeyValues(definitionLevel int, keyPath, stringPath, intPath, floatPat
 		// This is required
 		[]pq.Iterator{makeIter(keyPath, keyPred, "")},
 		[]pq.Iterator{
-			// These are optional and we find matching values of all types
+			// These are optional, and we find matching values of all types
 			makeIter(stringPath, skipNils, "string"),
 			makeIter(intPath, skipNils, "int"),
 			makeIter(floatPath, skipNils, "float"),

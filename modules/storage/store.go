@@ -61,7 +61,7 @@ type store struct {
 	deepdb.TracepointReader
 }
 
-// NewStore creates a new Tempo Store using configuration supplied.
+// NewStore creates a new Deep Store using configuration supplied.
 func NewStore(cfg Config, logger log.Logger) (Store, error) {
 
 	statCache.Set(cfg.TracePoint.Cache)

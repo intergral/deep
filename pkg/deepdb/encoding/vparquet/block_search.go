@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	deep_io "github.com/intergral/deep/pkg/io"
+	deepIO "github.com/intergral/deep/pkg/io"
 	pq "github.com/intergral/deep/pkg/parquetquery"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/opentracing/opentracing-go"
@@ -62,7 +62,7 @@ func (b *backendBlock) openForSearch(ctx context.Context, opts common.SearchOpti
 		//   only use buffered reader at if the block is small, otherwise it's far more effective to use larger
 		//   buffers in the parquet sdk
 		if opts.ReadBufferCount*opts.ReadBufferSize > int(b.meta.Size) {
-			readerAt = deep_io.NewBufferedReaderAt(readerAt, int64(b.meta.Size), opts.ReadBufferSize, opts.ReadBufferCount)
+			readerAt = deepIO.NewBufferedReaderAt(readerAt, int64(b.meta.Size), opts.ReadBufferSize, opts.ReadBufferCount)
 		} else {
 			o = append(o, parquet.ReadBufferSize(opts.ReadBufferSize))
 		}
@@ -210,7 +210,7 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 	switch len(traceIters) {
 
 	case 0:
-		// Empty request, in this case every trace matches so we can
+		// Empty request, in this case every trace matches, so we can
 		// simply iterate any column.
 		return makeIter("ID", nil, "")
 
@@ -227,7 +227,7 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 func searchParquetFile(ctx context.Context, pf *parquet.File, req *deeppb.SearchRequest, rgs []parquet.RowGroup) (*deeppb.SearchResponse, error) {
 
 	// Search happens in 2 phases for an optimization.
-	// Phase 1 is iterate all columns involved in the request.
+	// Phase 1 is to iterate all columns involved in the request.
 	// Only if there are any matches do we enter phase 2, which
 	// is to load the display-related columns.
 
@@ -304,7 +304,7 @@ func rawToResults(ctx context.Context, pf *parquet.File, rgs []parquet.RowGroup,
 
 		matchMap := match.ToMap()
 		result := &deeppb.SnapshotSearchMetadata{
-			SnapshotID:        util.TraceIDToHexString(matchMap["ID"][0].Bytes()),
+			SnapshotID:        util.SnapshotIDToHexString(matchMap["ID"][0].Bytes()),
 			ServiceName:       matchMap["ServiceName"][0].String(),
 			FilePath:          matchMap["FilePath"][0].String(),
 			LineNo:            matchMap["LineNo"][0].Uint32(),
@@ -375,7 +375,7 @@ func (r *reportValuesPredicate) String() string {
 }
 
 // KeepColumnChunk always returns true b/c we always have to dig deeper to find all values
-func (r *reportValuesPredicate) KeepColumnChunk(cc parquet.ColumnChunk) bool {
+func (r *reportValuesPredicate) KeepColumnChunk(parquet.ColumnChunk) bool {
 	// Reinspect dictionary for each new column chunk
 	r.inspectedDict = false
 	return true

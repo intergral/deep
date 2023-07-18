@@ -214,13 +214,13 @@ func (rw *readerWriter) compact(ctx context.Context, blockMetas []*backend.Block
 	}
 
 	opts := common.CompactionOptions{
-		BlockConfig:        *rw.cfg.Block,
-		ChunkSizeBytes:     rw.compactorCfg.ChunkSizeBytes,
-		FlushSizeBytes:     rw.compactorCfg.FlushSizeBytes,
-		IteratorBufferSize: rw.compactorCfg.IteratorBufferSize,
-		OutputBlocks:       outputBlocks,
-		Combiner:           combiner,
-		MaxBytesPerTrace:   rw.compactorOverrides.MaxBytesPerTraceForTenant(tenantID),
+		BlockConfig:         *rw.cfg.Block,
+		ChunkSizeBytes:      rw.compactorCfg.ChunkSizeBytes,
+		FlushSizeBytes:      rw.compactorCfg.FlushSizeBytes,
+		IteratorBufferSize:  rw.compactorCfg.IteratorBufferSize,
+		OutputBlocks:        outputBlocks,
+		Combiner:            combiner,
+		MaxBytesPerSnapshot: rw.compactorOverrides.MaxBytesPerSnapshotForTenant(tenantID),
 		BytesWritten: func(compactionLevel, bytes int) {
 			metricCompactionBytesWritten.WithLabelValues(strconv.Itoa(compactionLevel)).Add(float64(bytes))
 		},
@@ -230,8 +230,8 @@ func (rw *readerWriter) compact(ctx context.Context, blockMetas []*backend.Block
 		ObjectsWritten: func(compactionLevel, objs int) {
 			metricCompactionObjectsWritten.WithLabelValues(strconv.Itoa(compactionLevel)).Add(float64(objs))
 		},
-		SpansDiscarded: func(traceId string, spans int) {
-			rw.compactorSharder.RecordDiscardedSpans(spans, tenantID, traceId)
+		SnapshotsDiscarded: func(snapshotID string, count int) {
+			rw.compactorSharder.RecordDiscardedSnapshots(count, tenantID, snapshotID)
 		},
 	}
 
@@ -313,15 +313,15 @@ func measureOutstandingBlocks(tenantID string, blockSelector CompactionBlockSele
 }
 
 func compactionLevelForBlocks(blockMetas []*backend.BlockMeta) uint8 {
-	level := uint8(0)
+	compactionLevel := uint8(0)
 
 	for _, m := range blockMetas {
-		if m.CompactionLevel > level {
-			level = m.CompactionLevel
+		if m.CompactionLevel > compactionLevel {
+			compactionLevel = m.CompactionLevel
 		}
 	}
 
-	return level
+	return compactionLevel
 }
 
 type instrumentedObjectCombiner struct {

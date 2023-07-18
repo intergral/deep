@@ -51,11 +51,6 @@ type appendTracker struct {
 	Name string
 }
 
-// NewNoConfirm gets the Azure blob container without testing it
-func NewNoConfirm(cfg *Config) (backend2.RawReader, backend2.RawWriter, backend2.Compactor, error) {
-	return internalNew(cfg, false)
-}
-
 // New gets the Azure blob container
 func New(cfg *Config) (backend2.RawReader, backend2.RawWriter, backend2.Compactor, error) {
 	return internalNew(cfg, true)
@@ -122,7 +117,7 @@ func (rw *readerWriter) Append(ctx context.Context, name string, keypath backend
 }
 
 // CloseAppend implements backend.Writer
-func (rw *readerWriter) CloseAppend(ctx context.Context, tracker backend2.AppendTracker) error {
+func (rw *readerWriter) CloseAppend(context.Context, backend2.AppendTracker) error {
 	return nil
 }
 
@@ -147,8 +142,8 @@ func (rw *readerWriter) List(ctx context.Context, keypath backend2.KeyPath) ([]s
 		}
 		marker = list.NextMarker
 
-		for _, blob := range list.Segment.BlobPrefixes {
-			objects = append(objects, strings.TrimPrefix(strings.TrimSuffix(blob.Name, dir), prefix))
+		for _, objBlob := range list.Segment.BlobPrefixes {
+			objects = append(objects, strings.TrimPrefix(strings.TrimSuffix(objBlob.Name, dir), prefix))
 		}
 
 		// Continue iterating if we are not done.

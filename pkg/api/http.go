@@ -102,7 +102,7 @@ func ParseSnapshotID(r *http.Request) ([]byte, error) {
 		return nil, fmt.Errorf("please provide a snapshotID")
 	}
 
-	byteID, err := util.HexStringToTraceID(snapshotID)
+	byteID, err := util.HexStringToSnapshotID(snapshotID)
 	if err != nil {
 		return nil, err
 	}

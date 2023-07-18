@@ -60,7 +60,7 @@ package deepdb
 //	return model.StaticCombiner.Combine(dataEncoding, objs...)
 //}
 //
-//func (m *mockSharder) RecordDiscardedSpans(count int, tenantID string, traceID string) {}
+//func (m *mockSharder) RecordDiscardedSnapshots(count int, tenantID string, traceID string) {}
 //
 //type mockJobSharder struct{}
 //
@@ -75,7 +75,7 @@ package deepdb
 //	return m.blockRetention
 //}
 //
-//func (m *mockOverrides) MaxBytesPerTraceForTenant(_ string) int {
+//func (m *mockOverrides) MaxBytesPerSnapshotForTenant(_ string) int {
 //	return m.maxBytesPerTrace
 //}
 //

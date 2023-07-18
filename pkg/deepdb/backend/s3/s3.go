@@ -80,11 +80,6 @@ func (s *overrideSignatureVersion) IsExpired() bool {
 	return s.upstream.IsExpired()
 }
 
-// NewNoConfirm gets the S3 backend without testing it
-func NewNoConfirm(cfg *Config) (backend.RawReader, backend.RawWriter, backend.Compactor, error) {
-	return internalNew(cfg, false)
-}
-
 // New gets the S3 backend
 func New(cfg *Config) (backend.RawReader, backend.RawWriter, backend.Compactor, error) {
 	return internalNew(cfg, true)
@@ -157,7 +152,7 @@ func (rw *readerWriter) Write(ctx context.Context, name string, keypath backend.
 	return nil
 }
 
-// AppendObject implements backend.Writer
+// Append implements backend.Writer
 func (rw *readerWriter) Append(ctx context.Context, name string, keypath backend.KeyPath, tracker backend.AppendTracker, buffer []byte) (backend.AppendTracker, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "s3.Append", opentracing.Tags{
 		"len": len(buffer),
@@ -238,7 +233,7 @@ func (rw *readerWriter) CloseAppend(ctx context.Context, tracker backend.AppendT
 }
 
 // List implements backend.Reader
-func (rw *readerWriter) List(ctx context.Context, keypath backend.KeyPath) ([]string, error) {
+func (rw *readerWriter) List(_ context.Context, keypath backend.KeyPath) ([]string, error) {
 	prefix := path.Join(keypath...)
 	var objects []string
 
@@ -303,7 +298,9 @@ func (rw *readerWriter) readAll(ctx context.Context, name string) ([]byte, error
 		// we need to compare the specific err message
 		return nil, err
 	}
-	defer reader.Close()
+	defer func(reader io.ReadCloser) {
+		_ = reader.Close()
+	}(reader)
 
 	return deep_io.ReadAllWithEstimate(reader, info.Size)
 }
@@ -315,7 +312,9 @@ func (rw *readerWriter) readAllWithObjInfo(ctx context.Context, name string) ([]
 	} else if err != nil {
 		return nil, minio.ObjectInfo{}, errors.Wrap(err, "error fetching object from s3 backend")
 	}
-	defer reader.Close()
+	defer func(reader io.ReadCloser) {
+		_ = reader.Close()
+	}(reader)
 
 	buf, err := deep_io.ReadAllWithEstimate(reader, info.Size)
 	if err != nil {
@@ -334,7 +333,9 @@ func (rw *readerWriter) readRange(ctx context.Context, objName string, offset in
 	if err != nil {
 		return errors.Wrapf(err, "error in range read from s3 backend, bucket: %s, objName: %s", rw.cfg.Bucket, objName)
 	}
-	defer reader.Close()
+	defer func(reader io.ReadCloser) {
+		_ = reader.Close()
+	}(reader)
 
 	totalBytes := 0
 	for {
