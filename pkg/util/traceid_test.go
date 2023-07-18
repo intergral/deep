@@ -45,7 +45,7 @@ func TestHexStringToTraceID(t *testing.T) {
 		{
 			id:          "121234567890abcdef1234567890abcdef", // value too long
 			expected:    []byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef},
-			expectError: errors.New("trace IDs can't be larger than 128 bits"),
+			expectError: errors.New("snapshot IDs can't be larger than 128 bits"),
 		},
 		{
 			id:       "234567890abcdef", // odd length
@@ -54,7 +54,7 @@ func TestHexStringToTraceID(t *testing.T) {
 		{
 			id:          "1234567890abcdef ", // trailing space
 			expected:    nil,
-			expectError: errors.New("trace IDs can only contain hex characters: invalid character ' ' at position 17"),
+			expectError: errors.New("snapshot IDs can only contain hex characters: invalid character ' ' at position 17"),
 		},
 	}
 
