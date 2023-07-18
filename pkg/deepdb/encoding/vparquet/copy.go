@@ -20,6 +20,7 @@ package vparquet
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/pkg/errors"
 
@@ -34,13 +35,15 @@ func CopyBlock(ctx context.Context, fromMeta, toMeta *backend.BlockMeta, from ba
 		if err != nil {
 			return errors.Wrapf(err, "error reading %s", name)
 		}
-		defer reader.Close()
+		defer func(reader io.ReadCloser) {
+			_ = reader.Close()
+		}(reader)
 
 		return to.StreamWriter(ctx, name, toMeta.BlockID, toMeta.TenantID, reader, size)
 	}
 
 	// Read entire object and attempt to cache
-	copy := func(name string) error {
+	copyFunc := func(name string) error {
 		b, err := from.Read(ctx, name, fromMeta.BlockID, fromMeta.TenantID, true)
 		if err != nil {
 			return errors.Wrapf(err, "error reading %s", name)
@@ -57,7 +60,7 @@ func CopyBlock(ctx context.Context, fromMeta, toMeta *backend.BlockMeta, from ba
 
 	// Bloom
 	for i := 0; i < common.ValidateShardCount(int(fromMeta.BloomShardCount)); i++ {
-		err = copy(common.BloomName(i))
+		err = copyFunc(common.BloomName(i))
 		if err != nil {
 			return err
 		}

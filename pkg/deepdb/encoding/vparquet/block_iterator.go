@@ -24,7 +24,7 @@ import (
 	"io"
 
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	deep_io "github.com/intergral/deep/pkg/io"
+	deepIO "github.com/intergral/deep/pkg/io"
 	"github.com/intergral/deep/pkg/parquetquery"
 	"github.com/pkg/errors"
 )
@@ -33,7 +33,7 @@ func (b *backendBlock) open(ctx context.Context) (*parquet.File, *parquet.Reader
 	rr := NewBackendReaderAt(ctx, b.r, DataFileName, b.meta.BlockID, b.meta.TenantID)
 
 	// 128 MB memory buffering
-	br := deep_io.NewBufferedReaderAt(rr, int64(b.meta.Size), 2*1024*1024, 64)
+	br := deepIO.NewBufferedReaderAt(rr, int64(b.meta.Size), 2*1024*1024, 64)
 
 	pf, err := parquet.OpenFile(br, int64(b.meta.Size), parquet.SkipBloomFilters(true), parquet.SkipPageIndex(true))
 	if err != nil {
@@ -90,10 +90,10 @@ func (i *rawIterator) Next(context.Context) (common.ID, parquet.Row, error) {
 	return nil, nil, errors.Wrap(err, fmt.Sprintf("error iterating through block %s", i.blockID))
 }
 
-func (i *rawIterator) peekNextID(ctx context.Context) (common.ID, error) { // nolint:unused // this is required to satisfy the bookmarkIterator interface
+func (i *rawIterator) peekNextID(_ context.Context) (common.ID, error) { // nolint:unused // this is required to satisfy the bookmarkIterator interface
 	return nil, common.ErrUnsupported
 }
 
 func (i *rawIterator) Close() {
-	i.r.Close()
+	_ = i.r.Close()
 }

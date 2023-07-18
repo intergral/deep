@@ -28,7 +28,8 @@ import (
 
 var (
 	requestDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "backend_request_duration_seconds",
 		Help:      "Time spent doing backend storage requests.",
 		Buckets:   prometheus.ExponentialBuckets(0.005, 4, 6),

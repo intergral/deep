@@ -47,11 +47,6 @@ type readerWriter struct {
 	hedgedBucket *storage.BucketHandle
 }
 
-// NewNoConfirm gets the GCS backend without testing it
-func NewNoConfirm(cfg *Config) (backend.RawReader, backend.RawWriter, backend.Compactor, error) {
-	return internalNew(cfg, false)
-}
-
 // New gets the GCS backend
 func New(cfg *Config) (backend.RawReader, backend.RawWriter, backend.Compactor, error) {
 	return internalNew(cfg, true)
@@ -97,7 +92,7 @@ func (rw *readerWriter) Write(ctx context.Context, name string, keypath backend.
 
 	_, err := io.Copy(w, data)
 	if err != nil {
-		w.Close()
+		_ = w.Close()
 		span.SetTag("error", true)
 		return errors.Wrap(err, "failed to write")
 	}
@@ -220,7 +215,9 @@ func (rw *readerWriter) readAll(ctx context.Context, name string) ([]byte, error
 	if err != nil {
 		return nil, err
 	}
-	defer r.Close()
+	defer func(r *storage.Reader) {
+		_ = r.Close()
+	}(r)
 
 	return deep_io.ReadAllWithEstimate(r, r.Attrs.Size)
 }
@@ -230,7 +227,9 @@ func (rw *readerWriter) readAllWithModTime(ctx context.Context, name string) ([]
 	if err != nil {
 		return nil, time.Time{}, err
 	}
-	defer r.Close()
+	defer func(r *storage.Reader) {
+		_ = r.Close()
+	}(r)
 
 	buf, err := deep_io.ReadAllWithEstimate(r, r.Attrs.Size)
 	if err != nil {
@@ -245,7 +244,9 @@ func (rw *readerWriter) readRange(ctx context.Context, name string, offset int64
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer func(r *storage.Reader) {
+		_ = r.Close()
+	}(r)
 
 	totalBytes := 0
 	for {

@@ -131,7 +131,7 @@ func (e *Engine) createFetchSnapshotRequest(searchReq *deeppb.SearchRequest, pip
 
 func (e *Engine) asSnapshotSearchMetadata(result *SnapshotResult) *deeppb.SnapshotSearchMetadata {
 	return &deeppb.SnapshotSearchMetadata{
-		SnapshotID:        util.TraceIDToHexString(result.SnapshotID),
+		SnapshotID:        util.SnapshotIDToHexString(result.SnapshotID),
 		ServiceName:       result.ServiceName,
 		FilePath:          result.FilePath,
 		LineNo:            result.LineNo,

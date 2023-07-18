@@ -32,7 +32,7 @@ func TestApplyToOptions(t *testing.T) {
 
 	// test defaults
 	cfg.ApplyToOptions(&opts)
-	require.Equal(t, opts.PrefetchTraceCount, DefaultPrefetchTraceCount)
+	require.Equal(t, opts.PrefetchSnapshotCount, DefaultPrefetchSnapshotCount)
 	require.Equal(t, opts.ChunkSizeBytes, uint32(DefaultSearchChunkSizeBytes))
 	require.Equal(t, opts.ReadBufferCount, DefaultReadBufferCount)
 	require.Equal(t, opts.ReadBufferSize, DefaultReadBufferSize)
@@ -48,12 +48,12 @@ func TestApplyToOptions(t *testing.T) {
 
 	// test non defaults
 	cfg.ChunkSizeBytes = 4
-	cfg.PrefetchTraceCount = 5
+	cfg.PrefetchSnapshotCount = 5
 	cfg.ReadBufferCount = 6
 	cfg.ReadBufferSizeBytes = 7
 	cfg.ApplyToOptions(&opts)
 	require.Equal(t, cfg.ChunkSizeBytes, uint32(4))
-	require.Equal(t, cfg.PrefetchTraceCount, 5)
+	require.Equal(t, cfg.PrefetchSnapshotCount, 5)
 	require.Equal(t, cfg.ReadBufferCount, 6)
 	require.Equal(t, cfg.ReadBufferSizeBytes, 7)
 }

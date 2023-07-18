@@ -26,7 +26,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	deep_io "github.com/intergral/deep/pkg/io"
+	deepIO "github.com/intergral/deep/pkg/io"
 	"github.com/pkg/errors"
 )
 
@@ -51,7 +51,7 @@ func (b *backendWriter) Close() error {
 }
 
 func CreateBlock(ctx context.Context, cfg *common.BlockConfig, meta *backend.BlockMeta, i common.Iterator, r backend.Reader, to backend.Writer) (*backend.BlockMeta, error) {
-	s := newStreamingBlock(ctx, cfg, meta, r, to, deep_io.NewBufferedWriter)
+	s := newStreamingBlock(ctx, cfg, meta, r, to, deepIO.NewBufferedWriter)
 
 	var next func(context.Context) (common.ID, parquet.Row, error)
 
@@ -111,7 +111,7 @@ type streamingBlock struct {
 	ctx   context.Context
 	bloom *common.ShardedBloomFilter
 	meta  *backend.BlockMeta
-	bw    deep_io.BufferedWriteFlusher
+	bw    deepIO.BufferedWriteFlusher
 	pw    *parquet.GenericWriter[*Snapshot]
 	w     *backendWriter
 	r     backend.Reader
@@ -121,12 +121,12 @@ type streamingBlock struct {
 	currentBufferedBytes  int
 }
 
-func newStreamingBlock(ctx context.Context, cfg *common.BlockConfig, meta *backend.BlockMeta, r backend.Reader, to backend.Writer, createBufferedWriter func(w io.Writer) deep_io.BufferedWriteFlusher) *streamingBlock {
+func newStreamingBlock(ctx context.Context, cfg *common.BlockConfig, meta *backend.BlockMeta, r backend.Reader, to backend.Writer, createBufferedWriter func(w io.Writer) deepIO.BufferedWriteFlusher) *streamingBlock {
 	newMeta := backend.NewBlockMeta(meta.TenantID, meta.BlockID, VersionString, backend.EncNone, "")
 	newMeta.StartTime = meta.StartTime
 	newMeta.EndTime = meta.EndTime
 
-	// TotalObjects is used here an an estimated count for the bloom filter.
+	// TotalObjects is used here as an estimated count for the bloom filter.
 	// The real number of objects is tracked below.
 	bloom := common.NewBloom(cfg.BloomFP, uint(cfg.BloomShardSizeBytes), uint(meta.TotalObjects))
 

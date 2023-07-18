@@ -25,7 +25,7 @@ import (
 	"strings"
 )
 
-func HexStringToTraceID(id string) ([]byte, error) {
+func HexStringToSnapshotID(id string) ([]byte, error) {
 	// The encoding/hex package does not handle non-hex characters.
 	// Ensure the ID has only the proper characters
 	for pos, idChar := range strings.Split(id, "") {
@@ -34,7 +34,7 @@ func HexStringToTraceID(id string) ([]byte, error) {
 			(idChar >= "0" && idChar <= "9") {
 			continue
 		} else {
-			return nil, fmt.Errorf("trace IDs can only contain hex characters: invalid character '%s' at position %d", idChar, pos+1)
+			return nil, fmt.Errorf("snapshot IDs can only contain hex characters: invalid character '%s' at position %d", idChar, pos+1)
 		}
 	}
 
@@ -51,7 +51,7 @@ func HexStringToTraceID(id string) ([]byte, error) {
 
 	size := len(byteID)
 	if size > 16 {
-		return nil, errors.New("trace IDs can't be larger than 128 bits")
+		return nil, errors.New("snapshot IDs can't be larger than 128 bits")
 	}
 	if size < 16 {
 		byteID = append(make([]byte, 16-size), byteID...)
@@ -60,31 +60,22 @@ func HexStringToTraceID(id string) ([]byte, error) {
 	return byteID, nil
 }
 
-// TraceIDToHexString converts a trace ID to its string representation and removes any leading zeros.
-func TraceIDToHexString(byteID []byte) string {
+// SnapshotIDToHexString converts a snapshot ID to its string representation and removes any leading zeros.
+func SnapshotIDToHexString(byteID []byte) string {
 	id := hex.EncodeToString(byteID)
 	// remove leading zeros
 	id = strings.TrimLeft(id, "0")
 	return id
 }
 
-// SpanIDToHexString converts a span ID to its string representation and WITHOUT removing any leading zeros.
-// If the id is < 16, left pad with 0s
-func SpanIDToHexString(byteID []byte) string {
-	id := hex.EncodeToString(byteID)
-	id = strings.TrimLeft(id, "0")
-	return fmt.Sprintf("%016s", id)
-}
-
-// EqualHexStringTraceIDs compares two trace ID strings and compares the
-// resulting bytes after padding.  Returns true unless there is a reason not
-// to.
-func EqualHexStringTraceIDs(a, b string) (bool, error) {
-	aa, err := HexStringToTraceID(a)
+// EqualHexStringSnapshotIDs compares two snapshot ID strings and compares the
+// resulting bytes after padding.  Returns true unless there is a reason not to.
+func EqualHexStringSnapshotIDs(a, b string) (bool, error) {
+	aa, err := HexStringToSnapshotID(a)
 	if err != nil {
 		return false, err
 	}
-	bb, err := HexStringToTraceID(b)
+	bb, err := HexStringToSnapshotID(b)
 	if err != nil {
 		return false, err
 	}
@@ -92,7 +83,7 @@ func EqualHexStringTraceIDs(a, b string) (bool, error) {
 	return bytes.Equal(aa, bb), nil
 }
 
-func PadTraceIDTo16Bytes(traceID []byte) []byte {
+func PadSnapshotIDTo16Bytes(traceID []byte) []byte {
 	if len(traceID) > 16 {
 		return traceID[len(traceID)-16:]
 	}

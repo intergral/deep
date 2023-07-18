@@ -124,7 +124,7 @@ func (p *Processor) aggregateMetricsForSpan(svcName string, snapshot *tp.Snapsho
 
 	p.spanMetricsCallsTotal.Inc(registryLabelValues, 1*spanMultiplier)
 	p.spanMetricsSizeTotal.Inc(registryLabelValues, float64(proto.Size(snapshot))*spanMultiplier)
-	p.spanMetricsDurationSeconds.ObserveWithExemplar(registryLabelValues, latencySeconds, deep_util.TraceIDToHexString(snapshot.ID), spanMultiplier)
+	p.spanMetricsDurationSeconds.ObserveWithExemplar(registryLabelValues, latencySeconds, deep_util.SnapshotIDToHexString(snapshot.ID), spanMultiplier)
 }
 
 func sanitizeLabelNameWithCollisions(name string) string {

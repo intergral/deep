@@ -23,7 +23,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/intergral/deep/pkg/deeppb"
-	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	deepTP "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/deepql"
 	"io"
 	"time"
@@ -36,7 +36,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
-	pkg_cache "github.com/intergral/deep/pkg/cache"
+	pkgCache "github.com/intergral/deep/pkg/cache"
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/backend/azure"
 	"github.com/intergral/deep/pkg/deepdb/backend/cache"
@@ -102,7 +102,7 @@ type TracepointReader interface {
 }
 
 type Reader interface {
-	FindSnapshot(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) (*deep_tp.Snapshot, []error, error)
+	FindSnapshot(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) (*deepTP.Snapshot, []error, error)
 
 	Search(ctx context.Context, meta *backend.BlockMeta, req *deeppb.SearchRequest, opts common.SearchOptions) (*deeppb.SearchResponse, error)
 	Fetch(ctx context.Context, meta *backend.BlockMeta, req deepql.FetchSnapshotRequest, opts common.SearchOptions) (deepql.FetchSnapshotResponse, error)
@@ -119,12 +119,12 @@ type Compactor interface {
 type CompactorSharder interface {
 	Combine(dataEncoding string, tenantID string, objs ...[]byte) ([]byte, bool, error)
 	Owns(hash string) bool
-	RecordDiscardedSpans(count int, tenantID string, traceID string)
+	RecordDiscardedSnapshots(count int, tenantID string, snapshotID string)
 }
 
 type CompactorOverrides interface {
 	BlockRetentionForTenant(tenantID string) time.Duration
-	MaxBytesPerTraceForTenant(tenantID string) int
+	MaxBytesPerSnapshotForTenant(tenantID string) int
 }
 
 type WriteableBlock interface {
@@ -188,7 +188,7 @@ func New(cfg *Config, logger gkLog.Logger) (Reader, Writer, TracepointReader, Tr
 	uncachedReader := backend.NewReader(rawR)
 	uncachedWriter := backend.NewWriter(rawW)
 
-	var cacheBackend pkg_cache.Cache
+	var cacheBackend pkgCache.Cache
 
 	switch cfg.Cache {
 	case "redis":
@@ -304,7 +304,7 @@ func (rw *readerWriter) ReadTracepointBlock(ctx context.Context, tenantID string
 	return rw.tr.ReadTracepointBlock(ctx, tenantID)
 }
 
-func (rw *readerWriter) FindSnapshot(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) (*deep_tp.Snapshot, []error, error) {
+func (rw *readerWriter) FindSnapshot(ctx context.Context, tenantID string, id common.ID, blockStart string, blockEnd string, timeStart int64, timeEnd int64) (*deepTP.Snapshot, []error, error) {
 	// tracing instrumentation
 	logger := log.WithContext(ctx, log.Logger)
 	span, ctx := opentracing.StartSpanFromContext(ctx, "store.FindSnapshot")
@@ -366,16 +366,16 @@ func (rw *readerWriter) FindSnapshot(ctx context.Context, tenantID string, id co
 
 		foundObject, err := block.FindSnapshotByID(ctx, id, opts)
 		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("error finding trace by id, blockID: %s", meta.BlockID.String()))
+			return nil, errors.Wrap(err, fmt.Sprintf("error finding snapshot by id, blockID: %s", meta.BlockID.String()))
 		}
 
-		level.Info(logger).Log("msg", "searching for trace in block", "findTraceID", hex.EncodeToString(id), "block", meta.BlockID, "found", foundObject != nil)
+		level.Info(logger).Log("msg", "searching for snapshot in block", "findSnapshotID", hex.EncodeToString(id), "block", meta.BlockID, "found", foundObject != nil)
 		return foundObject, nil
 	})
 
-	var result *deep_tp.Snapshot
+	var result *deepTP.Snapshot
 	for i := range jobsResults {
-		res := jobsResults[i].(*deep_tp.Snapshot)
+		res := jobsResults[i].(*deepTP.Snapshot)
 		if res != nil {
 			result = res
 		}
@@ -390,7 +390,7 @@ func (rw *readerWriter) FindSnapshot(ctx context.Context, tenantID string, id co
 	return result, funcErrs, err
 }
 
-// Search the given block.  This method takes the pre-loaded block meta instead of a block ID, which
+// Search the given block.  This method takes the preloaded block meta instead of a block ID, which
 // eliminates a read per search request.
 func (rw *readerWriter) Search(ctx context.Context, meta *backend.BlockMeta, req *deeppb.SearchRequest, opts common.SearchOptions) (*deeppb.SearchResponse, error) {
 	block, err := encoding.OpenBlock(meta, rw.r)

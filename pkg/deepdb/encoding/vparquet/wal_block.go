@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/intergral/deep/pkg/deeppb"
-	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	deepTP "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/deepql"
 	"github.com/segmentio/parquet-go"
 	"io"
@@ -92,7 +92,7 @@ func openWALBlock(filename string, path string, ingestionSlack time.Duration, _ 
 		return nil, nil, fmt.Errorf("error unmarshaling wal meta json: %s %w", metaPath, err)
 	}
 
-	// below we're going to iterate all of the parquet files in the wal and build the meta, this will correctly
+	// below we're going to iterate all the parquet files in the wal and build the meta, this will correctly
 	// recount total objects so clear them out here
 	meta.TotalObjects = 0
 
@@ -448,7 +448,7 @@ func (b *walBlock) Clear() error {
 
 // FindSnapshotByID looks in this wal block for the snapshot with the id. We scan each of the flushed live snapshot
 // sets (which become the numbered block files).
-func (b *walBlock) FindSnapshotByID(_ context.Context, id common.ID, _ common.SearchOptions) (*deep_tp.Snapshot, error) {
+func (b *walBlock) FindSnapshotByID(_ context.Context, id common.ID, _ common.SearchOptions) (*deepTP.Snapshot, error) {
 	for _, page := range b.flushed {
 		// page has a list of ids it should contain, if the id is in that list try to load snapshot
 		if rowNumber, ok := page.ids.Get(id); ok {
@@ -464,7 +464,7 @@ func (b *walBlock) FindSnapshotByID(_ context.Context, id common.ID, _ common.Se
 }
 
 // findInPage will look for the snapshot in the walBlockFlush
-func (b *walBlock) findInPage(page *walBlockFlush, rowNumber int64) (*deep_tp.Snapshot, error) {
+func (b *walBlock) findInPage(page *walBlockFlush, rowNumber int64) (*deepTP.Snapshot, error) {
 	file, err := page.file()
 	if err != nil {
 		return nil, fmt.Errorf("error opening file %s: %w", page.path, err)
@@ -727,7 +727,7 @@ func newCommonIterator(iter *MultiBlockIterator[parquet.Row], schema *parquet.Sc
 	}
 }
 
-func (i *commonIterator) Next(ctx context.Context) (common.ID, *deep_tp.Snapshot, error) {
+func (i *commonIterator) Next(ctx context.Context) (common.ID, *deepTP.Snapshot, error) {
 	id, row, err := i.iter.Next(ctx)
 	if err != nil && err != io.EOF {
 		return nil, nil, err

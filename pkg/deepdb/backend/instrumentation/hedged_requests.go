@@ -27,7 +27,8 @@ import (
 var (
 	hedgedRequestsMetrics = promauto.NewGauge(
 		prometheus.GaugeOpts{
-			Namespace: "deepdb",
+			Namespace: "deep",
+			Subsystem: "db",
 			Name:      "backend_hedged_roundtrips_total",
 			Help:      "Total number of hedged backend requests. Registered as a gauge for code sanity. This is a counter.",
 		},

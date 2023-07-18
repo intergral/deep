@@ -27,18 +27,18 @@ import (
 	"github.com/pkg/errors"
 )
 
-type iteratable interface {
+type iterable interface {
 	parquet.Row | *Snapshot | *uint8
 }
 
-type combineFn[T iteratable] func([]T) (T, error)
+type combineFn[T iterable] func([]T) (T, error)
 
-type MultiBlockIterator[T iteratable] struct {
+type MultiBlockIterator[T iterable] struct {
 	bookmarks []*bookmark[T]
 	combine   combineFn[T]
 }
 
-func newMultiblockIterator[T iteratable](bookmarks []*bookmark[T]) *MultiBlockIterator[T] {
+func newMultiblockIterator[T iterable](bookmarks []*bookmark[T]) *MultiBlockIterator[T] {
 	return &MultiBlockIterator[T]{
 		bookmarks: bookmarks,
 	}
@@ -54,7 +54,7 @@ func (m *MultiBlockIterator[T]) Next(ctx context.Context) (common.ID, T, error) 
 		lowestBookmark *bookmark[T]
 	)
 
-	// find lowest ID of the new object
+	// find the lowest ID of the new object
 	for _, b := range m.bookmarks {
 		id, err := b.peekID(ctx)
 		if err != nil && err != io.EOF {
@@ -101,7 +101,7 @@ func (m *MultiBlockIterator[T]) done(ctx context.Context) bool {
 	return true
 }
 
-type bookmark[T iteratable] struct {
+type bookmark[T iterable] struct {
 	iter bookmarkIterator[T]
 
 	currentID     common.ID
@@ -109,13 +109,13 @@ type bookmark[T iteratable] struct {
 	currentErr    error
 }
 
-type bookmarkIterator[T iteratable] interface {
+type bookmarkIterator[T iterable] interface {
 	Next(ctx context.Context) (common.ID, T, error)
 	Close()
 	peekNextID(ctx context.Context) (common.ID, error)
 }
 
-func newBookmark[T iteratable](iter bookmarkIterator[T]) *bookmark[T] {
+func newBookmark[T iterable](iter bookmarkIterator[T]) *bookmark[T] {
 	return &bookmark[T]{
 		iter: iter,
 	}
