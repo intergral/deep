@@ -505,7 +505,7 @@ func (*Distributor) Check(_ context.Context, _ *grpc_health_v1.HealthCheckReques
 
 func (d *Distributor) sendToIngester(ctx context.Context, userID string, keys []uint32, snapshot *deeppb_tp.Snapshot) error {
 	// Marshal to bytes once
-	bytes, err := d.snapshotEncoder.PrepareForWrite(snapshot, uint32(snapshot.TsNanos))
+	bytes, err := d.snapshotEncoder.PrepareForWrite(snapshot, uint32(snapshot.TsNanos/1e9))
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal PushRequest")
 	}

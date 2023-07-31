@@ -32,7 +32,6 @@ import (
 
 	"github.com/intergral/deep/modules/overrides"
 	"github.com/intergral/deep/modules/storage"
-	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/util/log"
 )
 
@@ -46,8 +45,6 @@ const (
 	ringNumTokens = 512
 
 	compactorRingKey = "compactor"
-
-	reasonCompactorDiscardedSpans = "trace_too_large_to_compact"
 )
 
 var (
@@ -230,32 +227,6 @@ func (c *Compactor) Owns(hash string) bool {
 	level.Debug(log.Logger).Log("msg", "checking addresses", "owning_addr", rs.Instances[0].Addr, "this_addr", ringAddr)
 
 	return rs.Instances[0].Addr == ringAddr
-}
-
-// Combine implements deepdb.CompactorSharder
-func (c *Compactor) Combine(dataEncoding string, tenantID string, objs ...[]byte) ([]byte, bool, error) {
-	combinedObj, wasCombined, err := model.StaticCombiner.Combine(dataEncoding, objs...)
-	if err != nil {
-		return nil, false, err
-	}
-
-	maxBytes := c.overrides.MaxBytesPerSnapshot(tenantID)
-	if maxBytes == 0 || len(combinedObj) < maxBytes {
-		return combinedObj, wasCombined, nil
-	}
-
-	// technically neither of these conditions should ever be true, we are adding them as guard code
-	// for the following logic
-	if len(objs) == 0 {
-		return []byte{}, wasCombined, nil
-	}
-	if len(objs) == 1 {
-		return objs[0], wasCombined, nil
-	}
-
-	//totalDiscarded := countSpans(dataEncoding, objs[1:]...)
-	//overrides.RecordDiscardedSnapshots(totalDiscarded, reasonCompactorDiscardedSpans, tenantID)
-	return objs[0], wasCombined, nil
 }
 
 // RecordDiscardedSnapshots implements deepdb.CompactorSharder

@@ -62,8 +62,8 @@ func (rw *Backend) Write(_ context.Context, name string, keypath backend.KeyPath
 		return err
 	}
 
-	tracesFileName := rw.objectFileName(keypath, name)
-	dst, err := os.Create(tracesFileName)
+	fileName := rw.objectFileName(keypath, name)
+	dst, err := os.Create(fileName)
 	if err != nil {
 		return err
 	}
@@ -93,8 +93,8 @@ func (rw *Backend) Append(ctx context.Context, name string, keypath backend.KeyP
 			return nil, err
 		}
 
-		tracesFileName := rw.objectFileName(keypath, name)
-		dst, err = os.Create(tracesFileName)
+		fileName := rw.objectFileName(keypath, name)
+		dst, err = os.Create(fileName)
 		if err != nil {
 			return nil, err
 		}

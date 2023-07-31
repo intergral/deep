@@ -68,9 +68,9 @@ func NewBloom(fp float64, shardSize, estimatedObjects uint) *ShardedBloomFilter 
 	return b
 }
 
-func (b *ShardedBloomFilter) Add(traceID []byte) {
-	shardKey := ShardKeyForTraceID(traceID, len(b.blooms))
-	b.blooms[shardKey].Add(traceID)
+func (b *ShardedBloomFilter) Add(snapshotID []byte) {
+	shardKey := ShardKeyForSnapshotID(snapshotID, len(b.blooms))
+	b.blooms[shardKey].Add(snapshotID)
 }
 
 // Marshal is a wrapper around bloom.WriteTo
@@ -92,13 +92,13 @@ func (b *ShardedBloomFilter) GetShardCount() int {
 }
 
 // Test implements bloom.Test -> required only for testing
-func (b *ShardedBloomFilter) Test(traceID []byte) bool {
-	shardKey := ShardKeyForTraceID(traceID, len(b.blooms))
-	return b.blooms[shardKey].Test(traceID)
+func (b *ShardedBloomFilter) Test(snapshotID []byte) bool {
+	shardKey := ShardKeyForSnapshotID(snapshotID, len(b.blooms))
+	return b.blooms[shardKey].Test(snapshotID)
 }
 
-func ShardKeyForTraceID(traceID []byte, shardCount int) int {
-	return int(util.TokenForTraceID(traceID)) % ValidateShardCount(shardCount)
+func ShardKeyForSnapshotID(snapshotID []byte, shardCount int) int {
+	return int(util.TokenForSnapshotID(snapshotID)) % ValidateShardCount(shardCount)
 }
 
 // ValidateShardCount For backward compatibility

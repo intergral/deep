@@ -27,8 +27,8 @@ import (
 type SegmentDecoder struct {
 }
 
-func (s *SegmentDecoder) PrepareForWrite(trace *deeptp.Snapshot, start uint32) ([]byte, error) {
-	return marshalWithStart(trace, start)
+func (s *SegmentDecoder) PrepareForWrite(snapshot *deeptp.Snapshot, start uint32) ([]byte, error) {
+	return marshalWithStart(snapshot, start)
 }
 
 func (s *SegmentDecoder) PrepareForRead(segment []byte) (*deeptp.Snapshot, error) {

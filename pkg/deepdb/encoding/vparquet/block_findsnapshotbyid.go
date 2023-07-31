@@ -52,7 +52,7 @@ func (b *backendBlock) checkBloom(ctx context.Context, id common.ID) (found bool
 		})
 	defer span.Finish()
 
-	shardKey := common.ShardKeyForTraceID(id, int(b.meta.BloomShardCount))
+	shardKey := common.ShardKeyForSnapshotID(id, int(b.meta.BloomShardCount))
 	nameBloom := common.BloomName(shardKey)
 	span.SetTag("bloom", nameBloom)
 
@@ -119,7 +119,7 @@ func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.B
 	rowGroupMins[0] = bytes.Repeat([]byte{0}, 16)
 	rowGroupMins[numRowGroups] = bytes.Repeat([]byte{255}, 16) // This is actually inclusive and the logic is special for the last row group below
 
-	// Gets the minimum trace ID within the row group. Since the column is sorted
+	// Gets the minimum snapshot ID within the row group. Since the column is sorted
 	// ascending we just read the first value from the first page.
 	getRowGroupMin := func(rgIdx int) (common.ID, error) {
 		min := rowGroupMins[rgIdx]
@@ -158,7 +158,7 @@ func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.B
 		}
 
 		if check := bytes.Compare(snapshotID, min); check <= 0 {
-			// Trace is before or in this group
+			// Snapshot is before or in this group
 			return check, nil
 		}
 
@@ -171,7 +171,7 @@ func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.B
 		// Except for the last group, it is inclusive
 		check := bytes.Compare(snapshotID, max)
 		if check > 0 || (check == 0 && rgIdx < (numRowGroups-1)) {
-			// Trace is after this group
+			// Snapshot is after this group
 			return 1, nil
 		}
 
@@ -197,7 +197,7 @@ func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.B
 		return nil, err
 	}
 	if res == nil {
-		// TraceID not found in this block
+		// SnapshotID not found in this block
 		return nil, nil
 	}
 
@@ -222,7 +222,7 @@ func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.B
 		return nil, errors.Wrap(err, "error reading row from backend")
 	}
 
-	// convert to proto trace and return
+	// convert to proto snapshot and return
 	return parquetToDeepSnapshot(tr), nil
 }
 

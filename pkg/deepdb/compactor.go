@@ -66,11 +66,6 @@ var (
 		Name:      "compaction_errors_total",
 		Help:      "Total number of errors occurring during compaction.",
 	})
-	metricCompactionObjectsCombined = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "deepdb",
-		Name:      "compaction_objects_combined_total",
-		Help:      "Total number of objects combined during compaction.",
-	}, []string{"level"})
 	metricCompactionOutstandingBlocks = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "deepdb",
 		Name:      "compaction_outstanding_blocks",
@@ -207,25 +202,15 @@ func (rw *readerWriter) compact(ctx context.Context, blockMetas []*backend.Block
 	compactionLevel := compactionLevelForBlocks(blockMetas)
 	compactionLevelLabel := strconv.Itoa(int(compactionLevel))
 
-	combiner := instrumentedObjectCombiner{
-		tenant:               tenantID,
-		inner:                rw.compactorSharder,
-		compactionLevelLabel: compactionLevelLabel,
-	}
-
 	opts := common.CompactionOptions{
 		BlockConfig:         *rw.cfg.Block,
 		ChunkSizeBytes:      rw.compactorCfg.ChunkSizeBytes,
 		FlushSizeBytes:      rw.compactorCfg.FlushSizeBytes,
 		IteratorBufferSize:  rw.compactorCfg.IteratorBufferSize,
 		OutputBlocks:        outputBlocks,
-		Combiner:            combiner,
 		MaxBytesPerSnapshot: rw.compactorOverrides.MaxBytesPerSnapshotForTenant(tenantID),
 		BytesWritten: func(compactionLevel, bytes int) {
 			metricCompactionBytesWritten.WithLabelValues(strconv.Itoa(compactionLevel)).Add(float64(bytes))
-		},
-		ObjectsCombined: func(compactionLevel, objs int) {
-			metricCompactionObjectsCombined.WithLabelValues(strconv.Itoa(compactionLevel)).Add(float64(objs))
 		},
 		ObjectsWritten: func(compactionLevel, objs int) {
 			metricCompactionObjectsWritten.WithLabelValues(strconv.Itoa(compactionLevel)).Add(float64(objs))
@@ -322,19 +307,4 @@ func compactionLevelForBlocks(blockMetas []*backend.BlockMeta) uint8 {
 	}
 
 	return compactionLevel
-}
-
-type instrumentedObjectCombiner struct {
-	tenant               string
-	compactionLevelLabel string
-	inner                CompactorSharder
-}
-
-// Combine wraps the inner combiner with combined metrics
-func (i instrumentedObjectCombiner) Combine(dataEncoding string, objs ...[]byte) ([]byte, bool, error) {
-	b, wasCombined, err := i.inner.Combine(dataEncoding, i.tenant, objs...)
-	if wasCombined {
-		metricCompactionObjectsCombined.WithLabelValues(i.compactionLevelLabel).Inc()
-	}
-	return b, wasCombined, err
 }

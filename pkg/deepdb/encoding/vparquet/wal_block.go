@@ -45,7 +45,7 @@ import (
 var _ common.WALBlock = (*walBlock)(nil)
 
 // todo: this default size was very roughly tuned and likely should be based on config.
-// likely the best candidate is some fraction of max trace size per tenant.
+// likely the best candidate is some fraction of max snapshot size per tenant.
 const defaultRowPoolSize = 100000
 
 // completeBlockRowPool is used by the wal iterators and complete block logic to pool rows
@@ -153,9 +153,9 @@ func openWALBlock(filename string, path string, ingestionSlack time.Duration, _ 
 			for _, e := range match.Entries {
 				switch e.Key {
 				case columnPathSnapshotID:
-					traceID := e.Value.ByteArray()
-					b.meta.ObjectAdded(traceID, 0)
-					page.ids.Set(traceID, match.RowNumber[0]) // Save rownumber for the trace ID
+					snapshotID := e.Value.ByteArray()
+					b.meta.ObjectAdded(snapshotID, 0)
+					page.ids.Set(snapshotID, match.RowNumber[0]) // Save rownumber for the snapshot ID
 				}
 			}
 		}
@@ -311,7 +311,7 @@ func (b *walBlock) Append(id common.ID, buff []byte, start uint32) error {
 
 	snapshot, err := b.decoder.PrepareForRead(buff)
 	if err != nil {
-		return fmt.Errorf("error preparing trace for read: %w", err)
+		return fmt.Errorf("error preparing snapshots for read: %w", err)
 	}
 
 	b.buffer = snapshotToParquet(id, snapshot, b.buffer)
@@ -523,6 +523,10 @@ func (b *walBlock) Search(ctx context.Context, req *deeppb.SearchRequest, _ comm
 		}
 	}
 
+	if len(results.Snapshots) > int(req.Limit) {
+		results.Snapshots = results.Snapshots[0:req.Limit]
+	}
+
 	return results, nil
 }
 
@@ -579,39 +583,38 @@ func (b *walBlock) SearchTagValuesV2(ctx context.Context, tag deepql.Attribute, 
 	return nil
 }
 
-func (b *walBlock) Fetch(context.Context, deepql.FetchSnapshotRequest, common.SearchOptions) (deepql.FetchSnapshotResponse, error) {
+func (b *walBlock) Fetch(ctx context.Context, req deepql.FetchSnapshotRequest, opts common.SearchOptions) (deepql.FetchSnapshotResponse, error) {
 	// todo: this same method is called in backendBlock.Fetch. is there anyway to share this?
-	//err := checkConditions(req.Conditions)
-	//if err != nil {
-	//	return deepql.FetchSnapshotResponse{}, errors.Wrap(err, "conditions invalid")
-	//}
-	//
-	//pages := b.readFlushes()
-	//iters := make([]deepql.SnapshotResultIterator, 0, len(pages))
-	//for _, page := range pages {
-	//	file, err := page.file()
-	//	if err != nil {
-	//		return deepql.FetchSnapshotResponse{}, fmt.Errorf("error opening file %s: %w", page.path, err)
-	//	}
-	//
-	//	pf := file.parquetFile
-	//
-	//	iter, err := fetch(ctx, req, pf, opts)
-	//	if err != nil {
-	//		return deepql.FetchSnapshotResponse{}, errors.Wrap(err, "creating fetch iter")
-	//	}
-	//
-	//	wrappedIterator := &pageFileClosingIterator{iter: iter, pageFile: file}
-	//	iters = append(iters, wrappedIterator)
-	//}
-	//
-	//// combine iters?
-	//return deepql.FetchSnapshotResponse{
-	//	Results: &mergeSpansetIterator{
-	//		iters: iters,
-	//	},
-	//}, nil
-	return deepql.FetchSnapshotResponse{}, nil
+	err := checkConditions(req.Conditions)
+	if err != nil {
+		return deepql.FetchSnapshotResponse{}, errors.Wrap(err, "conditions invalid")
+	}
+
+	pages := b.readFlushes()
+	iters := make([]deepql.SnapshotResultIterator, 0, len(pages))
+	for _, page := range pages {
+		file, err := page.file()
+		if err != nil {
+			return deepql.FetchSnapshotResponse{}, fmt.Errorf("error opening file %s: %w", page.path, err)
+		}
+
+		pf := file.parquetFile
+
+		iter, err := fetch(ctx, req, pf, opts)
+		if err != nil {
+			return deepql.FetchSnapshotResponse{}, errors.Wrap(err, "creating fetch iter")
+		}
+
+		wrappedIterator := &pageFileClosingIterator{iter: iter, pageFile: file}
+		iters = append(iters, wrappedIterator)
+	}
+
+	// combine iters?
+	return deepql.FetchSnapshotResponse{
+		Results: &mergeSnapshotIterator{
+			iters: iters,
+		},
+	}, nil
 }
 
 func (b *walBlock) walPath() string {
@@ -648,22 +651,71 @@ func parseName(filename string) (uuid.UUID, string, string, error) {
 	return id, tenant, version, nil
 }
 
-// rowIterator is used to iterate a parquet file and implement iterIterator
-// traces are iterated according to the given row numbers, because there is
-// not a guarantee that the underlying parquet file is sorted
-type rowIterator struct {
-	reader       *parquet.Reader //nolint:all //deprecated
-	pageFile     *pageFile
-	rowNumbers   []common.IDMapEntry[int64]
-	traceIDIndex int
+// mergeSnapshotIterator iterates through a slice of spansetIterators exhausting them
+// in order
+type mergeSnapshotIterator struct {
+	iters []deepql.SnapshotResultIterator
+	cur   int
 }
 
-func newRowIterator(r *parquet.Reader, pageFile *pageFile, rowNumbers []common.IDMapEntry[int64], traceIDIndex int) *rowIterator { //nolint:all //deprecated
+var _ deepql.SnapshotResultIterator = (*mergeSnapshotIterator)(nil)
+
+func (i *mergeSnapshotIterator) Next(ctx context.Context) (*deepql.SnapshotResult, error) {
+	if i.cur >= len(i.iters) {
+		return nil, nil
+	}
+
+	iter := i.iters[i.cur]
+	spanset, err := iter.Next(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if spanset == nil {
+		i.cur++
+		return i.Next(ctx)
+	}
+
+	return spanset, nil
+}
+
+func (i *mergeSnapshotIterator) Close() {
+	for _, iter := range i.iters {
+		iter.Close()
+	}
+}
+
+type pageFileClosingIterator struct {
+	iter     *snapshotMetadataIterator
+	pageFile *pageFile
+}
+
+var _ deepql.SnapshotResultIterator = (*pageFileClosingIterator)(nil)
+
+func (b *pageFileClosingIterator) Next(ctx context.Context) (*deepql.SnapshotResult, error) {
+	return b.iter.Next(ctx)
+}
+
+func (b *pageFileClosingIterator) Close() {
+	b.iter.Close()
+	b.pageFile.Close()
+}
+
+// rowIterator is used to iterate a parquet file and implement iterIterator
+// snapshots are iterated according to the given row numbers, because there is
+// not a guarantee that the underlying parquet file is sorted
+type rowIterator struct {
+	reader          *parquet.Reader //nolint:all //deprecated
+	pageFile        *pageFile
+	rowNumbers      []common.IDMapEntry[int64]
+	snapshotIDIndex int
+}
+
+func newRowIterator(r *parquet.Reader, pageFile *pageFile, rowNumbers []common.IDMapEntry[int64], snapshotIDIndex int) *rowIterator { //nolint:all //deprecated
 	return &rowIterator{
-		reader:       r,
-		pageFile:     pageFile,
-		rowNumbers:   rowNumbers,
-		traceIDIndex: traceIDIndex,
+		reader:          r,
+		pageFile:        pageFile,
+		rowNumbers:      rowNumbers,
+		snapshotIDIndex: snapshotIDIndex,
 	}
 }
 
@@ -697,7 +749,7 @@ func (i *rowIterator) Next(context.Context) (common.ID, parquet.Row, error) {
 	row := rows[0]
 	var id common.ID
 	for _, v := range row {
-		if v.Column() == i.traceIDIndex {
+		if v.Column() == i.snapshotIDIndex {
 			id = v.ByteArray()
 			break
 		}

@@ -66,6 +66,7 @@ var cli struct {
 		Snapshot   generateSnapshotCmd `cmd:"snapshot" aliases:"snap" help:"Can generate a snapshot and send to configured endpoint"`
 		Tags       generateTagsCmd     `cmd:"tags" help:"Generate basic snapshots with a variety of tags"`
 		Tracepoint cmdCreateTracepoint `cmd:"tp" help:"Generate a new tracepoint"`
+		Block      cmdGenerateBlock    `cmd:"block" help:"Generate a test block"`
 	} `cmd:"generate" aliases:"gen"`
 
 	Delete struct {

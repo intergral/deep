@@ -27,26 +27,26 @@ import (
 )
 
 func TestShardedBloom(t *testing.T) {
-	// create a bunch of traceIDs
+	// create a bunch of snapshotIDs
 	var err error
-	const numTraces = 10000
-	traceIDs := make([][]byte, 0)
-	for i := 0; i < numTraces; i++ {
+	const numSnapshots = 10000
+	snapshotIDs := make([][]byte, 0)
+	for i := 0; i < numSnapshots; i++ {
 		id := make([]byte, 16)
 		_, err = crand.Read(id)
 		assert.NoError(t, err)
-		traceIDs = append(traceIDs, id)
+		snapshotIDs = append(snapshotIDs, id)
 	}
 
 	// create sharded bloom filter
 	const bloomFP = .01
 	shardSize := uint(100)
-	estimatedObjects := uint(numTraces)
+	estimatedObjects := uint(numSnapshots)
 	b := NewBloom(bloomFP, shardSize, estimatedObjects)
 
-	// add traceIDs to sharded bloom filter
-	for _, traceID := range traceIDs {
-		b.Add(traceID)
+	// add snapshotIDs to sharded bloom filter
+	for _, snapshotID := range snapshotIDs {
+		b.Add(snapshotID)
 	}
 
 	// get byte representation
@@ -69,16 +69,16 @@ func TestShardedBloom(t *testing.T) {
 
 	// confirm that the sharded bloom and parsed form give the same result
 	missingCount := 0
-	for _, traceID := range traceIDs {
-		found := b.Test(traceID)
+	for _, snapshotID := range snapshotIDs {
+		found := b.Test(snapshotID)
 		if !found {
 			missingCount++
 		}
-		assert.Equal(t, found, filters[ShardKeyForTraceID(traceID, b.GetShardCount())].Test(traceID))
+		assert.Equal(t, found, filters[ShardKeyForSnapshotID(snapshotID, b.GetShardCount())].Test(snapshotID))
 	}
 
 	// check that missingCount is less than bloomFP
-	assert.LessOrEqual(t, float64(missingCount), bloomFP*numTraces)
+	assert.LessOrEqual(t, float64(missingCount), bloomFP*numSnapshots)
 }
 
 func TestShardedBloomFalsePositive(t *testing.T) {

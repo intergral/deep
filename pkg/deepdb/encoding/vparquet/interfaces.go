@@ -24,8 +24,8 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 )
 
-type TraceIterator interface {
-	NextTrace(context.Context) (common.ID, *Snapshot, error)
+type SnapshotIterator interface {
+	NextSnapshot(context.Context) (common.ID, *Snapshot, error)
 	Close()
 }
 

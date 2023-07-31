@@ -117,8 +117,8 @@ type streamingBlock struct {
 	r     backend.Reader
 	to    backend.Writer
 
-	currentBufferedTraces int
-	currentBufferedBytes  int
+	currentBufferedSnapshots int
+	currentBufferedBytes     int
 }
 
 func newStreamingBlock(ctx context.Context, cfg *common.BlockConfig, meta *backend.BlockMeta, r backend.Reader, to backend.Writer, createBufferedWriter func(w io.Writer) deepIO.BufferedWriteFlusher) *streamingBlock {
@@ -155,7 +155,7 @@ func (b *streamingBlock) Add(tr *Snapshot, start uint32) error {
 
 	b.bloom.Add(id)
 	b.meta.ObjectAdded(id, start)
-	b.currentBufferedTraces++
+	b.currentBufferedSnapshots++
 	b.currentBufferedBytes += estimateMarshalledSizeFromSnapshot(tr)
 
 	return nil
@@ -169,7 +169,7 @@ func (b *streamingBlock) AddRaw(id []byte, row parquet.Row, start uint32) error 
 
 	b.bloom.Add(id)
 	b.meta.ObjectAdded(id, start)
-	b.currentBufferedTraces++
+	b.currentBufferedSnapshots++
 	b.currentBufferedBytes += estimateMarshalledSizeFromParquetRow(row)
 
 	return nil
@@ -180,7 +180,7 @@ func (b *streamingBlock) EstimatedBufferedBytes() int {
 }
 
 func (b *streamingBlock) CurrentBufferedObjects() int {
-	return b.currentBufferedTraces
+	return b.currentBufferedSnapshots
 }
 
 func (b *streamingBlock) Flush() (int, error) {
@@ -193,7 +193,7 @@ func (b *streamingBlock) Flush() (int, error) {
 	n := b.bw.Len()
 	b.meta.Size += uint64(n)
 	b.meta.TotalRecords++
-	b.currentBufferedTraces = 0
+	b.currentBufferedSnapshots = 0
 	b.currentBufferedBytes = 0
 
 	// Flush to underlying writer
@@ -248,7 +248,7 @@ func (b *streamingBlock) Complete() (int, error) {
 	return n, writeBlockMeta(b.ctx, b.to, b.meta, b.bloom)
 }
 
-// estimateMarshalledSizeFromSnapshot attempts to estimate the size of trace in bytes. This is used to make choose
+// estimateMarshalledSizeFromSnapshot attempts to estimate the size of Snapshot in bytes. This is used to make choose
 // when to cut a row group during block creation.
 // TODO: This function regularly estimates lower values then estimateProtoSize() and the size
 // of the actual proto. It's also quite inefficient. Perhaps just using static values per span or attribute
@@ -258,7 +258,7 @@ func estimateMarshalledSizeFromSnapshot(tr *Snapshot) (size int) {
 
 	size += estimateAttrSize(tr.Resource.Attrs)
 	size += estimateAttrSize(tr.Attributes)
-	size += 5                     // 5 tracepoint lvl fields
+	size += 5                     // 5 Snapshot lvl fields
 	size += 6 * len(tr.Watches)   // 6 watch result fields
 	size += 11 * len(tr.Frames)   // frame fields
 	size += 5 * len(tr.VarLookup) // var look up fields

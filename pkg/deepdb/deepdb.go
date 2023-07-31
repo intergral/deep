@@ -117,7 +117,6 @@ type Compactor interface {
 }
 
 type CompactorSharder interface {
-	Combine(dataEncoding string, tenantID string, objs ...[]byte) ([]byte, bool, error)
 	Owns(hash string) bool
 	RecordDiscardedSnapshots(count int, tenantID string, snapshotID string)
 }

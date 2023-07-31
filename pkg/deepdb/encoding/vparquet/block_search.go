@@ -123,7 +123,7 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 
 	// Wire up iterators
 	var resourceIters []pq.Iterator
-	var traceIters []pq.Iterator
+	var snapshotIters []pq.Iterator
 
 	otherAttrConditions := map[string]string{}
 
@@ -176,12 +176,12 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 	}
 
 	// Multiple resource-level filters get joined and wrapped
-	// up to trace-level. A single filter can be used as-is
+	// up to snapshot-level. A single filter can be used as-is
 	if len(resourceIters) == 1 {
-		traceIters = append(traceIters, resourceIters[0])
+		snapshotIters = append(snapshotIters, resourceIters[0])
 	}
 	if len(resourceIters) > 1 {
-		traceIters = append(traceIters, pq.NewJoinIterator(DefinitionLevelSnapshot, resourceIters, nil))
+		snapshotIters = append(snapshotIters, pq.NewJoinIterator(DefinitionLevelSnapshot, resourceIters, nil))
 	}
 
 	// Duration filtering?
@@ -195,32 +195,32 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 			max = (time.Millisecond * time.Duration(req.MaxDurationMs)).Nanoseconds()
 		}
 		durFilter := pq.NewIntBetweenPredicate(min, max)
-		traceIters = append(traceIters, makeIter("DurationNanos", durFilter, "Duration"))
+		snapshotIters = append(snapshotIters, makeIter("DurationNanos", durFilter, "DurationNanos"))
 	}
 
 	// Time range filtering?
 	if req.Start > 0 && req.End > 0 {
-		// Here's how we detect the trace overlaps the time window:
+		// Here's how we detect the snapshot overlaps the time window:
 
-		// Trace start <= req.End
+		// Snapshot start <= req.End
 		startFilter := pq.NewIntBetweenPredicate(time.Unix(int64(req.Start), 0).UnixNano(), time.Unix(int64(req.End), 0).UnixNano())
-		traceIters = append(traceIters, makeIter("TsNanos", startFilter, "TsNanos"))
+		snapshotIters = append(snapshotIters, makeIter("TsNanos", startFilter, "TsNanos"))
 	}
 
-	switch len(traceIters) {
+	switch len(snapshotIters) {
 
 	case 0:
-		// Empty request, in this case every trace matches, so we can
+		// Empty request, in this case every snapshot matches, so we can
 		// simply iterate any column.
 		return makeIter("ID", nil, "")
 
 	case 1:
 		// There is only 1 iterator already, no need to wrap it up
-		return traceIters[0]
+		return snapshotIters[0]
 
 	default:
 		// Join all conditions
-		return pq.NewJoinIterator(DefinitionLevelSnapshot, traceIters, nil)
+		return pq.NewJoinIterator(DefinitionLevelSnapshot, snapshotIters, nil)
 	}
 }
 

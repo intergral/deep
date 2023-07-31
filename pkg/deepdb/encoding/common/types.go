@@ -50,7 +50,7 @@ func NewIDMap[T any]() *IDMap[T] {
 
 // tokenForID returns a token for use in a hash map given a span id and span kind
 // buffer must be a 4 byte slice and is reused for writing the span kind to the hashing function
-// kind is used along with the actual id b/c in zipkin traces span id is not guaranteed to be unique
+// kind is used along with the actual id b/c in zipkin snapshots id is not guaranteed to be unique
 // as it is shared between client and server spans.
 func (m *IDMap[T]) tokenFor(id ID) uint64 {
 	m.h.Reset()

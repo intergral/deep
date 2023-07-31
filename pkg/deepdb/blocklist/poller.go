@@ -46,7 +46,7 @@ var (
 		Namespace: "deep",
 		Subsystem: "db",
 		Name:      "backend_objects_total",
-		Help:      "Total number of objects (traces) in the backend",
+		Help:      "Total number of objects (snapshots) in the backend",
 	}, []string{"tenant", "status"})
 	metricBackendBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "deep",

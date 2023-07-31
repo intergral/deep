@@ -29,6 +29,8 @@ import (
 
 // Label names for conversion b/n Proto <> Parquet
 const (
+	Id = "id"
+
 	LabelServiceName = "service.name"
 	LabelCluster     = "cluster"
 	LabelNamespace   = "namespace"
@@ -367,6 +369,9 @@ func convertVariableId(child *deepTP.VariableID) VariableID {
 }
 
 func convertTracepoint(tracepoint *deepTP.TracePointConfig) TracePointConfig {
+	if tracepoint == nil {
+		return TracePointConfig{}
+	}
 	return TracePointConfig{
 		ID:         tracepoint.ID,
 		Path:       tracepoint.Path,
@@ -555,6 +560,9 @@ func parquetConvertVariable(variable Variable) *deepTP.Variable {
 }
 
 func parquetConvertChildren(children []VariableID) []*deepTP.VariableID {
+	if len(children) == 0 {
+		return nil
+	}
 	var varChildren = make([]*deepTP.VariableID, len(children))
 	for i, child := range children {
 		varChildren[i] = parquetConvertVariableID(child)

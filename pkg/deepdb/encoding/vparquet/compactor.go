@@ -52,8 +52,8 @@ func (c *Compactor) Compact(ctx context.Context, l log.Logger, r backend.Reader,
 		minBlockStart   time.Time
 		maxBlockEnd     time.Time
 		bookmarks       = make([]*bookmark[parquet.Row], 0, len(inputs))
-		// MaxBytesPerSnapshot is the largest trace that can be expected, and assumes 1 byte per value on average (same as flushing).
-		// Divide by 4 to presumably require 2 slice allocations if we ever see a trace this large
+		// MaxBytesPerSnapshot is the largest snapshot that can be expected, and assumes 1 byte per value on average (same as flushing).
+		// Divide by 4 to presumably require 2 slice allocations if we ever see a snapshot this large
 		pool = newRowPool(c.opts.MaxBytesPerSnapshot / 4)
 	)
 	for _, blockMeta := range inputs {
@@ -120,7 +120,7 @@ func (c *Compactor) Compact(ctx context.Context, l log.Logger, r backend.Reader,
 			newCompactedBlocks = append(newCompactedBlocks, currentBlock.meta)
 		}
 
-		// Flush existing block data if the next trace can't fit
+		// Flush existing block data if the next snapshot can't fit
 		if currentBlock.EstimatedBufferedBytes() > 0 && currentBlock.EstimatedBufferedBytes()+estimateMarshalledSizeFromParquetRow(lowestObject) > c.opts.BlockConfig.RowGroupSizeBytes {
 			runtime.GC()
 			err = c.appendBlock(ctx, currentBlock, l)
@@ -129,8 +129,8 @@ func (c *Compactor) Compact(ctx context.Context, l log.Logger, r backend.Reader,
 			}
 		}
 
-		// Write trace.
-		// Note - not specifying trace start/end here, we set the overall block start/stop
+		// Write snapshot.
+		// Note - not specifying snapshot start/end here, we set the overall block start/stop
 		// times from the input metas.
 		err = currentBlock.AddRaw(lowestID, lowestObject, 0)
 		if err != nil {

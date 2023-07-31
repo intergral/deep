@@ -27,13 +27,10 @@ import (
 )
 
 type Engine struct {
-	spansPerSpanSet int
 }
 
 func NewEngine() *Engine {
-	return &Engine{
-		spansPerSpanSet: 3, // TODO make configurable
-	}
+	return &Engine{}
 }
 
 func (e *Engine) Execute(ctx context.Context, searchReq *deeppb.SearchRequest, spanSetFetcher SnapshotResultFetcher) (*deeppb.SearchResponse, error) {

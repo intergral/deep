@@ -50,26 +50,26 @@ func (b *backendBlock) RawIterator(ctx context.Context, pool *rowPool) (*rawIter
 		return nil, err
 	}
 
-	traceIDIndex, _ := parquetquery.GetColumnIndexByPath(pf, SnapshotIDColumnName)
-	if traceIDIndex < 0 {
+	snapshotIDIndex, _ := parquetquery.GetColumnIndexByPath(pf, SnapshotIDColumnName)
+	if snapshotIDIndex < 0 {
 		return nil, fmt.Errorf("cannot find snapshot ID column in '%s' in block '%s'", SnapshotIDColumnName, b.meta.BlockID.String())
 	}
 
-	return &rawIterator{b.meta.BlockID.String(), r, traceIDIndex, pool}, nil
+	return &rawIterator{b.meta.BlockID.String(), r, snapshotIDIndex, pool}, nil
 }
 
 type rawIterator struct {
-	blockID      string
-	r            *parquet.Reader //nolint:all //deprecated
-	traceIDIndex int
-	pool         *rowPool
+	blockID         string
+	r               *parquet.Reader //nolint:all //deprecated
+	snapshotIDIndex int
+	pool            *rowPool
 }
 
 var _ RawIterator = (*rawIterator)(nil)
 
-func (i *rawIterator) getTraceID(r parquet.Row) common.ID {
+func (i *rawIterator) getSnapshotID(r parquet.Row) common.ID {
 	for _, v := range r {
-		if v.Column() == i.traceIDIndex {
+		if v.Column() == i.snapshotIDIndex {
 			return v.ByteArray()
 		}
 	}
@@ -80,7 +80,7 @@ func (i *rawIterator) Next(context.Context) (common.ID, parquet.Row, error) {
 	rows := []parquet.Row{i.pool.Get()}
 	n, err := i.r.ReadRows(rows)
 	if n > 0 {
-		return i.getTraceID(rows[0]), rows[0], nil
+		return i.getSnapshotID(rows[0]), rows[0], nil
 	}
 
 	if err == io.EOF {

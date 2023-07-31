@@ -90,7 +90,7 @@ func TestGetContainerURL(t *testing.T) {
 	cfg := Config{
 		StorageAccountName: "devstoreaccount1",
 		StorageAccountKey:  flagext.SecretWithValue("dGVzdAo="),
-		ContainerName:      "traces",
+		ContainerName:      "snapshots",
 	}
 
 	tests := []struct {
@@ -101,22 +101,22 @@ func TestGetContainerURL(t *testing.T) {
 		{
 			name:        "localhost",
 			endpoint:    "localhost:10000",
-			expectedURL: "http://localhost:10000/devstoreaccount1/traces",
+			expectedURL: "http://localhost:10000/devstoreaccount1/snapshots",
 		},
 		{
 			name:        "Azure China",
 			endpoint:    "blob.core.chinacloudapi.cn",
-			expectedURL: "https://devstoreaccount1.blob.core.chinacloudapi.cn/traces",
+			expectedURL: "https://devstoreaccount1.blob.core.chinacloudapi.cn/snapshots",
 		},
 		{
 			name:        "Azure US Government",
 			endpoint:    "blob.core.usgovcloudapi.net",
-			expectedURL: "https://devstoreaccount1.blob.core.usgovcloudapi.net/traces",
+			expectedURL: "https://devstoreaccount1.blob.core.usgovcloudapi.net/snapshots",
 		},
 		{
 			name:        "Azure German",
 			endpoint:    "blob.core.cloudapi.de",
-			expectedURL: "https://devstoreaccount1.blob.core.cloudapi.de/traces",
+			expectedURL: "https://devstoreaccount1.blob.core.cloudapi.de/snapshots",
 		},
 	}
 
