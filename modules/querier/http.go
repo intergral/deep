@@ -46,10 +46,10 @@ const (
 
 func (q *Querier) SnapshotByIdHandler(w http.ResponseWriter, r *http.Request) {
 	// Enforce the query timeout while querying backends
-	ctx, cancel := context.WithDeadline(r.Context(), time.Now().Add(q.cfg.TraceByID.QueryTimeout))
+	ctx, cancel := context.WithDeadline(r.Context(), time.Now().Add(q.cfg.SnapshotByIDConfig.QueryTimeout))
 	defer cancel()
 
-	span, ctx := opentracing.StartSpanFromContext(ctx, "Querier.TraceByIDHandler")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Querier.SnapshotByIdHandler")
 	defer span.Finish()
 
 	byteID, err := api.ParseSnapshotID(r)
