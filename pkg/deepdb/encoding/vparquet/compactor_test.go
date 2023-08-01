@@ -37,17 +37,17 @@ import (
 
 func BenchmarkCompactor(b *testing.B) {
 	b.Run("Small", func(b *testing.B) {
-		benchmarkCompactor(b, 1000, 100, 100) // 10M spans
+		benchmarkCompactor(b, 1000, 100, 100) // 10M snapshot
 	})
 	b.Run("Medium", func(b *testing.B) {
-		benchmarkCompactor(b, 100, 100, 1000) // 10M spans
+		benchmarkCompactor(b, 100, 100, 1000) // 10M snapshot
 	})
 	b.Run("Large", func(b *testing.B) {
-		benchmarkCompactor(b, 10, 1000, 1000) // 10M spans
+		benchmarkCompactor(b, 10, 1000, 1000) // 10M snapshot
 	})
 }
 
-func benchmarkCompactor(b *testing.B, snapshotCount, batchCount, spanCount int) {
+func benchmarkCompactor(b *testing.B, snapshotCount, batchCount, count int) {
 	rawR, rawW, _, err := local.New(&local.Config{
 		Path: b.TempDir(),
 	})
@@ -64,7 +64,7 @@ func benchmarkCompactor(b *testing.B, snapshotCount, batchCount, spanCount int) 
 		RowGroupSizeBytes:   20_000_000,
 	}
 
-	meta := createTestBlock(b, ctx, cfg, r, w, snapshotCount, batchCount, spanCount)
+	meta := createTestBlock(b, ctx, cfg, r, w, snapshotCount, batchCount, count)
 
 	inputs := []*backend.BlockMeta{meta}
 
@@ -100,7 +100,7 @@ func BenchmarkCompactorDupes(b *testing.B) {
 		RowGroupSizeBytes:   20_000_000,
 	}
 
-	// 1M span snapshots
+	// 1M snapshots
 	meta := createTestBlock(b, ctx, cfg, r, w, 10, 1000, 1000)
 	inputs := []*backend.BlockMeta{meta, meta}
 
@@ -114,7 +114,7 @@ func BenchmarkCompactorDupes(b *testing.B) {
 			MaxBytesPerSnapshot: 50_000_000,
 
 			ObjectsWritten:     func(compactionLevel, objects int) {},
-			SnapshotsDiscarded: func(snapshotID string, spans int) {},
+			SnapshotsDiscarded: func(snapshotID string, count int) {},
 		})
 
 		_, err = c.Compact(ctx, l, r, func(*backend.BlockMeta, time.Time) backend.Writer { return w }, inputs)
@@ -126,7 +126,7 @@ func BenchmarkCompactorDupes(b *testing.B) {
 // Snapshot IDs are guaranteed to be monotonically increasing so that
 // the block will be iterated in order.
 // nolint: revive
-func createTestBlock(t testing.TB, ctx context.Context, cfg *common.BlockConfig, r backend.Reader, w backend.Writer, snapshotCount, batchCount, spanCount int) *backend.BlockMeta {
+func createTestBlock(t testing.TB, ctx context.Context, cfg *common.BlockConfig, r backend.Reader, w backend.Writer, snapshotCount, batchCount, count int) *backend.BlockMeta {
 	inMeta := &backend.BlockMeta{
 		TenantID:     tenantID,
 		BlockID:      uuid.New(),

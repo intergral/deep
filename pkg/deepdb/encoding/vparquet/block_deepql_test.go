@@ -40,7 +40,7 @@ func TestOne(t *testing.T) {
 	wantTr := fullyPopulatedTestSnapshot(nil)
 	b := makeBackendBlockWithSnapshots(t, []*Snapshot{wantTr})
 	ctx := context.Background()
-	req := deepql.MustExtractFetchSpansRequest(`{ .span.foo = "bar" || duration > 1s }`)
+	req := deepql.MustExtractFetchSnapshotRequest(`{ .span.foo = "bar" || duration > 1s }`)
 
 	req.StartTimeUnixNanos = uint64(1000 * time.Second)
 	req.EndTimeUnixNanos = uint64(1001 * time.Second)
@@ -48,13 +48,13 @@ func TestOne(t *testing.T) {
 	resp, err := b.Fetch(ctx, req, common.DefaultSearchOptions())
 	require.NoError(t, err, "search request:", req)
 
-	spanSet, err := resp.Results.Next(ctx)
+	snapshots, err := resp.Results.Next(ctx)
 	require.NoError(t, err, "search request:", req)
 
 	fmt.Println("-----------")
 	fmt.Println(resp.Results.(*snapshotMetadataIterator).iter)
 	fmt.Println("-----------")
-	fmt.Println(spanSet)
+	fmt.Println(snapshots)
 }
 
 func TestBackendBlockSearchDeepql(t *testing.T) {
@@ -94,63 +94,63 @@ func TestBackendBlockSearchDeepql(t *testing.T) {
 			EndTimeUnixNanos:   uint64(2100 * 1e9),
 		},
 		// Intrinsics
-		deepql.MustExtractFetchSpansRequest(`{` + LabelDuration + ` =  100s}`),
-		deepql.MustExtractFetchSpansRequest(`{` + LabelDuration + ` >  99s}`),
-		deepql.MustExtractFetchSpansRequest(`{` + LabelDuration + ` >= 100s}`),
-		deepql.MustExtractFetchSpansRequest(`{` + LabelDuration + ` <  101s}`),
-		deepql.MustExtractFetchSpansRequest(`{` + LabelDuration + ` <= 100s}`),
-		deepql.MustExtractFetchSpansRequest(`{` + LabelDuration + ` <= 100s}`),
-		//deepql.MustExtractFetchSpansRequest(`{` + LabelStatus + ` = error}`),
-		//deepql.MustExtractFetchSpansRequest(`{` + LabelStatus + ` = 2}`),
-		//deepql.MustExtractFetchSpansRequest(`{` + LabelKind + ` = client }`),
+		deepql.MustExtractFetchSnapshotRequest(`{` + LabelDuration + ` =  100s}`),
+		deepql.MustExtractFetchSnapshotRequest(`{` + LabelDuration + ` >  99s}`),
+		deepql.MustExtractFetchSnapshotRequest(`{` + LabelDuration + ` >= 100s}`),
+		deepql.MustExtractFetchSnapshotRequest(`{` + LabelDuration + ` <  101s}`),
+		deepql.MustExtractFetchSnapshotRequest(`{` + LabelDuration + ` <= 100s}`),
+		deepql.MustExtractFetchSnapshotRequest(`{` + LabelDuration + ` <= 100s}`),
+		//deepql.MustExtractFetchSnapshotRequest(`{` + LabelStatus + ` = error}`),
+		//deepql.MustExtractFetchSnapshotRequest(`{` + LabelStatus + ` = 2}`),
+		//deepql.MustExtractFetchSnapshotRequest(`{` + LabelKind + ` = client }`),
 		// Resource well-known attributes
-		deepql.MustExtractFetchSpansRequest(`{.` + LabelServiceName + ` = "spanservicename"}`), // Overridden at span
-		deepql.MustExtractFetchSpansRequest(`{.` + LabelCluster + ` = "cluster"}`),
-		deepql.MustExtractFetchSpansRequest(`{.` + LabelNamespace + ` = "namespace"}`),
-		deepql.MustExtractFetchSpansRequest(`{.` + LabelPod + ` = "pod"}`),
-		deepql.MustExtractFetchSpansRequest(`{.` + LabelContainer + ` = "container"}`),
-		deepql.MustExtractFetchSpansRequest(`{.` + LabelK8sNamespaceName + ` = "k8snamespace"}`),
-		deepql.MustExtractFetchSpansRequest(`{.` + LabelK8sClusterName + ` = "k8scluster"}`),
-		deepql.MustExtractFetchSpansRequest(`{.` + LabelK8sPodName + ` = "k8spod"}`),
-		deepql.MustExtractFetchSpansRequest(`{.` + LabelK8sContainerName + ` = "k8scontainer"}`),
-		deepql.MustExtractFetchSpansRequest(`{resource.` + LabelCluster + ` = "cluster"}`),
-		deepql.MustExtractFetchSpansRequest(`{resource.` + LabelNamespace + ` = "namespace"}`),
-		deepql.MustExtractFetchSpansRequest(`{resource.` + LabelPod + ` = "pod"}`),
-		deepql.MustExtractFetchSpansRequest(`{resource.` + LabelContainer + ` = "container"}`),
-		deepql.MustExtractFetchSpansRequest(`{resource.` + LabelK8sNamespaceName + ` = "k8snamespace"}`),
-		deepql.MustExtractFetchSpansRequest(`{resource.` + LabelK8sClusterName + ` = "k8scluster"}`),
-		deepql.MustExtractFetchSpansRequest(`{resource.` + LabelK8sPodName + ` = "k8spod"}`),
-		deepql.MustExtractFetchSpansRequest(`{resource.` + LabelK8sContainerName + ` = "k8scontainer"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelServiceName + ` = "test-service-name"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelCluster + ` = "cluster"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelNamespace + ` = "namespace"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelPod + ` = "pod"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelContainer + ` = "container"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelK8sNamespaceName + ` = "k8snamespace"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelK8sClusterName + ` = "k8scluster"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelK8sPodName + ` = "k8spod"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelK8sContainerName + ` = "k8scontainer"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelCluster + ` = "cluster"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelNamespace + ` = "namespace"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelPod + ` = "pod"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelContainer + ` = "container"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelK8sNamespaceName + ` = "k8snamespace"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelK8sClusterName + ` = "k8scluster"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelK8sPodName + ` = "k8spod"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelK8sContainerName + ` = "k8scontainer"}`),
 		// Span well-known attributes
-		//deepql.MustExtractFetchSpansRequest(`{.` + LabelHTTPStatusCode + ` = 500}`),
-		//deepql.MustExtractFetchSpansRequest(`{.` + LabelHTTPMethod + ` = "get"}`),
-		//deepql.MustExtractFetchSpansRequest(`{.` + LabelHTTPUrl + ` = "url/hello/world"}`),
-		//deepql.MustExtractFetchSpansRequest(`{span.` + LabelHTTPStatusCode + ` = 500}`),
-		//deepql.MustExtractFetchSpansRequest(`{span.` + LabelHTTPMethod + ` = "get"}`),
-		//deepql.MustExtractFetchSpansRequest(`{span.` + LabelHTTPUrl + ` = "url/hello/world"}`),
+		//deepql.MustExtractFetchSnapshotRequest(`{.` + LabelHTTPStatusCode + ` = 500}`),
+		//deepql.MustExtractFetchSnapshotRequest(`{.` + LabelHTTPMethod + ` = "get"}`),
+		//deepql.MustExtractFetchSnapshotRequest(`{.` + LabelHTTPUrl + ` = "url/hello/world"}`),
+		//deepql.MustExtractFetchSnapshotRequest(`{span.` + LabelHTTPStatusCode + ` = 500}`),
+		//deepql.MustExtractFetchSnapshotRequest(`{span.` + LabelHTTPMethod + ` = "get"}`),
+		//deepql.MustExtractFetchSnapshotRequest(`{span.` + LabelHTTPUrl + ` = "url/hello/world"}`),
 		// Basic data types and operations
-		//deepql.MustExtractFetchSpansRequest(`{.float = 456.78}`),      // Float ==
-		//deepql.MustExtractFetchSpansRequest(`{.float != 456.79}`),     // Float !=
-		//deepql.MustExtractFetchSpansRequest(`{.float > 456.7}`),       // Float >
-		//deepql.MustExtractFetchSpansRequest(`{.float >= 456.78}`),     // Float >=
-		//deepql.MustExtractFetchSpansRequest(`{.float < 456.781}`),     // Float <
-		//deepql.MustExtractFetchSpansRequest(`{.bool = false}`),        // Bool ==
-		//deepql.MustExtractFetchSpansRequest(`{.bool != true}`),        // Bool !=
-		//deepql.MustExtractFetchSpansRequest(`{.bar = 123}`),           // Int ==
-		//deepql.MustExtractFetchSpansRequest(`{.bar != 124}`),          // Int !=
-		//deepql.MustExtractFetchSpansRequest(`{.bar > 122}`),           // Int >
-		//deepql.MustExtractFetchSpansRequest(`{.bar >= 123}`),          // Int >=
-		//deepql.MustExtractFetchSpansRequest(`{.bar < 124}`),           // Int <
-		//deepql.MustExtractFetchSpansRequest(`{.bar <= 123}`),          // Int <=
-		deepql.MustExtractFetchSpansRequest(`{.foo = "def"}`),         // String ==
-		deepql.MustExtractFetchSpansRequest(`{.foo != "deg"}`),        // String !=
-		deepql.MustExtractFetchSpansRequest(`{.foo =~ "d.*"}`),        // String Regex
-		deepql.MustExtractFetchSpansRequest(`{resource.foo = "abc"}`), // Resource-level only
-		//deepql.MustExtractFetchSpansRequest(`{.foo}`),                 // Projection only
+		//deepql.MustExtractFetchSnapshotRequest(`{.float = 456.78}`),      // Float ==
+		//deepql.MustExtractFetchSnapshotRequest(`{.float != 456.79}`),     // Float !=
+		//deepql.MustExtractFetchSnapshotRequest(`{.float > 456.7}`),       // Float >
+		//deepql.MustExtractFetchSnapshotRequest(`{.float >= 456.78}`),     // Float >=
+		//deepql.MustExtractFetchSnapshotRequest(`{.float < 456.781}`),     // Float <
+		//deepql.MustExtractFetchSnapshotRequest(`{.bool = false}`),        // Bool ==
+		//deepql.MustExtractFetchSnapshotRequest(`{.bool != true}`),        // Bool !=
+		//deepql.MustExtractFetchSnapshotRequest(`{.bar = 123}`),           // Int ==
+		//deepql.MustExtractFetchSnapshotRequest(`{.bar != 124}`),          // Int !=
+		//deepql.MustExtractFetchSnapshotRequest(`{.bar > 122}`),           // Int >
+		//deepql.MustExtractFetchSnapshotRequest(`{.bar >= 123}`),          // Int >=
+		//deepql.MustExtractFetchSnapshotRequest(`{.bar < 124}`),           // Int <
+		//deepql.MustExtractFetchSnapshotRequest(`{.bar <= 123}`),          // Int <=
+		deepql.MustExtractFetchSnapshotRequest(`{.foo = "def"}`),         // String ==
+		deepql.MustExtractFetchSnapshotRequest(`{.foo != "deg"}`),        // String !=
+		deepql.MustExtractFetchSnapshotRequest(`{.foo =~ "d.*"}`),        // String Regex
+		deepql.MustExtractFetchSnapshotRequest(`{resource.foo = "abc"}`), // Resource-level only
+		//deepql.MustExtractFetchSnapshotRequest(`{.foo}`),                 // Projection only
 
 		// Edge cases
-		deepql.MustExtractFetchSpansRequest(`{.` + LabelServiceName + ` = "spanservicename"}`), // service.name present on span
-		deepql.MustExtractFetchSpansRequest(`{.foo = "def"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelServiceName + ` = "test-service-name"}`),
+		deepql.MustExtractFetchSnapshotRequest(`{.foo = "def"}`),
 	}
 
 	for _, req := range searchesThatMatch {
@@ -159,12 +159,12 @@ func TestBackendBlockSearchDeepql(t *testing.T) {
 
 		found := false
 		for {
-			spanSet, err := resp.Results.Next(ctx)
+			snaps, err := resp.Results.Next(ctx)
 			require.NoError(t, err, "search request:", req)
-			if spanSet == nil {
+			if snaps == nil {
 				break
 			}
-			found = bytes.Equal(spanSet.SnapshotID, wantedSnapshotID)
+			found = bytes.Equal(snaps.SnapshotID, wantedSnapshotID)
 			if found {
 				break
 			}
@@ -174,10 +174,9 @@ func TestBackendBlockSearchDeepql(t *testing.T) {
 
 	searchesThatDontMatch := []deepql.FetchSnapshotRequest{
 		// TODO - Should the below query return data or not?  It does match the resource
-		// makeReq(parse(t, `{.foo = "abc"}`)),                           // This should not return results because the span has overridden this attribute to "def".
-		deepql.MustExtractFetchSpansRequest(`{.foo =~ "xyz.*"}`),                            // Regex IN
-		deepql.MustExtractFetchSpansRequest(`{` + LabelDuration + ` >  100s}`),              // Intrinsic: duration
-		deepql.MustExtractFetchSpansRequest(`{.` + LabelServiceName + ` = "notmyservice"}`), // Well-known attribute: service.name not match
+		deepql.MustExtractFetchSnapshotRequest(`{.foo =~ "xyz.*"}`),                            // Regex IN
+		deepql.MustExtractFetchSnapshotRequest(`{` + LabelDuration + ` >  100s}`),              // Intrinsic: duration
+		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelServiceName + ` = "notmyservice"}`), // Well-known attribute: service.name not match
 		{
 			// Time range after snapshot
 			StartTimeUnixNanos: uint64(3000 * time.Second),
@@ -190,7 +189,7 @@ func TestBackendBlockSearchDeepql(t *testing.T) {
 		},
 		{
 			// Matches some conditions but not all
-			// Mix of span and resource columns
+			// Mix of attribute and resource columns
 			AllConditions: true,
 			Conditions: []deepql.Condition{
 				parse(t, `{resource.cluster = "cluster"}`),     // match
@@ -232,12 +231,12 @@ func TestBackendBlockSearchDeepql(t *testing.T) {
 		require.NoError(t, err, "search request:", req)
 
 		for {
-			spanSet, err := resp.Results.Next(ctx)
+			snaps, err := resp.Results.Next(ctx)
 			require.NoError(t, err, "search request:", req)
-			if spanSet == nil {
+			if snaps == nil {
 				break
 			}
-			require.NotEqual(t, wantedSnapshotID, spanSet.SnapshotID, "search request:", req)
+			require.NotEqual(t, wantedSnapshotID, snaps.SnapshotID, "search request:", req)
 		}
 	}
 }
@@ -250,14 +249,14 @@ func makeReq(conditions ...deepql.Condition) deepql.FetchSnapshotRequest {
 
 func parse(t *testing.T, q string) deepql.Condition {
 
-	req, err := deepql.ExtractFetchSpansRequest(q)
+	req, err := deepql.ExtractFetchSnapshotRequest(q)
 	require.NoError(t, err, "query:", q)
 
 	return req.Conditions[0]
 }
 
 func fullyPopulatedTestSnapshot(id common.ID) *Snapshot {
-	snapshot := test.GenerateSnapshot(0, &test.GenerateOptions{Id: id, ServiceName: "spanservicename", Resource: map[string]string{
+	snapshot := test.GenerateSnapshot(0, &test.GenerateOptions{Id: id, ServiceName: "test-service-name", Resource: map[string]string{
 		"cluster":            "cluster",
 		"namespace":          "namespace",
 		"pod":                "pod",
@@ -281,26 +280,26 @@ func BenchmarkBackendBlockdeepql(b *testing.B) {
 		name string
 		req  deepql.FetchSnapshotRequest
 	}{
-		// span
-		{"spanAttNameNoMatch", deepql.MustExtractFetchSpansRequest("{ span.foo = `bar` }")},
-		{"spanAttValNoMatch", deepql.MustExtractFetchSpansRequest("{ span.bloom = `bar` }")},
-		{"spanAttValMatch", deepql.MustExtractFetchSpansRequest("{ span.bloom > 0 }")},
-		{"spanAttIntrinsicNoMatch", deepql.MustExtractFetchSpansRequest("{ name = `asdfasdf` }")},
-		{"spanAttIntrinsicMatch", deepql.MustExtractFetchSpansRequest("{ name = `gcs.ReadRange` }")},
+		// snapshot
+		{"spanAttNameNoMatch", deepql.MustExtractFetchSnapshotRequest("{ span.foo = `bar` }")},
+		{"spanAttValNoMatch", deepql.MustExtractFetchSnapshotRequest("{ span.bloom = `bar` }")},
+		{"spanAttValMatch", deepql.MustExtractFetchSnapshotRequest("{ span.bloom > 0 }")},
+		{"spanAttIntrinsicNoMatch", deepql.MustExtractFetchSnapshotRequest("{ name = `asdfasdf` }")},
+		{"spanAttIntrinsicMatch", deepql.MustExtractFetchSnapshotRequest("{ name = `gcs.ReadRange` }")},
 
 		// resource
-		{"resourceAttNameNoMatch", deepql.MustExtractFetchSpansRequest("{ resource.foo = `bar` }")},
-		{"resourceAttValNoMatch", deepql.MustExtractFetchSpansRequest("{ resource.module.path = `bar` }")},
-		{"resourceAttValMatch", deepql.MustExtractFetchSpansRequest("{ resource.os.type = `linux` }")},
-		{"resourceAttIntrinsicNoMatch", deepql.MustExtractFetchSpansRequest("{ resource.service.name = `a` }")},
-		{"resourceAttIntrinsicMatch", deepql.MustExtractFetchSpansRequest("{ resource.service.name = `deep-query-frontend` }")},
+		{"resourceAttNameNoMatch", deepql.MustExtractFetchSnapshotRequest("{ resource.foo = `bar` }")},
+		{"resourceAttValNoMatch", deepql.MustExtractFetchSnapshotRequest("{ resource.module.path = `bar` }")},
+		{"resourceAttValMatch", deepql.MustExtractFetchSnapshotRequest("{ resource.os.type = `linux` }")},
+		{"resourceAttIntrinsicNoMatch", deepql.MustExtractFetchSnapshotRequest("{ resource.service.name = `a` }")},
+		{"resourceAttIntrinsicMatch", deepql.MustExtractFetchSnapshotRequest("{ resource.service.name = `deep-query-frontend` }")},
 
 		// mixed
-		{"mixedNameNoMatch", deepql.MustExtractFetchSpansRequest("{ .foo = `bar` }")},
-		{"mixedValNoMatch", deepql.MustExtractFetchSpansRequest("{ .bloom = `bar` }")},
-		{"mixedValMixedMatchAnd", deepql.MustExtractFetchSpansRequest("{ resource.foo = `bar` && name = `gcs.ReadRange` }")},
-		{"mixedValMixedMatchOr", deepql.MustExtractFetchSpansRequest("{ resource.foo = `bar` || name = `gcs.ReadRange` }")},
-		{"mixedValBothMatch", deepql.MustExtractFetchSpansRequest("{ resource.service.name = `query-frontend` && name = `gcs.ReadRange` }")},
+		{"mixedNameNoMatch", deepql.MustExtractFetchSnapshotRequest("{ .foo = `bar` }")},
+		{"mixedValNoMatch", deepql.MustExtractFetchSnapshotRequest("{ .bloom = `bar` }")},
+		{"mixedValMixedMatchAnd", deepql.MustExtractFetchSnapshotRequest("{ resource.foo = `bar` && name = `gcs.ReadRange` }")},
+		{"mixedValMixedMatchOr", deepql.MustExtractFetchSnapshotRequest("{ resource.foo = `bar` || name = `gcs.ReadRange` }")},
+		{"mixedValBothMatch", deepql.MustExtractFetchSnapshotRequest("{ resource.service.name = `query-frontend` && name = `gcs.ReadRange` }")},
 	}
 
 	ctx := context.TODO()

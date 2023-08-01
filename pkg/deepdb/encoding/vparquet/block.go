@@ -56,7 +56,7 @@ func (b *backendBlock) BlockMeta() *backend.BlockMeta {
 	return b.meta
 }
 
-// Fetch snapshots from the block for the given deepql FetchSpansRequest. The request is checked for
+// Fetch snapshots from the block for the given deepql FetchSnapshotRequest. The request is checked for
 // internal consistencies:  operand count matches the operation, all operands in each condition are identical
 // types, and the operand type is compatible with the operation.
 func (b *backendBlock) Fetch(ctx context.Context, req deepql.FetchSnapshotRequest, opts common.SearchOptions) (deepql.FetchSnapshotResponse, error) {

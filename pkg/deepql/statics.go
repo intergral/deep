@@ -27,7 +27,7 @@ type StaticType int
 
 const (
 	TypeNil       StaticType = iota
-	TypeSpanset              // type used by spanset pipelines
+	TypeSnapshot             // type used by snapshot pipelines
 	TypeAttribute            // a special constant that indicates the type is determined at query time by the attribute
 	TypeInt
 	TypeFloat

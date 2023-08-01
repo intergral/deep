@@ -29,7 +29,7 @@ func TokenFor(userID string, b []byte) uint32 {
 	return h.Sum32()
 }
 
-// TokenForSnapshotID generates a hashed value for a trace id
+// TokenForSnapshotID generates a hashed value for a snapshot id
 func TokenForSnapshotID(b []byte) uint32 {
 	h := fnv.New32()
 	_, _ = h.Write(b)

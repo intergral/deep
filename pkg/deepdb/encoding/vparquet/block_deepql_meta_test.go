@@ -37,11 +37,11 @@ func TestBackendBlockSearchFetchMetaData(t *testing.T) {
 		expectedResults []*deepql.SnapshotResult
 	}{
 		{
-			// Empty request returns 1 spanset with all spans
+			// Empty request returns 1 snapshot with all spans
 			deepql.FetchSnapshotRequest{},
 			[]*deepql.SnapshotResult{{
 				SnapshotID:         snapshot.ID,
-				ServiceName:        "spanservicename",
+				ServiceName:        "test-service-name",
 				FilePath:           snapshot.Tracepoint.Path,
 				LineNo:             snapshot.Tracepoint.LineNumber,
 				StartTimeUnixNanos: snapshot.TsNanos,

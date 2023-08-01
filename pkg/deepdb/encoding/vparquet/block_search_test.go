@@ -101,14 +101,14 @@ func TestBackendBlockSearch(t *testing.T) {
 		// Multiple
 		{
 			Tags: map[string]string{
-				"service.name": "spanservicename",
+				"service.name": "test-service-name",
 				"foo":          "def",
 			},
 		},
 	}
 	expected := &deeppb.SnapshotSearchMetadata{
 		SnapshotID:        util.SnapshotIDToHexString(snapshot.ID),
-		ServiceName:       "spanservicename",
+		ServiceName:       "test-service-name",
 		FilePath:          snapshot.Tracepoint.Path,
 		LineNo:            snapshot.Tracepoint.LineNumber,
 		StartTimeUnixNano: snapshot.TsNanos,
@@ -153,7 +153,7 @@ func TestBackendBlockSearch(t *testing.T) {
 		makeReq(LabelPod, "foo"),
 		makeReq(LabelContainer, "foo"),
 
-		// Span attributes
+		// attributes
 		makeReq("foo", "baz"),
 
 		// Multiple

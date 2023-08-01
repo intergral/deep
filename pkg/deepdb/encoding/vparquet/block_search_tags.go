@@ -65,13 +65,13 @@ func (b *backendBlock) SearchTags(ctx context.Context, cb common.TagCallback, op
 func searchTags(_ context.Context, cb common.TagCallback, pf *parquet.File) error {
 	// find indexes of generic attribute columns
 	resourceKeyIdx, _ := pq.GetColumnIndexByPath(pf, FieldResourceAttrKey)
-	spanKeyIdx, _ := pq.GetColumnIndexByPath(pf, FieldAttrKey)
-	if resourceKeyIdx == -1 || spanKeyIdx == -1 {
-		return fmt.Errorf("resource or span attributes col not found (%d, %d)", resourceKeyIdx, spanKeyIdx)
+	attributeKeyIdx, _ := pq.GetColumnIndexByPath(pf, FieldAttrKey)
+	if resourceKeyIdx == -1 || attributeKeyIdx == -1 {
+		return fmt.Errorf("resource or attributes col not found (%d, %d)", resourceKeyIdx, attributeKeyIdx)
 	}
 	standardAttrIdxs := []int{
 		resourceKeyIdx,
-		spanKeyIdx,
+		attributeKeyIdx,
 	}
 
 	// find indexes of all special columns
@@ -253,7 +253,7 @@ func searchStandardTagValues(ctx context.Context, tag deepql.Attribute, pf *parq
 			FieldAttrValBool,
 			makeIter, keyPred, cb)
 		if err != nil {
-			return errors.Wrap(err, "search span key values")
+			return errors.Wrap(err, "search snapshot key values")
 		}
 	}
 

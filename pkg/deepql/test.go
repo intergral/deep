@@ -17,19 +17,19 @@
 
 package deepql
 
-// MustExtractFetchSpansRequest parses the given traceql query and returns
+// MustExtractFetchSnapshotRequest parses the given deepql query and returns
 // the storage layer conditions. Panics if the query fails to parse.
-func MustExtractFetchSpansRequest(query string) FetchSnapshotRequest {
-	c, err := ExtractFetchSpansRequest(query)
+func MustExtractFetchSnapshotRequest(query string) FetchSnapshotRequest {
+	c, err := ExtractFetchSnapshotRequest(query)
 	if err != nil {
 		panic(err)
 	}
 	return c
 }
 
-// ExtractFetchSpansRequest parses the given traceql query and returns
+// ExtractFetchSnapshotRequest parses the given deepql query and returns
 // the storage layer conditions. Returns an error if the query fails to parse.
-func ExtractFetchSpansRequest(query string) (FetchSnapshotRequest, error) {
+func ExtractFetchSnapshotRequest(query string) (FetchSnapshotRequest, error) {
 	ast, err := Parse(query)
 	if err != nil {
 		return FetchSnapshotRequest{}, err

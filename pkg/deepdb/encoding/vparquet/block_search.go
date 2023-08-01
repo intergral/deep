@@ -143,7 +143,7 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 	if len(otherAttrConditions) > 0 {
 		// We are looking for one or more foo=bar attributes that aren't
 		// projected to their own columns, they are in the generic Key/Value
-		// columns at the resource or span levels.  We want to search
+		// columns at the resource or snapshot levels.  We want to search
 		// both locations. But we also only want to read the columns once.
 
 		keys := make([]string, 0, len(otherAttrConditions))
@@ -157,8 +157,8 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 		valPred := pq.NewStringInPredicate(vals)
 
 		// This iterator combines the results from the resource
-		// and span searches, and checks if all conditions were satisfied
-		// on each ResourceSpans.  This is a single-pass over the attribute columns.
+		// and snapshot searches, and checks if all conditions were satisfied
+		// on each snapshot.  This is a single-pass over the attribute columns.
 		j := pq.NewUnionIterator(DefinitionLevelSnapshot, []pq.Iterator{
 			//	// This iterator finds all keys/values at the resource level
 			pq.NewJoinIterator(DefinitionLevelResourceAttrs, []pq.Iterator{

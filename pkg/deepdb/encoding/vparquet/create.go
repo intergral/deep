@@ -251,7 +251,7 @@ func (b *streamingBlock) Complete() (int, error) {
 // estimateMarshalledSizeFromSnapshot attempts to estimate the size of Snapshot in bytes. This is used to make choose
 // when to cut a row group during block creation.
 // TODO: This function regularly estimates lower values then estimateProtoSize() and the size
-// of the actual proto. It's also quite inefficient. Perhaps just using static values per span or attribute
+// of the actual proto. It's also quite inefficient. Perhaps just using static values per snapshot or attribute
 // would be a better choice?
 func estimateMarshalledSizeFromSnapshot(tr *Snapshot) (size int) {
 	size += 10 // 10 snapshot lvl fields

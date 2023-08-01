@@ -651,7 +651,7 @@ func parseName(filename string) (uuid.UUID, string, string, error) {
 	return id, tenant, version, nil
 }
 
-// mergeSnapshotIterator iterates through a slice of spansetIterators exhausting them
+// mergeSnapshotIterator iterates through a slice of SnapshotResultIterator exhausting them
 // in order
 type mergeSnapshotIterator struct {
 	iters []deepql.SnapshotResultIterator
@@ -666,16 +666,16 @@ func (i *mergeSnapshotIterator) Next(ctx context.Context) (*deepql.SnapshotResul
 	}
 
 	iter := i.iters[i.cur]
-	spanset, err := iter.Next(ctx)
+	snapshots, err := iter.Next(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if spanset == nil {
+	if snapshots == nil {
 		i.cur++
 		return i.Next(ctx)
 	}
 
-	return spanset, nil
+	return snapshots, nil
 }
 
 func (i *mergeSnapshotIterator) Close() {

@@ -139,7 +139,7 @@ func ParseSearchRequest(r *http.Request) (*deeppb.SearchRequest, error) {
 		if query != "{}" {
 			_, err := deepql.Parse(query)
 			if err != nil {
-				return nil, fmt.Errorf("invalid TraceQL query: %w", err)
+				return nil, fmt.Errorf("invalid DeepQL query: %w", err)
 			}
 		}
 		req.Query = query
@@ -147,7 +147,7 @@ func ParseSearchRequest(r *http.Request) (*deeppb.SearchRequest, error) {
 
 	encodedTags, tagsFound := extractQueryParam(r, urlParamTags)
 	if tagsFound {
-		// tags and traceQL API are mutually exclusive
+		// tags and deepQL API are mutually exclusive
 		if queryFound {
 			return nil, fmt.Errorf("invalid request: can't specify tags and q in the same query")
 		}
@@ -448,7 +448,7 @@ func extractQueryParam(r *http.Request, param string) (string, bool) {
 	return value, value != ""
 }
 
-// ValidateAndSanitizeRequest validates params for trace by id api
+// ValidateAndSanitizeRequest validates params for snapshot by id api
 // return values are (blockStart, blockEnd, queryMode, start, end, error)
 func ValidateAndSanitizeRequest(r *http.Request) (string, string, string, int64, int64, error) {
 	q, _ := extractQueryParam(r, QueryModeKey)
