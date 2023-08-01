@@ -107,8 +107,6 @@ type responseFromIngesters struct {
 
 // New makes a new Querier.
 func New(cfg Config, clientCfg ingester_client.Config, ring ring.ReadRing, store storage.Store, limits *overrides.Overrides) (*Querier, error) {
-	// TODO should we somehow refuse traceQL queries if backend encoding is not parquet?
-
 	factory := func(addr string) (ring_client.PoolClient, error) {
 		return ingester_client.New(addr, clientCfg)
 	}
@@ -221,13 +219,13 @@ func (q *Querier) FindSnapshotByID(ctx context.Context, req *deeppb.SnapshotByID
 		var replicationSet ring.ReplicationSet
 		var err error
 		if q.cfg.QueryRelevantIngesters {
-			traceKey := util.TokenFor(tenantID, req.ID)
-			replicationSet, err = q.ring.Get(traceKey, ring.Read, nil, nil, nil)
+			tenantKey := util.TokenFor(tenantID, req.ID)
+			replicationSet, err = q.ring.Get(tenantKey, ring.Read, nil, nil, nil)
 		} else {
 			replicationSet, err = q.ring.GetReplicationSetForOperation(ring.Read)
 		}
 		if err != nil {
-			return nil, errors.Wrap(err, "error finding ingesters in Querier.FindTraceByID")
+			return nil, errors.Wrap(err, "error finding ingesters in Querier.SnapshotByIdHandler")
 		}
 
 		span.LogFields(ot_log.String("msg", "searching ingesters"))
@@ -268,7 +266,7 @@ func (q *Querier) FindSnapshotByID(ctx context.Context, req *deeppb.SnapshotByID
 		span.LogFields(ot_log.String("timeEnd", fmt.Sprint(timeEnd)))
 		findResults, blockErrs, err := q.store.FindSnapshot(ctx, tenantID, req.ID, req.BlockStart, req.BlockEnd, timeStart, timeEnd)
 		if err != nil {
-			retErr := errors.Wrap(err, "error querying store in Querier.FindTraceByID")
+			retErr := errors.Wrap(err, "error querying store in Querier.SnapshotByIdHandler")
 			ot_log.Error(retErr)
 			return nil, retErr
 		}
