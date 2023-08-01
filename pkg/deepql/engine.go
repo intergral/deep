@@ -33,8 +33,8 @@ func NewEngine() *Engine {
 	return &Engine{}
 }
 
-func (e *Engine) Execute(ctx context.Context, searchReq *deeppb.SearchRequest, spanSetFetcher SnapshotResultFetcher) (*deeppb.SearchResponse, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "traceql.Engine.Execute")
+func (e *Engine) Execute(ctx context.Context, searchReq *deeppb.SearchRequest, snapshotResultFetcher SnapshotResultFetcher) (*deeppb.SearchResponse, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "deepql.Engine.Execute")
 	defer span.Finish()
 
 	rootExpr, err := e.parseQuery(searchReq)
@@ -42,14 +42,14 @@ func (e *Engine) Execute(ctx context.Context, searchReq *deeppb.SearchRequest, s
 		return nil, err
 	}
 
-	fetchSpansRequest := e.createFetchSnapshotRequest(searchReq, rootExpr.Pipeline)
+	snapshotRequest := e.createFetchSnapshotRequest(searchReq, rootExpr.Pipeline)
 
 	span.SetTag("pipeline", rootExpr.Pipeline)
-	span.SetTag("fetchSpansRequest", fetchSpansRequest)
+	span.SetTag("fetchSnapshotRequest", snapshotRequest)
 
-	spansetsEvaluated := 0
+	evaluated := 0
 	// set up the expression evaluation as a filter to reduce data pulled
-	fetchSpansRequest.Filter = func(inSS *SnapshotResult) ([]*SnapshotResult, error) {
+	snapshotRequest.Filter = func(inSS *SnapshotResult) ([]*SnapshotResult, error) {
 		if inSS.Snapshot == nil {
 			return nil, nil
 		}
@@ -60,7 +60,7 @@ func (e *Engine) Execute(ctx context.Context, searchReq *deeppb.SearchRequest, s
 			return nil, err
 		}
 
-		spansetsEvaluated++
+		evaluated++
 		if len(evalSS) == 0 {
 			return nil, nil
 		}
@@ -68,11 +68,11 @@ func (e *Engine) Execute(ctx context.Context, searchReq *deeppb.SearchRequest, s
 		return evalSS, nil
 	}
 
-	fetchSpansResponse, err := spanSetFetcher.Fetch(ctx, fetchSpansRequest)
+	fetchSnapshotResponse, err := snapshotResultFetcher.Fetch(ctx, snapshotRequest)
 	if err != nil {
 		return nil, err
 	}
-	iterator := fetchSpansResponse.Results
+	iterator := fetchSnapshotResponse.Results
 	defer iterator.Close()
 
 	res := &deeppb.SearchResponse{
@@ -96,8 +96,8 @@ func (e *Engine) Execute(ctx context.Context, searchReq *deeppb.SearchRequest, s
 		}
 	}
 
-	span.SetTag("spansets_evaluated", spansetsEvaluated)
-	span.SetTag("spansets_found", len(res.Snapshots))
+	span.SetTag("snapshots_evaluated", evaluated)
+	span.SetTag("snapshots_found", len(res.Snapshots))
 
 	return res, nil
 }
@@ -110,11 +110,9 @@ func (e *Engine) parseQuery(searchReq *deeppb.SearchRequest) (*RootExpr, error) 
 	return r, r.validate()
 }
 
-// createFetchSpansRequest will flatten the SpansetFilter in simple conditions the storage layer
+// createFetchSnapshotRequest will flatten the SearchRequest in simple conditions the storage layer
 // can work with.
 func (e *Engine) createFetchSnapshotRequest(searchReq *deeppb.SearchRequest, pipeline Pipeline) FetchSnapshotRequest {
-	// TODO handle SearchRequest.MinDurationMs and MaxDurationMs, this refers to the trace level duration which is not the same as the intrinsic duration
-
 	req := FetchSnapshotRequest{
 		StartTimeUnixNanos: unixSecToNano(searchReq.Start),
 		EndTimeUnixNanos:   unixSecToNano(searchReq.End),

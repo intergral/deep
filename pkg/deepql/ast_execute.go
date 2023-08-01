@@ -330,15 +330,15 @@ func uniqueSnapshots(ss1 []*SnapshotResult, ss2 []*SnapshotResult) []Snapshot {
 		ssLarger = ss2
 	}
 
-	spans := make(map[Snapshot]struct{}, ssCount)
+	snaps := make(map[Snapshot]struct{}, ssCount)
 	for _, ss := range ssSmaller {
-		spans[ss.Snapshot] = struct{}{}
+		snaps[ss.Snapshot] = struct{}{}
 		output = append(output, ss.Snapshot)
 	}
 
-	// only add the spans from ssLarger that aren't in the map
+	// only add the snapshots from ssLarger that aren't in the map
 	for _, ss := range ssLarger {
-		if _, ok := spans[ss.Snapshot]; !ok {
+		if _, ok := snaps[ss.Snapshot]; !ok {
 			output = append(output, ss.Snapshot)
 		}
 	}

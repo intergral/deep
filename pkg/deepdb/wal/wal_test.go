@@ -296,7 +296,7 @@ func testFetch(t *testing.T, e encoding.VersionedEncoding) {
 			require.NotEmpty(t, v)
 
 			query := fmt.Sprintf("{ .id = \"%s\" }", util.SnapshotIDToHexString(o.ID))
-			resp, err := block.Fetch(ctx, deepql.MustExtractFetchSpansRequest(query), common.DefaultSearchOptions())
+			resp, err := block.Fetch(ctx, deepql.MustExtractFetchSnapshotRequest(query), common.DefaultSearchOptions())
 			// not all blocks support fetch
 			if err == common.ErrUnsupported {
 				return

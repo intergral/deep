@@ -112,7 +112,7 @@ func TestBackendBlockSearchTagValuesV2(t *testing.T) {
 		tag  deepql.Attribute
 		vals []deepql.Static
 	}{
-		// Attr present at both resource and span level
+		// Attr present at both resource and snapshot level
 		{deepql.MustParseIdentifier(".foo"), []deepql.Static{
 			deepql.NewStaticString("abc"),
 			deepql.NewStaticString("def"),

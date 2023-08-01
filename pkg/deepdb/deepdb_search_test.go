@@ -134,11 +134,9 @@ func testAdvancedDeepQLCompleteBlock(t *testing.T, blockVersion string) {
 
 		// collect some info about wantTr to use below
 		trueConditions := [][]string{}
-		//durationBySpan := []uint64{}
 		falseConditions := []string{
 			fmt.Sprintf(".name=`%v`", test.RandomString()),
 			fmt.Sprintf("duration>%dh", rand.Intn(10)+1),
-			// status? can't really construct a status condition that's false for all spans
 		}
 		totalSpans := 0
 		trueAttrC, falseAttrC := conditionsForAttributes(wantedSnapshot.Attributes, "")
@@ -157,7 +155,7 @@ func testAdvancedDeepQLCompleteBlock(t *testing.T, blockVersion string) {
 			{Query: fmt.Sprintf("{%s && %s && %s && %s && %s}", rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]))},
 			{Query: fmt.Sprintf("{%s || %s || %s || %s || %s}", rando(falseConditions), rando(falseConditions), rando(falseConditions), rando(trueConditions[0]), rando(falseConditions))},
 			{Query: fmt.Sprintf("{(%s && %s) || %s}", rando(falseConditions), rando(falseConditions), rando(trueConditions[0]))},
-			// spansets
+			// snapshots
 			{Query: fmt.Sprintf("{%s} && {%s}", rando(trueConditions[0]), rando(trueConditions[1]))},
 			{Query: fmt.Sprintf("{%s} || {%s}", rando(trueConditions[0]), rando(falseConditions))},
 			{Query: fmt.Sprintf("{%s} && {%s} && {%s} && {%s} && {%s}", rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]))},
@@ -204,7 +202,7 @@ func testAdvancedDeepQLCompleteBlock(t *testing.T, blockVersion string) {
 			{Query: fmt.Sprintf("{%s && %s}", rando(trueConditions[0]), rando(falseConditions))},
 			{Query: fmt.Sprintf("{%s || %s}", rando(falseConditions), rando(falseConditions))},
 			//{Query: fmt.Sprintf("{%s && (%s || %s)}", rando(falseConditions), rando(falseConditions), rando(trueConditions[0]))},
-			//// spansets
+			//// snapshots
 			//{Query: fmt.Sprintf("{%s} && {%s}", rando(trueConditions[0]), rando(falseConditions))},
 			//{Query: fmt.Sprintf("{%s} || {%s}", rando(falseConditions), rando(falseConditions))},
 			//{Query: fmt.Sprintf("{%s && %s} || {%s}", rando(falseConditions), rando(falseConditions), rando(falseConditions))},
@@ -505,7 +503,7 @@ func searchTestSuite() (
 		//makeReq("root.service.name", "RootService"),
 		//makeReq("root.name", "RootSpan"),
 
-		// Span attributes
+		// Attributes
 		//makeReq("foo", "Bar"),
 		// Resource attributes
 		//makeReq("bat", "Baz"),
@@ -540,7 +538,7 @@ func searchTestSuite() (
 		makeReq("pod", "pod"),              // wrong case
 		makeReq("container", "container"),  // wrong case
 
-		// Well-known span attributes
+		// Well-known attributes
 		makeReq("http.method", "post"),
 		makeReq("http.url", "asdf"),
 		makeReq("http.status_code", "200"),
@@ -548,7 +546,7 @@ func searchTestSuite() (
 		makeReq("root.service.name", "NotRootService"),
 		makeReq("root.name", "NotRootSpan"),
 
-		// Span attributes
+		// Attributes
 		makeReq("foo", "baz"), // wrong case
 	}
 

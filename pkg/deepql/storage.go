@@ -27,9 +27,9 @@ type Condition struct {
 	Operands  Operands
 }
 
-// FilterSnapshots is a hint that allows the calling code to filter down spans to only
-// those that metadata needs to be retrieved for. If the returned Spanset has no
-// spans it is discarded and will not appear in FetchSpansResponse. The bool
+// FilterSnapshots is a hint that allows the calling code to filter down snapshot to only
+// those that metadata needs to be retrieved for. If the returned snapshots have no
+// snapshots it is discarded and will not appear in FetchSnapshotResponse. The bool
 // return value is used to indicate if the Fetcher should continue iterating or if
 // it can bail out.
 type FilterSnapshots func(result *SnapshotResult) ([]*SnapshotResult, error)
@@ -39,7 +39,7 @@ type FetchSnapshotRequest struct {
 	EndTimeUnixNanos   uint64
 	Conditions         []Condition
 
-	// AllConditions, by default the storage layer fetches spans meeting any of the criteria.
+	// AllConditions, by default the storage layer fetches snapshots meeting any of the criteria.
 	// This hint is for common cases like { x && y && z } where the storage layer
 	// can make extra optimizations by returning only snapshots that meet
 	// all criteria.
@@ -69,13 +69,13 @@ func (s *SnapshotResult) clone() *SnapshotResult {
 		LineNo:             s.LineNo,
 		StartTimeUnixNanos: s.StartTimeUnixNanos,
 		DurationNanos:      s.DurationNanos,
-		Snapshot:           s.Snapshot, // we're not deep cloning into the spans themselves
+		Snapshot:           s.Snapshot, // we're not deep cloning into the snapshots themselves
 	}
 }
 
 type Snapshot interface {
 	// Attributes are the actual fields used by the engine to evaluate queries
-	// if a Filter parameter is passed the spans returned will only have this field populated
+	// if a Filter parameter is passed the snapshots returned will only have this field populated
 	Attributes() map[Attribute]Static
 
 	ID() []byte

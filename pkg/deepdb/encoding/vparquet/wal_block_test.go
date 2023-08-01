@@ -351,7 +351,7 @@ func BenchmarkWalDeepQL(b *testing.B) {
 	require.NoError(b, warn)
 
 	for _, q := range reqs {
-		req := deepql.MustExtractFetchSpansRequest(q)
+		req := deepql.MustExtractFetchSnapshotRequest(q)
 		b.Run(q, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				resp, err := w.Fetch(context.TODO(), req, common.DefaultSearchOptions())

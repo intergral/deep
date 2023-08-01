@@ -563,14 +563,14 @@ func (q *Querier) postProcessIngesterSearchResults(req *deeppb.SearchRequest, rr
 		Metrics: &deeppb.SearchMetrics{},
 	}
 
-	traces := map[string]*deeppb.SnapshotSearchMetadata{}
+	snapshots := map[string]*deeppb.SnapshotSearchMetadata{}
 
 	for _, r := range rr {
 		sr := r.response.(*deeppb.SearchResponse)
 		for _, t := range sr.Snapshots {
 			// Just simply take first result for each trace
-			if _, ok := traces[t.SnapshotID]; !ok {
-				traces[t.SnapshotID] = t
+			if _, ok := snapshots[t.SnapshotID]; !ok {
+				snapshots[t.SnapshotID] = t
 			}
 		}
 		if sr.Metrics != nil {
@@ -581,10 +581,7 @@ func (q *Querier) postProcessIngesterSearchResults(req *deeppb.SearchRequest, rr
 		}
 	}
 
-	for _, t := range traces {
-		if t.ServiceName == "" {
-			t.ServiceName = search.RootSpanNotYetReceivedText
-		}
+	for _, t := range snapshots {
 		response.Snapshots = append(response.Snapshots, t)
 	}
 

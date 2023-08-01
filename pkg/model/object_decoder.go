@@ -32,13 +32,13 @@ var AllEncodings = []string{
 	v1.Encoding,
 }
 
-// ObjectDecoder is used to work with opaque byte slices that contain trace data in the backend
+// ObjectDecoder is used to work with opaque byte slices that contain snapshot data in the backend
 type ObjectDecoder interface {
-	// PrepareForRead converts the byte slice into a tempopb.Trace for reading. This can be very expensive
+	// PrepareForRead converts the byte slice into a deepdb.Snapshot for reading. This can be very expensive
 	//  and should only be used when surfacing a byte slice from deepdb and preparing it for reads.
 	PrepareForRead(obj []byte) (*deeppb_tp.Snapshot, error)
 
-	// FastRange returns the start and end unix epoch timestamp of the trace. If its not possible to efficiently get these
+	// FastRange returns the start and end unix epoch timestamp of the snapshot. If it's not possible to efficiently get these
 	// values from the underlying encoding then it should return decoder.ErrUnsupported
 	FastRange(obj []byte) (uint32, error)
 }

@@ -35,14 +35,14 @@ import (
 const (
 	orgIDHeader = TenantIDHeaderName
 
-	QueryTraceEndpoint = "/api/traces"
+	QuerySnapshotsEndpoint = "/api/snapshots"
 
 	acceptHeader        = "Accept"
 	applicationProtobuf = "application/protobuf"
 	applicationJSON     = "application/json"
 )
 
-// Client is client to the Tempo API.
+// Client is client to the Deep API.
 type Client struct {
 	BaseURL  string
 	TenantID string
@@ -82,11 +82,11 @@ func (c *Client) getFor(url string, m proto.Message) (*http.Response, error) {
 	}
 
 	marshallingFormat := applicationJSON
-	if strings.Contains(url, QueryTraceEndpoint) {
+	if strings.Contains(url, QuerySnapshotsEndpoint) {
 		marshallingFormat = applicationProtobuf
 	}
 	// Set 'Accept' header to 'application/protobuf'.
-	// This is required for the /api/traces endpoint to return a protobuf response.
+	// This is required for the /api/snapshots endpoint to return a protobuf response.
 	// JSON lost backwards compatibility with the upgrade to `opentelemetry-proto` v0.18.0.
 	req.Header.Set(acceptHeader, marshallingFormat)
 
@@ -144,7 +144,7 @@ func (c *Client) SearchTagValues(key string) (*deeppb.SearchTagValuesResponse, e
 	return m, nil
 }
 
-// Search Tempo. tags must be in logfmt format, that is "key1=value1 key2=value2"
+// Search Deep. tags must be in logfmt format, that is "key1=value1 key2=value2"
 func (c *Client) Search(tags string) (*deeppb.SearchResponse, error) {
 	m := &deeppb.SearchResponse{}
 	_, err := c.getFor(c.BaseURL+"/api/search?tags="+url.QueryEscape(tags), m)
@@ -167,12 +167,12 @@ func (c *Client) SearchWithRange(tags string, start int64, end int64) (*deeppb.S
 	return m, nil
 }
 
-func (c *Client) QueryTrace(id string) (*deep_tp.Snapshot, error) {
+func (c *Client) QuerySnapshot(id string) (*deep_tp.Snapshot, error) {
 	m := &deep_tp.Snapshot{}
-	resp, err := c.getFor(c.BaseURL+QueryTraceEndpoint+"/"+id, m)
+	resp, err := c.getFor(c.BaseURL+QuerySnapshotsEndpoint+"/"+id, m)
 	if err != nil {
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
-			return nil, ErrTraceNotFound
+			return nil, ErrSnapshotNotFound
 		}
 		return nil, err
 	}
@@ -180,7 +180,7 @@ func (c *Client) QueryTrace(id string) (*deep_tp.Snapshot, error) {
 	return m, nil
 }
 
-func (c *Client) SearchTraceQL(query string) (*deeppb.SearchResponse, error) {
+func (c *Client) SearchDeepQL(query string) (*deeppb.SearchResponse, error) {
 	m := &deeppb.SearchResponse{}
 	_, err := c.getFor(c.BaseURL+"/api/search?q="+url.QueryEscape(query), m)
 	if err != nil {

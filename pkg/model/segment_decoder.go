@@ -24,19 +24,19 @@ import (
 	v1 "github.com/intergral/deep/pkg/model/v1"
 )
 
-// SegmentDecoder is used by the distributor/ingester to aggregate and pass segments of traces. The distributor
-// creates the segments using PrepareForWrite which can then be consumed and organized by traceid in the ingester.
+// SegmentDecoder is used by the distributor/ingester to aggregate and pass segments of snapshots. The distributor
+// creates the segments using PrepareForWrite which can then be consumed and organized by snapshotid in the ingester.
 //
 // The ingester then holds these in memory until either:
-//   - The trace id is queried. In this case it uses PrepareForRead to turn the segments into a tempopb.Trace for
+//   - The snapshot id is queried. In this case it uses PrepareForRead to turn the segments into a deepTP.Snapshot for
 //     return on the query path.
 //   - It needs to push them into deepdb. For this it uses ToObject() to create a single byte slice from the
 //     segments that is then completely handled by an ObjectDecoder of the same version
 type SegmentDecoder interface {
 	// PrepareForWrite takes a snapshot pointer and returns a record prepared for writing to an ingester
-	PrepareForWrite(trace *deeppb_tp.Snapshot, start uint32) ([]byte, error)
+	PrepareForWrite(snapshot *deeppb_tp.Snapshot, start uint32) ([]byte, error)
 	// PrepareForRead converts a set of segments created using PrepareForWrite. These segments
-	//  are converted into a tempopb.Trace. This operation can be quite costly and should be called only for reading
+	//  are converted into a deepTP.Snapshot. This operation can be quite costly and should be called only for reading
 	PrepareForRead(segment []byte) (*deeppb_tp.Snapshot, error)
 	// ToObject converts a set of segments into an object ready to be written to the deepdb backend.
 	//  The resultant byte slice can then be manipulated using the corresponding ObjectDecoder.

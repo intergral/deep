@@ -19,7 +19,7 @@ package deepql
 
 import "fmt"
 
-// unsupportedError is returned for traceql features that are not yet supported.
+// unsupportedError is returned for deepql features that are not yet supported.
 type unsupportedError struct {
 	feature string
 }

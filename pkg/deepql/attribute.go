@@ -114,10 +114,10 @@ func (a Attribute) extractConditions(request *FetchSnapshotRequest) {
 }
 
 // NewScopedAttribute creates a new scopedattribute with the given identifier string.
-// this handles parent, span, and resource scopes.
+// this handles parent, snapshot, and resource scopes.
 func NewScopedAttribute(scope AttributeScope, parent bool, att string) Attribute {
 	intrinsic := IntrinsicNone
-	// if we are explicitly passed a resource or span scopes then we shouldn't parse for intrinsic
+	// if we are explicitly passed a resource or snapshot scopes then we shouldn't parse for intrinsic
 	if scope != AttributeScopeResource && scope != AttributeScopeSnapshot {
 		intrinsic = intrinsicFromString(att)
 	}

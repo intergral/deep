@@ -61,7 +61,7 @@ func (p Pipeline) addItem(i pipelineElement) Pipeline {
 
 func (p Pipeline) impliedType() StaticType {
 	if len(p.Elements) == 0 {
-		return TypeSpanset
+		return TypeSnapshot
 	}
 
 	finalItem := p.Elements[len(p.Elements)-1]
@@ -70,7 +70,7 @@ func (p Pipeline) impliedType() StaticType {
 		return aggregate.impliedType()
 	}
 
-	return TypeSpanset
+	return TypeSnapshot
 }
 
 func (p Pipeline) extractConditions(req *FetchSnapshotRequest) {
@@ -164,10 +164,10 @@ type FieldExpression interface {
 	Element
 	typedExpression
 
-	// referencesSnapshot returns true if this field expression has any attributes or intrinsics. i.e. it references the span itself
+	// referencesSnapshot returns true if this field expression has any attributes or intrinsics. i.e. it references the snapshot itself
 	referencesSnapshot() bool
 	extractConditions(request *FetchSnapshotRequest)
-	execute(span Snapshot) (Static, error)
+	execute(snapshots Snapshot) (Static, error)
 
 	__fieldExpression()
 }

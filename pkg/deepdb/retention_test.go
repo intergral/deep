@@ -195,7 +195,7 @@ func TestBlockRetentionOverride(t *testing.T) {
 
 	cutTestBlocks(t, w, testTenantID, 10, 10)
 
-	// The test spans are all 1 second long, so we have to sleep to put all the
+	// The test snapshots are all 1 second long, so we have to sleep to put all the
 	// data in the past
 	time.Sleep(time.Second)
 

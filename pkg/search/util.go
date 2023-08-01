@@ -27,8 +27,6 @@ const (
 	StatusCodeUnset = "unset"
 	StatusCodeOK    = "ok"
 	StatusCodeError = "error"
-
-	RootSpanNotYetReceivedText = "<root span not yet received>"
 )
 
 func GetVirtualTagValues(tagName string) []string {
@@ -49,8 +47,8 @@ func GetVirtualTagValuesV2(tagName string) []*deeppb.TagValue {
 }
 
 // CombineSearchResults overlays the incoming search result with the existing result. This is required
-// for the following reason:  a trace may be present in multiple blocks, or in partial segments
-// in live traces.  The results should reflect elements of all segments.
+// for the following reason:  a snapshot may be present in multiple blocks, or in partial segments
+// in live snapshot.  The results should reflect elements of all segments.
 func CombineSearchResults(existing *deeppb.SnapshotSearchMetadata, incoming *deeppb.SnapshotSearchMetadata) {
 	if existing.SnapshotID == "" {
 		existing.SnapshotID = incoming.SnapshotID

@@ -83,17 +83,17 @@ func EqualHexStringSnapshotIDs(a, b string) (bool, error) {
 	return bytes.Equal(aa, bb), nil
 }
 
-func PadSnapshotIDTo16Bytes(traceID []byte) []byte {
-	if len(traceID) > 16 {
-		return traceID[len(traceID)-16:]
+func PadSnapshotIDTo16Bytes(snapshotID []byte) []byte {
+	if len(snapshotID) > 16 {
+		return snapshotID[len(snapshotID)-16:]
 	}
 
-	if len(traceID) == 16 {
-		return traceID
+	if len(snapshotID) == 16 {
+		return snapshotID
 	}
 
 	padded := make([]byte, 16)
-	copy(padded[16-len(traceID):], traceID)
+	copy(padded[16-len(snapshotID):], snapshotID)
 
 	return padded
 }

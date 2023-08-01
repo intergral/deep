@@ -1108,7 +1108,7 @@ type GroupPredicate interface {
 
 // KeyValueGroupPredicate takes key/value pairs and checks if the
 // group contains all of them. This is the only predicate/iterator
-// that is knowledgable about our trace or search contents. I'd like
+// that is knowledgable about our snapshot or search contents. I'd like
 // to change that and make it generic, but it's quite complex and not
 // figured it out yet.
 type KeyValueGroupPredicate struct {

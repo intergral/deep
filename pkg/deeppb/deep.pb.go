@@ -50,7 +50,7 @@ type SearchRequest struct {
 	Limit         uint32            `protobuf:"varint,4,opt,name=Limit,proto3" json:"Limit,omitempty"`
 	Start         uint32            `protobuf:"varint,5,opt,name=start,proto3" json:"start,omitempty"`
 	End           uint32            `protobuf:"varint,6,opt,name=end,proto3" json:"end,omitempty"`
-	// TraceQL query
+	// DeepQL query
 	Query string `protobuf:"bytes,8,opt,name=Query,proto3" json:"Query,omitempty"`
 }
 

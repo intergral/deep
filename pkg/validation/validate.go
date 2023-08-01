@@ -17,7 +17,7 @@
 
 package validation
 
-// ValidSnapshotID confirms that trace ids are 128 bits
+// ValidSnapshotID confirms that snapshot ids are 128 bits
 func ValidSnapshotID(id []byte) bool {
 	return len(id) == 16
 }

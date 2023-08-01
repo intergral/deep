@@ -99,7 +99,7 @@ func TestQuerierParseSearchRequest(t *testing.T) {
 			err:      "invalid maxDuration: time: unknown unit \"msec\" in duration \"1msec\"",
 		},
 		{
-			name:     "traceql query",
+			name:     "deepql query",
 			urlQuery: "q=" + url.QueryEscape(`{ .foo="bar" }`),
 			expected: &deeppb.SearchRequest{
 				Query: `{ .foo="bar" }`,
@@ -108,12 +108,12 @@ func TestQuerierParseSearchRequest(t *testing.T) {
 			},
 		},
 		{
-			name:     "invalid traceql query",
+			name:     "invalid deepql query",
 			urlQuery: "q=" + url.QueryEscape(`{ .foo="bar" `),
-			err:      "invalid TraceQL query: parse error at line 1, col 14: syntax error: unexpected $end",
+			err:      "invalid DeepQL query: parse error at line 1, col 14: syntax error: unexpected $end",
 		},
 		{
-			name:     "traceql query and tags",
+			name:     "deepql query and tags",
 			urlQuery: "q=" + url.QueryEscape(`{ .foo="bar" }`) + "&tags=" + url.QueryEscape("service.name=foo"),
 			err:      "invalid request: can't specify tags and q in the same query",
 		},

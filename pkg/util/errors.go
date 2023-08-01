@@ -27,8 +27,8 @@ import (
 )
 
 var (
-	// ErrTraceNotFound can be used when we don't find a trace
-	ErrTraceNotFound = errors.New("trace not found")
+	// ErrSnapshotNotFound can be used when we don't find a snapshot
+	ErrSnapshotNotFound = errors.New("snaplshot not found")
 
 	// ErrSearchKeyValueNotFound is used to indicate the requested key/value pair was not found.
 	ErrSearchKeyValueNotFound = errors.New("key/value not found")
