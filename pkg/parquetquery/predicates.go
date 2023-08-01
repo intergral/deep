@@ -20,10 +20,9 @@ package parquetquery
 import (
 	"bytes"
 	"fmt"
+	pq "github.com/segmentio/parquet-go"
 	"regexp"
 	"strings"
-
-	pq "github.com/segmentio/parquet-go"
 )
 
 // Predicate is a pushdown predicate that can be applied at
@@ -57,11 +56,11 @@ func NewStringInPredicate(ss []string) Predicate {
 }
 
 func (p *StringInPredicate) String() string {
-	var strings string
+	var str string
 	for _, s := range p.ss {
-		strings += fmt.Sprintf("%s, ", string(s))
+		str += fmt.Sprintf("%s, ", string(s))
 	}
-	return fmt.Sprintf("StringInPredicate{%s}", strings)
+	return fmt.Sprintf("StringInPredicate{%s}", str)
 }
 
 func (p *StringInPredicate) KeepColumnChunk(cc pq.ColumnChunk) bool {
@@ -126,11 +125,11 @@ func NewRegexInPredicate(regs []string) (*RegexInPredicate, error) {
 }
 
 func (p *RegexInPredicate) String() string {
-	var strings string
+	var str string
 	for _, s := range p.regs {
-		strings += fmt.Sprintf("%s, ", s.String())
+		str += fmt.Sprintf("%s, ", s.String())
 	}
-	return fmt.Sprintf("RegexInPredicate{%s}", strings)
+	return fmt.Sprintf("RegexInPredicate{%s}", str)
 }
 
 func (p *RegexInPredicate) keep(v *pq.Value) bool {
@@ -156,7 +155,7 @@ func (p *RegexInPredicate) keep(v *pq.Value) bool {
 	return matched
 }
 
-func (p *RegexInPredicate) KeepColumnChunk(cc pq.ColumnChunk) bool {
+func (p *RegexInPredicate) KeepColumnChunk(pq.ColumnChunk) bool {
 	p.helper.setNewRowGroup()
 
 	// Reset match cache on each row group change
@@ -194,7 +193,7 @@ func (p *SubstringPredicate) String() string {
 	return fmt.Sprintf("SubstringPredicate{%s}", p.substring)
 }
 
-func (p *SubstringPredicate) KeepColumnChunk(cc pq.ColumnChunk) bool {
+func (p *SubstringPredicate) KeepColumnChunk(pq.ColumnChunk) bool {
 	p.helper.setNewRowGroup()
 
 	// Reset match cache on each row group change
@@ -560,7 +559,7 @@ func (p *SkipNilsPredicate) String() string {
 	return "SkipNilsPredicate{}"
 }
 
-func (p *SkipNilsPredicate) KeepColumnChunk(c pq.ColumnChunk) bool {
+func (p *SkipNilsPredicate) KeepColumnChunk(pq.ColumnChunk) bool {
 	return true
 }
 
