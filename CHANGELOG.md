@@ -1,3 +1,9 @@
+<!-- 0.1.5 START -->
+# 0.1.5 (xx/xx/2023)
+
+ - **[FEATURE]**: add basic deepql support 
+ - **[CHANGE]**: remove gotestsum usage
+<!-- 0.1.5 END -->
 
 <!-- 0.1.4 START -->
 # 0.1.4 (04/07/2023)
