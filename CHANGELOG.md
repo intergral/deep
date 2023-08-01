@@ -1,8 +1,8 @@
 <!-- 0.1.5 START -->
 # 0.1.5 (xx/xx/2023)
 
- - **[FEATURE]**: add basic deepql support [x74](https://github.com/intergral/deep/pull/74) [@Umaaz](https://github.com/Umaaz)
- - **[CHANGE]**: remove gotestsum usage [x74](https://github.com/intergral/deep/pull/74) [@Umaaz](https://github.com/Umaaz)
+ - **[FEATURE]**: add basic deepql support [#74](https://github.com/intergral/deep/pull/74) [@Umaaz](https://github.com/Umaaz)
+ - **[CHANGE]**: remove gotestsum usage [#74](https://github.com/intergral/deep/pull/74) [@Umaaz](https://github.com/Umaaz)
 <!-- 0.1.5 END -->
 
 <!-- 0.1.4 START -->
