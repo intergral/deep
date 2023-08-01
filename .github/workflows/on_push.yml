@@ -30,7 +30,7 @@ jobs:
         run: make test-with-cover-report
 
       - name: Test Report
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v1.6.0
         if: success() || failure()
         with:
           name: GO Tests
