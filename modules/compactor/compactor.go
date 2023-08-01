@@ -32,7 +32,6 @@ import (
 
 	"github.com/intergral/deep/modules/overrides"
 	"github.com/intergral/deep/modules/storage"
-	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/util/log"
 )
 
@@ -46,8 +45,6 @@ const (
 	ringNumTokens = 512
 
 	compactorRingKey = "compactor"
-
-	reasonCompactorDiscardedSpans = "trace_too_large_to_compact"
 )
 
 var (
@@ -232,36 +229,10 @@ func (c *Compactor) Owns(hash string) bool {
 	return rs.Instances[0].Addr == ringAddr
 }
 
-// Combine implements deepdb.CompactorSharder
-func (c *Compactor) Combine(dataEncoding string, tenantID string, objs ...[]byte) ([]byte, bool, error) {
-	combinedObj, wasCombined, err := model.StaticCombiner.Combine(dataEncoding, objs...)
-	if err != nil {
-		return nil, false, err
-	}
-
-	maxBytes := c.overrides.MaxBytesPerSnapshot(tenantID)
-	if maxBytes == 0 || len(combinedObj) < maxBytes {
-		return combinedObj, wasCombined, nil
-	}
-
-	// technically neither of these conditions should ever be true, we are adding them as guard code
-	// for the following logic
-	if len(objs) == 0 {
-		return []byte{}, wasCombined, nil
-	}
-	if len(objs) == 1 {
-		return objs[0], wasCombined, nil
-	}
-
-	//totalDiscarded := countSpans(dataEncoding, objs[1:]...)
-	//overrides.RecordDiscardedSpans(totalDiscarded, reasonCompactorDiscardedSpans, tenantID)
-	return objs[0], wasCombined, nil
-}
-
-// RecordDiscardedSpans implements deepdb.CompactorSharder
-func (c *Compactor) RecordDiscardedSpans(count int, tenantID string, traceID string) {
-	level.Warn(log.Logger).Log("msg", "max size of trace exceeded", "tenant", tenantID, "traceId", traceID, "discarded_span_count", count)
-	//overrides.RecordDiscardedSpans(count, reasonCompactorDiscardedSpans, tenantID)
+// RecordDiscardedSnapshots implements deepdb.CompactorSharder
+func (c *Compactor) RecordDiscardedSnapshots(count int, tenantID string, snapshotID string) {
+	level.Warn(log.Logger).Log("msg", "max size of trace exceeded", "tenantID", tenantID, "snapshotID", snapshotID, "discarded_snapshot_count", count)
+	//overrides.RecordDiscardedSnapshots(count, reasonCompactorDiscardedSpans, tenantID)
 }
 
 // BlockRetentionForTenant implements CompactorOverrides
@@ -269,7 +240,7 @@ func (c *Compactor) BlockRetentionForTenant(tenantID string) time.Duration {
 	return c.overrides.BlockRetention(tenantID)
 }
 
-func (c *Compactor) MaxBytesPerTraceForTenant(tenantID string) int {
+func (c *Compactor) MaxBytesPerSnapshotForTenant(tenantID string) int {
 	return c.overrides.MaxBytesPerSnapshot(tenantID)
 }
 
@@ -280,7 +251,7 @@ func (c *Compactor) isSharded() bool {
 // OnRingInstanceRegister is called while the lifecycler is registering the
 // instance within the ring and should return the state and set of tokens to
 // use for the instance itself.
-func (c *Compactor) OnRingInstanceRegister(lifecycler *ring.BasicLifecycler, ringDesc ring.Desc, instanceExists bool, instanceID string, instanceDesc ring.InstanceDesc) (ring.InstanceState, ring.Tokens) {
+func (c *Compactor) OnRingInstanceRegister(_ *ring.BasicLifecycler, ringDesc ring.Desc, instanceExists bool, _ string, instanceDesc ring.InstanceDesc) (ring.InstanceState, ring.Tokens) {
 	// When we initialize the compactor instance in the ring we want to start from
 	// a clean situation, so whatever is the state we set it ACTIVE, while we keep existing
 	// tokens (if any) or the ones loaded from file.
@@ -300,14 +271,14 @@ func (c *Compactor) OnRingInstanceRegister(lifecycler *ring.BasicLifecycler, rin
 
 // OnRingInstanceTokens is called once the instance tokens are set and are
 // stable within the ring (honoring the observe period, if set).
-func (c *Compactor) OnRingInstanceTokens(lifecycler *ring.BasicLifecycler, tokens ring.Tokens) {}
+func (c *Compactor) OnRingInstanceTokens(*ring.BasicLifecycler, ring.Tokens) {}
 
 // OnRingInstanceStopping is called while the lifecycler is stopping. The lifecycler
 // will continue to hearbeat the ring the this function is executing and will proceed
 // to unregister the instance from the ring only after this function has returned.
-func (c *Compactor) OnRingInstanceStopping(lifecycler *ring.BasicLifecycler) {}
+func (c *Compactor) OnRingInstanceStopping(*ring.BasicLifecycler) {}
 
 // OnRingInstanceHeartbeat is called while the instance is updating its heartbeat
 // in the ring.
-func (c *Compactor) OnRingInstanceHeartbeat(lifecycler *ring.BasicLifecycler, ringDesc *ring.Desc, instanceDesc *ring.InstanceDesc) {
+func (c *Compactor) OnRingInstanceHeartbeat(*ring.BasicLifecycler, *ring.Desc, *ring.InstanceDesc) {
 }

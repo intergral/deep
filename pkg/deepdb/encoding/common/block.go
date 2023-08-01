@@ -33,7 +33,7 @@ const (
 	nameBloomPrefix = "bloom-"
 )
 
-// bloomName returns the backend bloom name for the given shard
+// BloomName returns the backend bloom name for the given shard
 func BloomName(shard int) string {
 	return nameBloomPrefix + strconv.Itoa(shard)
 }

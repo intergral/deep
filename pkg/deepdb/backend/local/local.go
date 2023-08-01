@@ -55,19 +55,21 @@ func New(cfg *Config) (backend.RawReader, backend.RawWriter, backend.Compactor, 
 }
 
 // Write implements backend.Writer
-func (rw *Backend) Write(ctx context.Context, name string, keypath backend.KeyPath, data io.Reader, _ int64, _ bool) error {
+func (rw *Backend) Write(_ context.Context, name string, keypath backend.KeyPath, data io.Reader, _ int64, _ bool) error {
 	blockFolder := rw.rootPath(keypath)
 	err := os.MkdirAll(blockFolder, os.ModePerm)
 	if err != nil {
 		return err
 	}
 
-	tracesFileName := rw.objectFileName(keypath, name)
-	dst, err := os.Create(tracesFileName)
+	fileName := rw.objectFileName(keypath, name)
+	dst, err := os.Create(fileName)
 	if err != nil {
 		return err
 	}
-	defer dst.Close()
+	defer func(dst *os.File) {
+		_ = dst.Close()
+	}(dst)
 
 	_, err = io.Copy(dst, data)
 	if err != nil {
@@ -91,8 +93,8 @@ func (rw *Backend) Append(ctx context.Context, name string, keypath backend.KeyP
 			return nil, err
 		}
 
-		tracesFileName := rw.objectFileName(keypath, name)
-		dst, err = os.Create(tracesFileName)
+		fileName := rw.objectFileName(keypath, name)
+		dst, err = os.Create(fileName)
 		if err != nil {
 			return nil, err
 		}
@@ -109,17 +111,17 @@ func (rw *Backend) Append(ctx context.Context, name string, keypath backend.KeyP
 }
 
 // CloseAppend implements backend.Writer
-func (rw *Backend) CloseAppend(ctx context.Context, tracker backend.AppendTracker) error {
+func (rw *Backend) CloseAppend(_ context.Context, tracker backend.AppendTracker) error {
 	if tracker == nil {
 		return nil
 	}
 
-	var dst *os.File = tracker.(*os.File)
+	dst := tracker.(*os.File)
 	return dst.Close()
 }
 
 // List implements backend.Reader
-func (rw *Backend) List(ctx context.Context, keypath backend.KeyPath) ([]string, error) {
+func (rw *Backend) List(_ context.Context, keypath backend.KeyPath) ([]string, error) {
 	path := rw.rootPath(keypath)
 	folders, err := os.ReadDir(path)
 	if err != nil {
@@ -138,7 +140,7 @@ func (rw *Backend) List(ctx context.Context, keypath backend.KeyPath) ([]string,
 }
 
 // Read implements backend.Reader
-func (rw *Backend) Read(ctx context.Context, name string, keypath backend.KeyPath, _ bool) (io.ReadCloser, int64, error) {
+func (rw *Backend) Read(_ context.Context, name string, keypath backend.KeyPath, _ bool) (io.ReadCloser, int64, error) {
 	filename := rw.objectFileName(keypath, name)
 
 	f, err := os.OpenFile(filename, os.O_RDONLY, 0644)
@@ -148,7 +150,7 @@ func (rw *Backend) Read(ctx context.Context, name string, keypath backend.KeyPat
 
 	stat, err := f.Stat()
 	if err != nil {
-		f.Close()
+		_ = f.Close()
 		return nil, -1, err
 	}
 
@@ -169,7 +171,9 @@ func (rw *Backend) ReadRange(ctx context.Context, name string, keypath backend.K
 	if err != nil {
 		return readError(err)
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		_ = f.Close()
+	}(f)
 
 	_, err = f.ReadAt(buffer, int64(offset))
 	if err != nil {
@@ -184,7 +188,7 @@ func (rw *Backend) ReadRange(ctx context.Context, name string, keypath backend.K
 func (rw *Backend) Shutdown() {
 	ctx := context.Background()
 
-	// Shutdown() doesn't return error so this is best effort
+	// Shutdown() doesn't return error so this is the best effort
 	tenants, err := rw.List(ctx, backend.KeyPath{})
 	if err != nil {
 		return

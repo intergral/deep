@@ -23,11 +23,28 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Setup gotestsum
-        run: go install gotest.tools/gotestsum@latest
+      - name: Setup go-junit-report
+        run: go install github.com/jstemmer/go-junit-report/v2@latest
 
       - name: Test
-        run: make test-with-cover
+        run: make test-with-cover-report
+
+      - name: Test Report
+        uses: dorny/test-reporter@v1.6.0
+        if: success() || failure()
+        continue-on-error: true
+        with:
+          name: GO Tests
+          path: report.xml
+          reporter: java-junit
+
+      - name: Test Summary
+        uses: test-summary/action@v2
+        with:
+          paths: |
+            report.xml
+        if: success() || failure()
+        continue-on-error: true
 
   build:
     name: Build

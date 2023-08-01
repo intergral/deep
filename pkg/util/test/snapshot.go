@@ -12,38 +12,47 @@ import (
 )
 
 type GenerateOptions struct {
-	attrs           map[string]string
-	resource        map[string]string
-	allResource     bool
-	allAttrs        bool
-	allVarTypes     bool
-	asyncFrame      bool
-	transpiledFrame bool
-	columnFrame     bool
-	noVars          bool
-	serviceName     string
+	Id              []byte
+	Attrs           map[string]string
+	Resource        map[string]string
+	AllResource     bool
+	AllAttrs        bool
+	AllVarTypes     bool
+	AsyncFrame      bool
+	TranspiledFrame bool
+	ColumnFrame     bool
+	NoVars          bool
+	RandomStrings   bool
+	ServiceName     string
 }
 
 func GenerateSnapshot(index int, options *GenerateOptions) *tp.Snapshot {
 	if options == nil {
 		options = &GenerateOptions{
-			attrs:           nil,
-			resource:        nil,
-			allResource:     false,
-			allAttrs:        false,
-			allVarTypes:     false,
-			asyncFrame:      false,
-			transpiledFrame: false,
-			columnFrame:     false,
-			noVars:          false,
-			serviceName:     "test-service",
+			Id:              MakeSnapshotID(),
+			Attrs:           nil,
+			Resource:        nil,
+			AllResource:     false,
+			AllAttrs:        false,
+			AllVarTypes:     false,
+			AsyncFrame:      false,
+			TranspiledFrame: false,
+			ColumnFrame:     false,
+			NoVars:          false,
+			RandomStrings:   false,
+			ServiceName:     "test-service",
 		}
 	}
+
+	if options.Id == nil {
+		options.Id = MakeSnapshotID()
+	}
+
 	vars := make([]*tp.Variable, 0)
 
-	point := GenerateTracePoint(index)
+	point := GenerateTracePoint(index, options)
 	snap := &tp.Snapshot{
-		ID:            MakeSnapshotID(),
+		ID:            options.Id,
 		Tracepoint:    point,
 		VarLookup:     nil,
 		TsNanos:       uint64(time.Now().UnixNano()),
@@ -53,7 +62,7 @@ func GenerateSnapshot(index int, options *GenerateOptions) *tp.Snapshot {
 		DurationNanos: 1010101,
 		Resource:      generateResource(*options),
 	}
-	if !options.noVars {
+	if !options.NoVars {
 		snap.VarLookup = generateVarLookup(vars)
 	}
 	return snap
@@ -65,15 +74,28 @@ func MakeSnapshotID() []byte {
 	return id
 }
 
-func GenerateTracePoint(index int) *tp.TracePointConfig {
+func GenerateTracePoint(index int, options *GenerateOptions) *tp.TracePointConfig {
 	newUUID, _ := uuid.NewUUID()
+
+	path := "/some/path/to/file_" + strconv.Itoa(index) + ".py"
+	if options.RandomStrings {
+		path = "/some/path/to/file_" + RandomStringLen(5) + ".py"
+	}
+
 	return &tp.TracePointConfig{
 		ID:         newUUID.String(),
-		Path:       "/some/path/to/file_" + strconv.Itoa(index) + ".py",
+		Path:       path,
 		LineNumber: uint32(index),
 		Args:       nil,
 		Watches:    nil,
 	}
+}
+
+func randomString(options GenerateOptions) string {
+	if options.RandomStrings {
+		return RandomStringLen(5)
+	}
+	return ""
 }
 
 func generateFrames(options GenerateOptions, vars []*tp.Variable) []*tp.StackFrame {
@@ -81,7 +103,7 @@ func generateFrames(options GenerateOptions, vars []*tp.Variable) []*tp.StackFra
 	trueBool := true
 	frames := []*tp.StackFrame{
 		{
-			FileName:   "/usr/src/app/src/simple-app/simple_test.py",
+			FileName:   "/usr/src/app/src/simple-app/simple_test" + randomString(options) + ".py",
 			MethodName: "message",
 			LineNumber: 31,
 			ClassName:  &className,
@@ -109,7 +131,7 @@ func generateFrames(options GenerateOptions, vars []*tp.Variable) []*tp.StackFra
 			AppFrame: &trueBool,
 		},
 		{
-			FileName:   "/usr/src/app/src/simple-app/main.py",
+			FileName:   "/usr/src/app/src/simple-app/main" + randomString(options) + ".py",
 			MethodName: "main",
 			LineNumber: 37,
 		},
@@ -120,7 +142,7 @@ func generateFrames(options GenerateOptions, vars []*tp.Variable) []*tp.StackFra
 		},
 	}
 
-	if options.allVarTypes {
+	if options.AllVarTypes {
 		originalName := "original name"
 		frames = append(frames, &tp.StackFrame{
 			FileName:   "/var/text/frame.go",
@@ -148,7 +170,7 @@ func generateFrames(options GenerateOptions, vars []*tp.Variable) []*tp.StackFra
 		})
 	}
 
-	if options.asyncFrame {
+	if options.AsyncFrame {
 		frames = append(frames, &tp.StackFrame{
 			FileName:   "/async/frame/test.go",
 			MethodName: "asyncFrame",
@@ -164,7 +186,7 @@ func generateFrames(options GenerateOptions, vars []*tp.Variable) []*tp.StackFra
 		})
 	}
 
-	if options.columnFrame {
+	if options.ColumnFrame {
 		columnNumber := uint32(222)
 		frames = append(frames, &tp.StackFrame{
 			FileName:     "/column/frame/test.go",
@@ -174,7 +196,7 @@ func generateFrames(options GenerateOptions, vars []*tp.Variable) []*tp.StackFra
 		})
 	}
 
-	if options.transpiledFrame {
+	if options.TranspiledFrame {
 		transpiledFileName := "/original/file.ts"
 		transpiledLineNumber := uint32(202)
 		frames = append(frames, &tp.StackFrame{
@@ -185,7 +207,7 @@ func generateFrames(options GenerateOptions, vars []*tp.Variable) []*tp.StackFra
 			TranspiledLineNumber: &transpiledLineNumber,
 		})
 
-		if options.columnFrame {
+		if options.ColumnFrame {
 			columnNumber := uint32(333)
 			tpColumnNumber := uint32(111)
 			frames = append(frames, &tp.StackFrame{
@@ -205,8 +227,8 @@ func generateFrames(options GenerateOptions, vars []*tp.Variable) []*tp.StackFra
 
 func generateResource(options GenerateOptions) []*cp.KeyValue {
 	var serviceName = "deep-cli"
-	if options.serviceName != "" {
-		serviceName = options.serviceName
+	if options.ServiceName != "" {
+		serviceName = options.ServiceName
 	}
 
 	values := []*cp.KeyValue{
@@ -218,7 +240,17 @@ func generateResource(options GenerateOptions) []*cp.KeyValue {
 		},
 	}
 
-	if options.allResource {
+	if options.RandomStrings {
+		values = append(values, &cp.KeyValue{
+			Key:   RandomString(),
+			Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: RandomString()}},
+		}, &cp.KeyValue{
+			Key:   RandomString(),
+			Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: RandomString()}},
+		})
+	}
+
+	if options.AllResource {
 		allTypes := []*cp.KeyValue{
 			{
 				Key:   "str_type",
@@ -273,8 +305,8 @@ func generateResource(options GenerateOptions) []*cp.KeyValue {
 		values = append(values, allTypes...)
 	}
 
-	if options.resource != nil {
-		for k, v := range options.resource {
+	if options.Resource != nil {
+		for k, v := range options.Resource {
 			values = append(values, &cp.KeyValue{
 				Key:   k,
 				Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: v}},
@@ -300,7 +332,17 @@ func generateAttributes(tp *tp.TracePointConfig, options GenerateOptions) []*cp.
 		},
 	}
 
-	if options.allAttrs {
+	if options.RandomStrings {
+		keyValues = append(keyValues, &cp.KeyValue{
+			Key:   RandomString(),
+			Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: RandomString()}},
+		}, &cp.KeyValue{
+			Key:   RandomString(),
+			Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: RandomString()}},
+		})
+	}
+
+	if options.AllAttrs {
 		allTypes := []*cp.KeyValue{
 			{
 				Key:   "str_type",
@@ -355,8 +397,8 @@ func generateAttributes(tp *tp.TracePointConfig, options GenerateOptions) []*cp.
 		keyValues = append(keyValues, allTypes...)
 	}
 
-	if options.attrs != nil {
-		for k, v := range options.attrs {
+	if options.Attrs != nil {
+		for k, v := range options.Attrs {
 			keyValues = append(keyValues, &cp.KeyValue{
 				Key:   k,
 				Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: v}},

@@ -31,8 +31,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	deep_io "github.com/intergral/deep/pkg/io"
-	deepUtil "github.com/intergral/deep/pkg/util"
+	deepIO "github.com/intergral/deep/pkg/io"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 )
@@ -53,9 +52,9 @@ func (c *Compactor) Compact(ctx context.Context, l log.Logger, r backend.Reader,
 		minBlockStart   time.Time
 		maxBlockEnd     time.Time
 		bookmarks       = make([]*bookmark[parquet.Row], 0, len(inputs))
-		// MaxBytesPerSnapshot is the largest trace that can be expected, and assumes 1 byte per value on average (same as flushing).
-		// Divide by 4 to presumably require 2 slice allocations if we ever see a trace this large
-		pool = newRowPool(c.opts.MaxBytesPerTrace / 4)
+		// MaxBytesPerSnapshot is the largest snapshot that can be expected, and assumes 1 byte per value on average (same as flushing).
+		// Divide by 4 to presumably require 2 slice allocations if we ever see a snapshot this large
+		pool = newRowPool(c.opts.MaxBytesPerSnapshot / 4)
 	)
 	for _, blockMeta := range inputs {
 		totalRecords += blockMeta.TotalObjects
@@ -90,7 +89,7 @@ func (c *Compactor) Compact(ctx context.Context, l log.Logger, r backend.Reader,
 
 	var (
 		m               = newMultiblockIterator(bookmarks)
-		recordsPerBlock = (totalRecords / int(c.opts.OutputBlocks))
+		recordsPerBlock = totalRecords / int(c.opts.OutputBlocks)
 		currentBlock    *streamingBlock
 	)
 	defer m.Close()
@@ -116,12 +115,12 @@ func (c *Compactor) Compact(ctx context.Context, l log.Logger, r backend.Reader,
 			}
 			w := writerCallback(newMeta, time.Now())
 
-			currentBlock = newStreamingBlock(ctx, &c.opts.BlockConfig, newMeta, r, w, deep_io.NewBufferedWriter)
+			currentBlock = newStreamingBlock(ctx, &c.opts.BlockConfig, newMeta, r, w, deepIO.NewBufferedWriter)
 			currentBlock.meta.CompactionLevel = nextCompactionLevel
 			newCompactedBlocks = append(newCompactedBlocks, currentBlock.meta)
 		}
 
-		// Flush existing block data if the next trace can't fit
+		// Flush existing block data if the next snapshot can't fit
 		if currentBlock.EstimatedBufferedBytes() > 0 && currentBlock.EstimatedBufferedBytes()+estimateMarshalledSizeFromParquetRow(lowestObject) > c.opts.BlockConfig.RowGroupSizeBytes {
 			runtime.GC()
 			err = c.appendBlock(ctx, currentBlock, l)
@@ -130,8 +129,8 @@ func (c *Compactor) Compact(ctx context.Context, l log.Logger, r backend.Reader,
 			}
 		}
 
-		// Write trace.
-		// Note - not specifying trace start/end here, we set the overall block start/stop
+		// Write snapshot.
+		// Note - not specifying snapshot start/end here, we set the overall block start/stop
 		// times from the input metas.
 		err = currentBlock.AddRaw(lowestID, lowestObject, 0)
 		if err != nil {
@@ -248,57 +247,8 @@ func (r *rowPool) Put(row parquet.Row) {
 	r.pool.Put(row[:0]) //nolint:all //SA6002
 }
 
-// estimateProtoSizeFromParquetRow estimates the byte-length of the corresponding
-// trace in tempopb.Trace format. This method is unreasonably effective.
-// Testing on real blocks shows 90-98% accuracy.
-func estimateProtoSizeFromParquetRow(row parquet.Row) (size int) {
-	for _, v := range row {
-		size++ // Field identifier
-
-		switch v.Kind() {
-		case parquet.ByteArray:
-			size += len(v.ByteArray())
-
-		case parquet.FixedLenByteArray:
-			size += len(v.ByteArray())
-
-		default:
-			// All other types (ints, bools) approach 1 byte per value
-			size++
-		}
-	}
-	return
-}
-
 // estimateMarshalledSizeFromParquetRow estimates the byte size as marshalled into parquet.
 // this is a very rough estimate and is generally 66%-100% of actual size.
 func estimateMarshalledSizeFromParquetRow(row parquet.Row) (size int) {
 	return len(row)
-}
-
-// countSpans counts the number of spans in the given trace in deconstructed
-// parquet row format and returns traceId.
-// It simply counts the number of values for span ID, which is always present.
-func countSpans(schema *parquet.Schema, row parquet.Row) (traceID string, spans int) {
-	traceIDColumn, found := schema.Lookup(SnapshotIDColumnName)
-	if !found {
-		return "", 0
-	}
-
-	spanID, found := schema.Lookup("rs", "ils", "Spans", "ID")
-	if !found {
-		return "", 0
-	}
-
-	for _, v := range row {
-		if v.Column() == spanID.ColumnIndex {
-			spans++
-		}
-
-		if v.Column() == traceIDColumn.ColumnIndex {
-			traceID = deepUtil.TraceIDToHexString(v.ByteArray())
-		}
-	}
-
-	return
 }

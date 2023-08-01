@@ -41,7 +41,7 @@ const (
 	DefaultBloomShardSizeBytes = 100 * 1024
 )
 
-// Config is the Tempo storage configuration
+// Config is the Deep storage configuration
 type Config struct {
 	TracePoint deepdb.Config `yaml:"tracepoint"`
 }
@@ -53,7 +53,7 @@ func (cfg *Config) RegisterFlagsAndApplyDefaults(prefix string, f *flag.FlagSet)
 	cfg.TracePoint.BlocklistPollConcurrency = deepdb.DefaultBlocklistPollConcurrency
 	cfg.TracePoint.BlocklistPollTenantIndexBuilders = deepdb.DefaultTenantIndexBuilders
 
-	f.StringVar(&cfg.TracePoint.Backend, util.PrefixConfig(prefix, "tracepoint.backend"), "", "Trace backend (s3, azure, gcs, local)")
+	f.StringVar(&cfg.TracePoint.Backend, util.PrefixConfig(prefix, "tracepoint.backend"), "", "Tracepoint backend (s3, azure, gcs, local)")
 	f.DurationVar(&cfg.TracePoint.BlocklistPoll, util.PrefixConfig(prefix, "tracepoint.blocklist_poll"), deepdb.DefaultBlocklistPoll, "Period at which to run the maintenance cycle.")
 
 	cfg.TracePoint.WAL = &wal.Config{}
@@ -64,13 +64,13 @@ func (cfg *Config) RegisterFlagsAndApplyDefaults(prefix string, f *flag.FlagSet)
 
 	cfg.TracePoint.Search = &deepdb.SearchConfig{}
 	cfg.TracePoint.Search.ChunkSizeBytes = deepdb.DefaultSearchChunkSizeBytes
-	cfg.TracePoint.Search.PrefetchTraceCount = deepdb.DefaultPrefetchTraceCount
+	cfg.TracePoint.Search.PrefetchSnapshotCount = deepdb.DefaultPrefetchSnapshotCount
 	cfg.TracePoint.Search.ReadBufferCount = deepdb.DefaultReadBufferCount
 	cfg.TracePoint.Search.ReadBufferSizeBytes = deepdb.DefaultReadBufferSize
 
 	cfg.TracePoint.Block = &common.BlockConfig{}
-	f.Float64Var(&cfg.TracePoint.Block.BloomFP, util.PrefixConfig(prefix, "trace.block.v2-bloom-filter-false-positive"), DefaultBloomFP, "Bloom Filter False Positive.")
-	f.IntVar(&cfg.TracePoint.Block.BloomShardSizeBytes, util.PrefixConfig(prefix, "trace.block.v2-bloom-filter-shard-size-bytes"), DefaultBloomShardSizeBytes, "Bloom Filter Shard Size in bytes.")
+	f.Float64Var(&cfg.TracePoint.Block.BloomFP, util.PrefixConfig(prefix, "tracepoint.block.v2-bloom-filter-false-positive"), DefaultBloomFP, "Bloom Filter False Positive.")
+	f.IntVar(&cfg.TracePoint.Block.BloomShardSizeBytes, util.PrefixConfig(prefix, "tracepoint.block.v2-bloom-filter-shard-size-bytes"), DefaultBloomShardSizeBytes, "Bloom Filter Shard Size in bytes.")
 	cfg.TracePoint.Block.Version = encoding.DefaultEncoding().Version()
 	cfg.TracePoint.Block.Encoding = backend.EncZstd
 	cfg.TracePoint.Block.SearchEncoding = backend.EncSnappy
@@ -94,12 +94,12 @@ func (cfg *Config) RegisterFlagsAndApplyDefaults(prefix string, f *flag.FlagSet)
 	cfg.TracePoint.S3.HedgeRequestsUpTo = 2
 
 	cfg.TracePoint.GCS = &gcs.Config{}
-	f.StringVar(&cfg.TracePoint.GCS.BucketName, util.PrefixConfig(prefix, "tracepoint.gcs.bucket"), "", "gcs bucket to store traces in.")
+	f.StringVar(&cfg.TracePoint.GCS.BucketName, util.PrefixConfig(prefix, "tracepoint.gcs.bucket"), "", "gcs bucket to store snapshots in.")
 	cfg.TracePoint.GCS.ChunkBufferSize = 10 * 1024 * 1024
 	cfg.TracePoint.GCS.HedgeRequestsUpTo = 2
 
 	cfg.TracePoint.Local = &local.Config{}
-	f.StringVar(&cfg.TracePoint.Local.Path, util.PrefixConfig(prefix, "tracepoint.local.path"), "", "path to store traces at.")
+	f.StringVar(&cfg.TracePoint.Local.Path, util.PrefixConfig(prefix, "tracepoint.local.path"), "", "path to store snapshots at.")
 
 	cfg.TracePoint.BackgroundCache = &cache.BackgroundConfig{}
 	cfg.TracePoint.BackgroundCache.WriteBackBuffer = 10000

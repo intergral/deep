@@ -38,8 +38,10 @@ import (
 const objectName = "test"
 
 func TestReadWrite(t *testing.T) {
-	fakeTracesFile, err := os.CreateTemp("/tmp", "")
-	defer os.Remove(fakeTracesFile.Name())
+	tempFile, err := os.CreateTemp("/tmp", "")
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(tempFile.Name())
 	assert.NoError(t, err, "unexpected error creating temp file")
 
 	r, w, _, err := New(&Config{

@@ -38,8 +38,6 @@ type ObjectDecoder interface {
 	//  and should only be used when surfacing a byte slice from deepdb and preparing it for reads.
 	PrepareForRead(obj []byte) (*deeppb_tp.Snapshot, error)
 
-	// Combine combines the passed byte slice
-	Combine(objs ...[]byte) ([]byte, error)
 	// FastRange returns the start and end unix epoch timestamp of the trace. If its not possible to efficiently get these
 	// values from the underlying encoding then it should return decoder.ErrUnsupported
 	FastRange(obj []byte) (uint32, error)
@@ -53,15 +51,4 @@ func NewObjectDecoder(dataEncoding string) (ObjectDecoder, error) {
 	}
 
 	return nil, fmt.Errorf("unknown encoding %s. Supported encodings %v", dataEncoding, AllEncodings)
-}
-
-// MustNewObjectDecoder creates a new encoding or it panics
-func MustNewObjectDecoder(dataEncoding string) ObjectDecoder {
-	decoder, err := NewObjectDecoder(dataEncoding)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return decoder
 }

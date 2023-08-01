@@ -28,6 +28,15 @@ type snapshotMetadataIterator struct {
 	iter parquetquery.Iterator
 }
 
+const (
+	resEntriesIDOffset          = 6
+	resEntriesTSOffset          = 5
+	resEntriesDurationOffset    = 4
+	resEntriesServiceNameOffset = 3
+	resEntriesPathOffset        = 2
+	resEntriesLineNoOffset      = 1
+)
+
 var _ deepql.SnapshotResultIterator = (*snapshotMetadataIterator)(nil)
 
 func newSnapshotMetadataIterator(iter parquetquery.Iterator) *snapshotMetadataIterator {
@@ -36,27 +45,23 @@ func newSnapshotMetadataIterator(iter parquetquery.Iterator) *snapshotMetadataIt
 	}
 }
 
-func (i *snapshotMetadataIterator) Next(ctx context.Context) (*deepql.SnapshotResult, error) {
-	//res, err := i.iter.Next()
-	//if err != nil {
-	//	return nil, err
-	//}
-	//if res == nil {
-	//	return nil, nil
-	//}
-	//
-	//// The spanset is in the OtherEntries
-	//iface := res.OtherValueFromKey(otherEntrySpansetKey)
-	//if iface == nil {
-	//	return nil, fmt.Errorf("engine assumption broken: spanset not found in other entries")
-	//}
-	//ss, ok := iface.(*deepql.SnapshotResult)
-	//if !ok {
-	//	return nil, fmt.Errorf("engine assumption broken: spanset is not of type *traceql.Spanset")
-	//}
-	//
-	//return ss, nil
-	return nil, nil
+func (i *snapshotMetadataIterator) Next(context.Context) (*deepql.SnapshotResult, error) {
+	res, err := i.iter.Next()
+	if err != nil {
+		return nil, err
+	}
+	if res == nil {
+		return nil, nil
+	}
+	entries := len(res.Entries)
+	return &deepql.SnapshotResult{
+		SnapshotID:         res.Entries[entries-resEntriesIDOffset].Value.Bytes(),
+		StartTimeUnixNanos: res.Entries[entries-resEntriesTSOffset].Value.Uint64(),
+		DurationNanos:      res.Entries[entries-resEntriesDurationOffset].Value.Uint64(),
+		ServiceName:        res.Entries[entries-resEntriesServiceNameOffset].Value.String(),
+		FilePath:           res.Entries[entries-resEntriesPathOffset].Value.String(),
+		LineNo:             res.Entries[entries-resEntriesLineNoOffset].Value.Uint32(),
+	}, err
 }
 
 func (i *snapshotMetadataIterator) Close() {

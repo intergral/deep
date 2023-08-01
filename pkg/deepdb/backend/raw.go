@@ -27,14 +27,14 @@ import (
 
 	"github.com/google/uuid"
 
-	deep_io "github.com/intergral/deep/pkg/io"
+	deepIO "github.com/intergral/deep/pkg/io"
 )
 
 const (
 	MetaName          = "meta.json"
 	CompactedMetaName = "meta.compacted.json"
 	TenantIndexName   = "index.json.gz"
-	// File name for the cluster seed file.
+	// ClusterSeedFileName File name for the cluster seed file.
 	ClusterSeedFileName = "deep_cluster_seed.json"
 )
 
@@ -43,7 +43,7 @@ type KeyPath []string
 
 // RawWriter is a collection of methods to write data to deepdb backends
 type RawWriter interface {
-	// Write is for in memory data. shouldCache specifies whether or not caching should be attempted.
+	// Write is for in memory data. shouldCache specifies whether caching should be attempted.
 	Write(ctx context.Context, name string, keypath KeyPath, data io.Reader, size int64, shouldCache bool) error
 	// Append starts or continues an Append job. Pass nil to AppendTracker to start a job.
 	Append(ctx context.Context, name string, keypath KeyPath, tracker AppendTracker, buffer []byte) (AppendTracker, error)
@@ -146,7 +146,7 @@ func (r *reader) Read(ctx context.Context, name string, blockID uuid.UUID, tenan
 	defer func(objReader io.ReadCloser) {
 		_ = objReader.Close()
 	}(objReader)
-	return deep_io.ReadAllWithEstimate(objReader, size)
+	return deepIO.ReadAllWithEstimate(objReader, size)
 }
 
 func (r *reader) StreamReader(ctx context.Context, name string, blockID uuid.UUID, tenantID string) (io.ReadCloser, int64, error) {
@@ -204,13 +204,13 @@ func (r *reader) BlockMeta(ctx context.Context, blockID uuid.UUID, tenantID stri
 		_ = reader.Close()
 	}(reader)
 
-	indexBytes, err := deep_io.ReadAllWithEstimate(reader, size)
+	estimate, err := deepIO.ReadAllWithEstimate(reader, size)
 	if err != nil {
 		return nil, err
 	}
 
 	out := &BlockMeta{}
-	err = json.Unmarshal(indexBytes, out)
+	err = json.Unmarshal(estimate, out)
 	if err != nil {
 		return nil, err
 	}
@@ -228,13 +228,13 @@ func (r *reader) TenantIndex(ctx context.Context, tenantID string) (*TenantIndex
 		_ = reader.Close()
 	}(reader)
 
-	indexBytes, err := deep_io.ReadAllWithEstimate(reader, size)
+	estimate, err := deepIO.ReadAllWithEstimate(reader, size)
 	if err != nil {
 		return nil, err
 	}
 
 	i := &TenantIndex{}
-	err = i.unmarshal(indexBytes)
+	err = i.unmarshal(estimate)
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +246,7 @@ func (r *reader) Shutdown() {
 	r.r.Shutdown()
 }
 
-// KeyPathForBlock returns a correctly ordered keypath given a block id and tenantid
+// KeyPathForBlock returns a correctly ordered keypath given a block id and tenantID
 func KeyPathForBlock(blockID uuid.UUID, tenantID string) KeyPath {
 	return []string{tenantID, blockID.String()}
 }
@@ -256,17 +256,17 @@ func ObjectFileName(keypath KeyPath, name string) string {
 	return path.Join(path.Join(keypath...), name)
 }
 
-// MetaFileName returns the object name for the block meta given a block id and tenantid
+// MetaFileName returns the object name for the block meta given a block id and tenantID
 func MetaFileName(blockID uuid.UUID, tenantID string) string {
 	return path.Join(RootPath(blockID, tenantID), MetaName)
 }
 
-// CompactedMetaFileName returns the object name for the compacted block meta given a block id and tenantid
+// CompactedMetaFileName returns the object name for the compacted block meta given a block id and tenantID
 func CompactedMetaFileName(blockID uuid.UUID, tenantID string) string {
 	return path.Join(RootPath(blockID, tenantID), CompactedMetaName)
 }
 
-// RootPath returns the root path for a block given a block id and tenantid
+// RootPath returns the root path for a block given a block id and tenantID
 func RootPath(blockID uuid.UUID, tenantID string) string {
 	return path.Join(tenantID, blockID.String())
 }

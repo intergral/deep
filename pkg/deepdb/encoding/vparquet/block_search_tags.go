@@ -95,7 +95,9 @@ func searchTags(_ context.Context, cb common.TagCallback, pf *parquet.File) erro
 			cc := rg.ColumnChunks()[idx]
 			err = func() error {
 				pgs := cc.Pages()
-				defer pgs.Close()
+				defer func(pgs parquet.Pages) {
+					_ = pgs.Close()
+				}(pgs)
 				for {
 					pg, err := pgs.ReadPage()
 					if err == io.EOF || pg == nil {
@@ -132,7 +134,9 @@ func searchTags(_ context.Context, cb common.TagCallback, pf *parquet.File) erro
 			cc := rg.ColumnChunks()[idx]
 			err = func() error {
 				pgs := cc.Pages()
-				defer pgs.Close()
+				defer func(pgs parquet.Pages) {
+					_ = pgs.Close()
+				}(pgs)
 
 				// normally we'd loop here calling read page for every page in the column chunk, but
 				// there is only one dictionary per column chunk, so just read it from the first page
@@ -207,23 +211,7 @@ func (b *backendBlock) SearchTagValuesV2(ctx context.Context, tag deepql.Attribu
 func searchTagValues(ctx context.Context, tag deepql.Attribute, cb common.TagCallbackV2, pf *parquet.File) error {
 	// Special handling for intrinsics - currently we only have a duration intrinsic which is not a tag so skip it
 	if tag.Intrinsic != deepql.IntrinsicNone {
-		//lookup := intrinsicColumnLookups[tag.Intrinsic]
-		//if lookup.columnPath != "" {
-		//	err := searchSpecialTagValues(ctx, lookup.columnPath, pf, cb)
-		//	if err != nil {
-		//		return fmt.Errorf("unexpected error searching special tags: %w", err)
-		//	}
-		//}
 		return nil
-	}
-
-	// Search dedicated attribute column if one exists and is a compatible scope.
-	column := wellKnownColumnLookups[tag.Name]
-	if column.columnPath != "" && (tag.Scope == column.level || tag.Scope == deepql.AttributeScopeNone) {
-		err := searchSpecialTagValues(ctx, column.columnPath, pf, cb)
-		if err != nil {
-			return fmt.Errorf("unexpected error searching special tags: %w", err)
-		}
 	}
 
 	// Finally also search generic key/values
@@ -244,7 +232,7 @@ func searchStandardTagValues(ctx context.Context, tag deepql.Attribute, pf *parq
 	keyPred := pq.NewStringInPredicate([]string{tag.Name})
 
 	if tag.Scope == deepql.AttributeScopeNone || tag.Scope == deepql.AttributeScopeResource {
-		err := searchKeyValues(DefinitionLevelResourceAttrs,
+		err := searchKeyValues(DefinitionLevelSnapshotAttrs,
 			FieldResourceAttrKey,
 			FieldResourceAttrVal,
 			FieldResourceAttrValInt,
@@ -279,7 +267,7 @@ func searchKeyValues(definitionLevel int, keyPath, stringPath, intPath, floatPat
 		// This is required
 		[]pq.Iterator{makeIter(keyPath, keyPred, "")},
 		[]pq.Iterator{
-			// These are optional and we find matching values of all types
+			// These are optional, and we find matching values of all types
 			makeIter(stringPath, skipNils, "string"),
 			makeIter(intPath, skipNils, "int"),
 			makeIter(floatPath, skipNils, "float"),
@@ -305,6 +293,8 @@ func searchKeyValues(definitionLevel int, keyPath, stringPath, intPath, floatPat
 
 	return nil
 }
+
+//todo incorporate this into tag search
 
 // searchSpecialTagValues searches a parquet file for all values for the provided column. It first attempts
 // to only pull all values from the column's dictionary. If this fails it falls back to scanning the entire path.

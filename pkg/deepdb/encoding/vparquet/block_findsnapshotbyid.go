@@ -21,7 +21,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	deepTP "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/segmentio/parquet-go"
 	"io"
 
@@ -52,7 +52,7 @@ func (b *backendBlock) checkBloom(ctx context.Context, id common.ID) (found bool
 		})
 	defer span.Finish()
 
-	shardKey := common.ShardKeyForTraceID(id, int(b.meta.BloomShardCount))
+	shardKey := common.ShardKeyForSnapshotID(id, int(b.meta.BloomShardCount))
 	nameBloom := common.BloomName(shardKey)
 	span.SetTag("bloom", nameBloom)
 
@@ -71,7 +71,7 @@ func (b *backendBlock) checkBloom(ctx context.Context, id common.ID) (found bool
 }
 
 // FindSnapshotByID scan the block for the snapshot with the given ID
-func (b *backendBlock) FindSnapshotByID(ctx context.Context, snapshotID common.ID, opts common.SearchOptions) (_ *deep_tp.Snapshot, err error) {
+func (b *backendBlock) FindSnapshotByID(ctx context.Context, snapshotID common.ID, opts common.SearchOptions) (_ *deepTP.Snapshot, err error) {
 	span, derivedCtx := opentracing.StartSpanFromContext(ctx, "parquet.backendBlock.FindSnapshotByID",
 		opentracing.Tags{
 			"blockID":   b.meta.BlockID,
@@ -102,7 +102,7 @@ func (b *backendBlock) FindSnapshotByID(ctx context.Context, snapshotID common.I
 }
 
 // findSnapshotByID will scan a given block for the snapshot
-func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.BlockMeta, pf *parquet.File) (*deep_tp.Snapshot, error) {
+func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.BlockMeta, pf *parquet.File) (*deepTP.Snapshot, error) {
 	// snapshotID column index
 	colIndex, _ := pq.GetColumnIndexByPath(pf, SnapshotIDColumnName)
 	if colIndex == -1 {
@@ -119,7 +119,7 @@ func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.B
 	rowGroupMins[0] = bytes.Repeat([]byte{0}, 16)
 	rowGroupMins[numRowGroups] = bytes.Repeat([]byte{255}, 16) // This is actually inclusive and the logic is special for the last row group below
 
-	// Gets the minimum trace ID within the row group. Since the column is sorted
+	// Gets the minimum snapshot ID within the row group. Since the column is sorted
 	// ascending we just read the first value from the first page.
 	getRowGroupMin := func(rgIdx int) (common.ID, error) {
 		min := rowGroupMins[rgIdx]
@@ -129,7 +129,9 @@ func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.B
 		}
 
 		pages := pf.RowGroups()[rgIdx].ColumnChunks()[colIndex].Pages()
-		defer pages.Close()
+		defer func(pages parquet.Pages) {
+			_ = pages.Close()
+		}(pages)
 
 		page, err := pages.ReadPage()
 		if err != nil {
@@ -141,7 +143,7 @@ func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.B
 			return nil, err
 		}
 		if c < 1 {
-			return nil, fmt.Errorf("failed to read value from page: snapshotID: %s blockID:%v rowGroupIdx:%d", util.TraceIDToHexString(snapshotID), meta.BlockID, rgIdx)
+			return nil, fmt.Errorf("failed to read value from page: snapshotID: %s blockID:%v rowGroupIdx:%d", util.SnapshotIDToHexString(snapshotID), meta.BlockID, rgIdx)
 		}
 
 		min = buf[0].ByteArray()
@@ -156,7 +158,7 @@ func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.B
 		}
 
 		if check := bytes.Compare(snapshotID, min); check <= 0 {
-			// Trace is before or in this group
+			// Snapshot is before or in this group
 			return check, nil
 		}
 
@@ -169,7 +171,7 @@ func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.B
 		// Except for the last group, it is inclusive
 		check := bytes.Compare(snapshotID, max)
 		if check > 0 || (check == 0 && rgIdx < (numRowGroups-1)) {
-			// Trace is after this group
+			// Snapshot is after this group
 			return 1, nil
 		}
 
@@ -195,7 +197,7 @@ func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.B
 		return nil, err
 	}
 	if res == nil {
-		// TraceID not found in this block
+		// SnapshotID not found in this block
 		return nil, nil
 	}
 
@@ -220,7 +222,7 @@ func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.B
 		return nil, errors.Wrap(err, "error reading row from backend")
 	}
 
-	// convert to proto trace and return
+	// convert to proto snapshot and return
 	return parquetToDeepSnapshot(tr), nil
 }
 
@@ -255,7 +257,7 @@ func binarySearch(n int, compare func(int) (int, error)) (int, error) {
 	for i, r := range row {
 		slicestr := ""
 		if r.Kind() == parquet.ByteArray {
-			slicestr = util.TraceIDToHexString(r.ByteArray())
+			slicestr = util.SnapshotIDToHexString(r.ByteArray())
 		}
 		fmt.Printf("row[%d] = c:%d (%s) r:%d d:%d v:%s (%s)\n",
 			i,

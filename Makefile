@@ -26,15 +26,24 @@ ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
 ## Tests
 GOTEST_OPT?= -race -timeout 20m -count=1 -v
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -cover
-GOTEST=gotestsum --format=testname --
+GOTEST=go test
+GO_JUNIT_REPORT=2>&1 | go-junit-report -parser gojson -iocopy -out report.xml
 
 .PHONY: test
 test:
 	$(GOTEST) $(GOTEST_OPT) $(ALL_PKGS)
 
+.PHONY: test-report
+test-report:
+	$(GOTEST) $(GOTEST_OPT) -json $(ALL_PKGS) $(GO_JUNIT_REPORT)
+
 .PHONY: test-with-cover
 test-with-cover:
 	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(ALL_PKGS)
+
+.PHONY: test-with-cover-report
+test-with-cover-report:
+	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) -json $(ALL_PKGS) $(GO_JUNIT_REPORT)
 
 ### Build
 

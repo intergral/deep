@@ -21,7 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	deep "github.com/intergral/go-deep-proto/tracepoint/v1"
+	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"sort"
@@ -157,7 +157,7 @@ type GRCPClient struct {
 	connection *grpc.ClientConn
 }
 
-func (client *GRCPClient) connectGrpc() deep.SnapshotServiceClient {
+func (client *GRCPClient) connectGrpc() tp.SnapshotServiceClient {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	dial, err := grpc.Dial(client.Endpoint, opts...)
@@ -166,5 +166,5 @@ func (client *GRCPClient) connectGrpc() deep.SnapshotServiceClient {
 	}
 	client.connection = dial
 
-	return deep.NewSnapshotServiceClient(dial)
+	return tp.NewSnapshotServiceClient(dial)
 }

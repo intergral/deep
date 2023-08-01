@@ -97,7 +97,7 @@ func GetContainerURL(ctx context.Context, cfg *Config, hedge bool) (blob.Contain
 
 	opts := blob.PipelineOptions{
 		Retry:      retryOptions,
-		Telemetry:  blob.TelemetryOptions{Value: "Tempo"},
+		Telemetry:  blob.TelemetryOptions{Value: "Deep"},
 		HTTPSender: httpSender,
 	}
 
@@ -150,18 +150,6 @@ func GetBlobURL(ctx context.Context, conf *Config, blobName string) (blob.BlockB
 		return blob.BlockBlobURL{}, err
 	}
 	return c.NewBlockBlobURL(blobName), nil
-}
-
-func CreateContainer(ctx context.Context, conf *Config) (blob.ContainerURL, error) {
-	c, err := GetContainerURL(ctx, conf, false)
-	if err != nil {
-		return blob.ContainerURL{}, err
-	}
-	_, err = c.Create(
-		ctx,
-		blob.Metadata{},
-		blob.PublicAccessNone)
-	return c, err
 }
 
 func getStorageAccountName(cfg *Config) string {

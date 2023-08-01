@@ -27,13 +27,10 @@ import (
 )
 
 type Engine struct {
-	spansPerSpanSet int
 }
 
 func NewEngine() *Engine {
-	return &Engine{
-		spansPerSpanSet: 3, // TODO make configurable
-	}
+	return &Engine{}
 }
 
 func (e *Engine) Execute(ctx context.Context, searchReq *deeppb.SearchRequest, spanSetFetcher SnapshotResultFetcher) (*deeppb.SearchResponse, error) {
@@ -131,7 +128,7 @@ func (e *Engine) createFetchSnapshotRequest(searchReq *deeppb.SearchRequest, pip
 
 func (e *Engine) asSnapshotSearchMetadata(result *SnapshotResult) *deeppb.SnapshotSearchMetadata {
 	return &deeppb.SnapshotSearchMetadata{
-		SnapshotID:        util.TraceIDToHexString(result.SnapshotID),
+		SnapshotID:        util.SnapshotIDToHexString(result.SnapshotID),
 		ServiceName:       result.ServiceName,
 		FilePath:          result.FilePath,
 		LineNo:            result.LineNo,

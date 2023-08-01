@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-	deep_io "github.com/intergral/deep/pkg/io"
+	deepIO "github.com/intergral/deep/pkg/io"
 	pq "github.com/intergral/deep/pkg/parquetquery"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/opentracing/opentracing-go"
@@ -62,7 +62,7 @@ func (b *backendBlock) openForSearch(ctx context.Context, opts common.SearchOpti
 		//   only use buffered reader at if the block is small, otherwise it's far more effective to use larger
 		//   buffers in the parquet sdk
 		if opts.ReadBufferCount*opts.ReadBufferSize > int(b.meta.Size) {
-			readerAt = deep_io.NewBufferedReaderAt(readerAt, int64(b.meta.Size), opts.ReadBufferSize, opts.ReadBufferCount)
+			readerAt = deepIO.NewBufferedReaderAt(readerAt, int64(b.meta.Size), opts.ReadBufferSize, opts.ReadBufferCount)
 		} else {
 			o = append(o, parquet.ReadBufferSize(opts.ReadBufferSize))
 		}
@@ -123,7 +123,7 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 
 	// Wire up iterators
 	var resourceIters []pq.Iterator
-	var traceIters []pq.Iterator
+	var snapshotIters []pq.Iterator
 
 	otherAttrConditions := map[string]string{}
 
@@ -176,12 +176,12 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 	}
 
 	// Multiple resource-level filters get joined and wrapped
-	// up to trace-level. A single filter can be used as-is
+	// up to snapshot-level. A single filter can be used as-is
 	if len(resourceIters) == 1 {
-		traceIters = append(traceIters, resourceIters[0])
+		snapshotIters = append(snapshotIters, resourceIters[0])
 	}
 	if len(resourceIters) > 1 {
-		traceIters = append(traceIters, pq.NewJoinIterator(DefinitionLevelSnapshot, resourceIters, nil))
+		snapshotIters = append(snapshotIters, pq.NewJoinIterator(DefinitionLevelSnapshot, resourceIters, nil))
 	}
 
 	// Duration filtering?
@@ -195,39 +195,39 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 			max = (time.Millisecond * time.Duration(req.MaxDurationMs)).Nanoseconds()
 		}
 		durFilter := pq.NewIntBetweenPredicate(min, max)
-		traceIters = append(traceIters, makeIter("DurationNanos", durFilter, "Duration"))
+		snapshotIters = append(snapshotIters, makeIter("DurationNanos", durFilter, "DurationNanos"))
 	}
 
 	// Time range filtering?
 	if req.Start > 0 && req.End > 0 {
-		// Here's how we detect the trace overlaps the time window:
+		// Here's how we detect the snapshot overlaps the time window:
 
-		// Trace start <= req.End
+		// Snapshot start <= req.End
 		startFilter := pq.NewIntBetweenPredicate(time.Unix(int64(req.Start), 0).UnixNano(), time.Unix(int64(req.End), 0).UnixNano())
-		traceIters = append(traceIters, makeIter("TsNanos", startFilter, "TsNanos"))
+		snapshotIters = append(snapshotIters, makeIter("TsNanos", startFilter, "TsNanos"))
 	}
 
-	switch len(traceIters) {
+	switch len(snapshotIters) {
 
 	case 0:
-		// Empty request, in this case every trace matches so we can
+		// Empty request, in this case every snapshot matches, so we can
 		// simply iterate any column.
 		return makeIter("ID", nil, "")
 
 	case 1:
 		// There is only 1 iterator already, no need to wrap it up
-		return traceIters[0]
+		return snapshotIters[0]
 
 	default:
 		// Join all conditions
-		return pq.NewJoinIterator(DefinitionLevelSnapshot, traceIters, nil)
+		return pq.NewJoinIterator(DefinitionLevelSnapshot, snapshotIters, nil)
 	}
 }
 
 func searchParquetFile(ctx context.Context, pf *parquet.File, req *deeppb.SearchRequest, rgs []parquet.RowGroup) (*deeppb.SearchResponse, error) {
 
 	// Search happens in 2 phases for an optimization.
-	// Phase 1 is iterate all columns involved in the request.
+	// Phase 1 is to iterate all columns involved in the request.
 	// Only if there are any matches do we enter phase 2, which
 	// is to load the display-related columns.
 
@@ -304,7 +304,7 @@ func rawToResults(ctx context.Context, pf *parquet.File, rgs []parquet.RowGroup,
 
 		matchMap := match.ToMap()
 		result := &deeppb.SnapshotSearchMetadata{
-			SnapshotID:        util.TraceIDToHexString(matchMap["ID"][0].Bytes()),
+			SnapshotID:        util.SnapshotIDToHexString(matchMap["ID"][0].Bytes()),
 			ServiceName:       matchMap["ServiceName"][0].String(),
 			FilePath:          matchMap["FilePath"][0].String(),
 			LineNo:            matchMap["LineNo"][0].Uint32(),
@@ -375,7 +375,7 @@ func (r *reportValuesPredicate) String() string {
 }
 
 // KeepColumnChunk always returns true b/c we always have to dig deeper to find all values
-func (r *reportValuesPredicate) KeepColumnChunk(cc parquet.ColumnChunk) bool {
+func (r *reportValuesPredicate) KeepColumnChunk(parquet.ColumnChunk) bool {
 	// Reinspect dictionary for each new column chunk
 	r.inspectedDict = false
 	return true

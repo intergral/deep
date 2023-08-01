@@ -19,6 +19,7 @@ package main
 
 import (
 	"context"
+	"github.com/intergral/deep/pkg/util/test"
 	"google.golang.org/grpc"
 )
 
@@ -26,14 +27,14 @@ type generateTagsCmd struct {
 	generateSnapshotCmd
 }
 
-func (cmd *generateTagsCmd) Run(opts *globalOptions) error {
+func (cmd *generateTagsCmd) Run(*globalOptions) error {
 	client := cmd.connectGrpc()
 	defer func(connection *grpc.ClientConn) {
 		_ = connection.Close()
 	}(cmd.connection)
 
 	{
-		snapshot := cmd.generateSnapshot(0, generateOptions{attrs: map[string]string{"tag_test": "simple"}, resource: map[string]string{"os_name": "windows"}, serviceName: "tag_test"})
+		snapshot := cmd.generateSnapshot(0, &test.GenerateOptions{Attrs: map[string]string{"tag_test": "simple"}, Resource: map[string]string{"os_name": "windows"}, ServiceName: "tag_test"})
 		_, _ = client.Send(context.TODO(), snapshot)
 	}
 

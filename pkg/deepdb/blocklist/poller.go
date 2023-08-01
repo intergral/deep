@@ -43,43 +43,51 @@ const (
 
 var (
 	metricBackendObjects = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "backend_objects_total",
-		Help:      "Total number of objects (traces) in the backend",
+		Help:      "Total number of objects (snapshots) in the backend",
 	}, []string{"tenant", "status"})
 	metricBackendBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "backend_bytes_total",
 		Help:      "Total number of bytes in the backend.",
 	}, []string{"tenant", "status"})
 	metricBlocklistErrors = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "blocklist_poll_errors_total",
 		Help:      "Total number of times an error occurred while polling the blocklist.",
 	}, []string{"tenant"})
 	metricBlocklistPollDuration = promauto.NewHistogram(prometheus.HistogramOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "blocklist_poll_duration_seconds",
 		Help:      "Records the amount of time to poll and update the blocklist.",
 		Buckets:   prometheus.LinearBuckets(0, 60, 5),
 	})
 	metricBlocklistLength = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "blocklist_length",
 		Help:      "Total number of blocks per tenant.",
 	}, []string{"tenant"})
 	metricTenantIndexErrors = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "blocklist_tenant_index_errors_total",
 		Help:      "Total number of times an error occurred while retrieving or building the tenant index.",
 	}, []string{"tenant"})
 	metricTenantIndexBuilder = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "blocklist_tenant_index_builder",
 		Help:      "A value of 1 indicates this instance of deepdb is building the tenant index.",
 	}, []string{"tenant"})
 	metricTenantIndexAgeSeconds = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "blocklist_tenant_index_age_seconds",
 		Help:      "Age in seconds of the last pulled tenant index.",
 	}, []string{"tenant"})

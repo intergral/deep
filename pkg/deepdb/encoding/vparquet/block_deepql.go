@@ -22,12 +22,57 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	"github.com/intergral/deep/pkg/deepql"
 	"github.com/intergral/deep/pkg/parquetquery"
+	"github.com/pkg/errors"
 	"github.com/segmentio/parquet-go"
 )
 
+var intrinsicColumnLookups = map[deepql.Intrinsic]struct {
+	scope      deepql.AttributeScope
+	typ        deepql.StaticType
+	columnPath string
+}{
+	deepql.IntrinsicDuration: {deepql.AttributeScopeSnapshot, deepql.TypeDuration, ""},
+}
+
+// Lookup table of all well-known attributes with dedicated columns
+var wellKnownColumnLookups = map[string]struct {
+	columnPath string            // path.to.column
+	typ        deepql.StaticType // Data type
+}{
+	// Resource-level columns
+	Id:                    {columnPathSnapshotIDText, deepql.TypeString},
+	LabelServiceName:      {columnPathResourceServiceName, deepql.TypeString},
+	LabelCluster:          {columnPathResourceCluster, deepql.TypeString},
+	LabelNamespace:        {columnPathResourceNamespace, deepql.TypeString},
+	LabelPod:              {columnPathResourcePod, deepql.TypeString},
+	LabelContainer:        {columnPathResourceContainer, deepql.TypeString},
+	LabelK8sClusterName:   {columnPathResourceK8sClusterName, deepql.TypeString},
+	LabelK8sNamespaceName: {columnPathResourceK8sNamespaceName, deepql.TypeString},
+	LabelK8sPodName:       {columnPathResourceK8sPodName, deepql.TypeString},
+	LabelK8sContainerName: {columnPathResourceK8sContainerName, deepql.TypeString},
+}
+
 const (
-	columnPathSnapshotID  = "ID"
-	columnPathServiceName = "ServiceName"
+	columnPathSnapshotID        = "ID"
+	columnPathSnapshotIDText    = "IDText"
+	columnPathStartTimeUnixNano = "TsNanos"
+	columnPathDurationNanos     = "DurationNanos"
+
+	columnPathTracepointID   = "tp.ID"
+	columnPathTracepointFile = "tp.Path"
+	columnPathTracepointLine = "tp.LineNumber"
+
+	columnPathAttrKey         = "attr.Key"
+	columnPathAttrValueString = "attr.Value"
+	columnPathAttrValueInt    = "attr.ValueInt"
+	columnPathAttrValueDouble = "attr.ValueDouble"
+	columnPathAttrValueBool   = "attr.ValueBool"
+
+	columnPathResourceAttrKey         = "rs.Attrs.Key"
+	columnPathResourceAttrValueString = "rs.Attrs.Value"
+	columnPathResourceAttrValueInt    = "rs.Attrs.ValueInt"
+	columnPathResourceAttrValueDouble = "rs.Attrs.ValueDouble"
+	columnPathResourceAttrValueBool   = "rs.Attrs.ValueBool"
 
 	columnPathResourceServiceName      = "rs.ServiceName"
 	columnPathResourceCluster          = "rs.Cluster"
@@ -40,32 +85,288 @@ const (
 	columnPathResourceK8sContainerName = "rs.K8sContainerName"
 )
 
-// Lookup table of all well-known attributes with dedicated columns
-var wellKnownColumnLookups = map[string]struct {
-	columnPath string                // path.to.column
-	level      deepql.AttributeScope // span or resource level
-	typ        deepql.StaticType     // Data type
-}{
-	// Resource-level columns
-	LabelServiceName:      {columnPathResourceServiceName, deepql.AttributeScopeResource, deepql.TypeString},
-	LabelCluster:          {columnPathResourceCluster, deepql.AttributeScopeResource, deepql.TypeString},
-	LabelNamespace:        {columnPathResourceNamespace, deepql.AttributeScopeResource, deepql.TypeString},
-	LabelPod:              {columnPathResourcePod, deepql.AttributeScopeResource, deepql.TypeString},
-	LabelContainer:        {columnPathResourceContainer, deepql.AttributeScopeResource, deepql.TypeString},
-	LabelK8sClusterName:   {columnPathResourceK8sClusterName, deepql.AttributeScopeResource, deepql.TypeString},
-	LabelK8sNamespaceName: {columnPathResourceK8sNamespaceName, deepql.AttributeScopeResource, deepql.TypeString},
-	LabelK8sPodName:       {columnPathResourceK8sPodName, deepql.AttributeScopeResource, deepql.TypeString},
-	LabelK8sContainerName: {columnPathResourceK8sContainerName, deepql.AttributeScopeResource, deepql.TypeString},
-}
-
 // Helper function to create an iterator, that abstracts away
 // context like file and rowgroups.
 type makeIterFn func(columnName string, predicate parquetquery.Predicate, selectAs string) parquetquery.Iterator
 
-// fetch is the core logic for executing the given conditions against the parquet columns. The algorithm
-// can be summarized as a hiearchy of iterators where we iterate related columns together and collect the results
-// at each level into attributes, spans, and spansets.  Each condition (.foo=bar) is pushed down to the one or more
-// matching columns using parquetquery.Predicates.  Results are collected The final return is an iterator where each result is 1 Spanset for each trace.
 func fetch(ctx context.Context, req deepql.FetchSnapshotRequest, pf *parquet.File, opts common.SearchOptions) (*snapshotMetadataIterator, error) {
-	return nil, nil
+	var (
+		conditionIterators  []parquetquery.Iterator
+		attributeConditions []deepql.Condition
+		columnPredicates    = map[string][]parquetquery.Predicate{}
+		columnSelectAs      = map[string]string{}
+	)
+
+	rgs := rowGroupsFromFile(pf, opts)
+	makeIter := makeIterFunc(ctx, rgs, pf)
+
+	// add start time filter
+	if req.StartTimeUnixNanos > 0 && req.EndTimeUnixNanos > 0 {
+		conditionIterators = append(conditionIterators, makeIter(columnPathStartTimeUnixNano, parquetquery.NewIntBetweenPredicate(int64(req.StartTimeUnixNanos), int64(req.EndTimeUnixNanos)), columnPathStartTimeUnixNano))
+	}
+
+	if len(req.Conditions) == 0 {
+		// we have no conditions so iterate the ids
+		if len(conditionIterators) == 0 {
+			return createSnapshotMetaIterator(makeIter, makeIter(columnPathSnapshotID, nil, ""))
+		}
+		// we are a time only request
+		return createSnapshotMetaIterator(makeIter, conditionIterators[0])
+	}
+
+	addPredicate := func(columnPath string, p parquetquery.Predicate) {
+		columnPredicates[columnPath] = append(columnPredicates[columnPath], p)
+	}
+
+	for _, condition := range req.Conditions {
+		if condition.Attribute.Intrinsic == deepql.IntrinsicDuration {
+
+			predicate, err := createIntPredicate(condition.Op, condition.Operands)
+			if err != nil {
+				return nil, err
+			}
+			conditionIterators = append(conditionIterators, makeIter(columnPathDurationNanos, predicate, columnPathDurationNanos))
+		} else {
+			if entry, ok := wellKnownColumnLookups[condition.Attribute.Name]; ok {
+				if condition.Op == deepql.OpNone {
+					addPredicate(entry.columnPath, nil) // No filtering
+					columnSelectAs[entry.columnPath] = condition.Attribute.Name
+					continue
+				}
+
+				// Compatible type?
+				if entry.typ == operandType(condition.Operands) {
+					pred, err := createPredicate(condition.Op, condition.Operands)
+					if err != nil {
+						return nil, errors.Wrap(err, "creating predicate")
+					}
+					addPredicate(entry.columnPath, pred)
+					columnSelectAs[entry.columnPath] = condition.Attribute.Name
+					continue
+				}
+			} else {
+				attributeConditions = append(attributeConditions, condition)
+			}
+		}
+	}
+
+	for columnPath, predicates := range columnPredicates {
+		conditionIterators = append(conditionIterators, makeIter(columnPath, parquetquery.NewOrPredicate(predicates...), columnSelectAs[columnPath]))
+	}
+
+	if len(attributeConditions) > 0 {
+		resIter, err := createAttributeIterator(makeIter, attributeConditions, DefinitionLevelSnapshot, columnPathResourceAttrKey, columnPathResourceAttrValueString, columnPathResourceAttrValueInt, columnPathResourceAttrValueDouble, columnPathResourceAttrValueBool, req.AllConditions)
+		if err != nil {
+			return nil, errors.Wrap(err, "cannot make resource iterator")
+		}
+		attrIter, err := createAttributeIterator(makeIter, attributeConditions, DefinitionLevelSnapshot, columnPathAttrKey, columnPathAttrValueString, columnPathAttrValueInt, columnPathAttrValueDouble, columnPathAttrValueBool, req.AllConditions)
+		if err != nil {
+			return nil, errors.Wrap(err, "cannot make attribute iterator")
+		}
+		conditionIterators = append(conditionIterators, parquetquery.NewUnionIterator(DefinitionLevelSnapshot, []parquetquery.Iterator{attrIter, resIter}, nil))
+	}
+
+	if !req.AllConditions {
+		conditionIterators = []parquetquery.Iterator{parquetquery.NewUnionIterator(DefinitionLevelSnapshot, conditionIterators, nil)}
+	}
+
+	iterator := parquetquery.NewJoinIterator(DefinitionLevelSnapshot, conditionIterators, nil)
+
+	return createSnapshotMetaIterator(makeIter, iterator)
+}
+
+func createSnapshotMetaIterator(makeIter makeIterFn, snapshotIter parquetquery.Iterator) (*snapshotMetadataIterator, error) {
+
+	snapshotIterators := []parquetquery.Iterator{
+		snapshotIter,
+		// Add static columns that are always return
+		makeIter(columnPathSnapshotID, nil, columnPathSnapshotID),
+		makeIter(columnPathStartTimeUnixNano, nil, columnPathStartTimeUnixNano),
+		makeIter(columnPathDurationNanos, nil, columnPathDurationNanos),
+		makeIter(columnPathResourceServiceName, nil, columnPathResourceServiceName),
+		makeIter(columnPathTracepointFile, nil, columnPathTracepointFile),
+		makeIter(columnPathTracepointLine, nil, columnPathTracepointLine),
+	}
+
+	return newSnapshotMetadataIterator(parquetquery.NewJoinIterator(DefinitionLevelSnapshot, snapshotIterators, nil)), nil
+}
+
+func operandType(operands deepql.Operands) deepql.StaticType {
+	if len(operands) > 0 {
+		return operands[0].Type
+	}
+	return deepql.TypeNil
+}
+
+func createAttributeIterator(makeIter makeIterFn, conditions []deepql.Condition,
+	definitionLevel int,
+	keyPath, strPath, intPath, floatPath, boolPath string,
+	allConditions bool,
+) (parquetquery.Iterator, error) {
+	var ittrs []parquetquery.Iterator
+	for _, condition := range conditions {
+		attrName := condition.Attribute.Name
+		keyIter := makeIter(keyPath, parquetquery.NewStringInPredicate([]string{attrName}), "key")
+		var valueIter parquetquery.Iterator
+		switch condition.Operands[0].Type {
+		case deepql.TypeString:
+			valuePred, err := createStringPredicate(condition.Op, condition.Operands)
+			if err != nil {
+				return nil, errors.Wrap(err, "creating attribute predicate")
+			}
+			valueIter = makeIter(strPath, valuePred, "string")
+		case deepql.TypeInt:
+			valuePred, err := createIntPredicate(condition.Op, condition.Operands)
+			if err != nil {
+				return nil, errors.Wrap(err, "creating attribute predicate")
+			}
+			valueIter = makeIter(intPath, valuePred, "int")
+		}
+
+		ittrs = append(ittrs, parquetquery.NewLeftJoinIterator(definitionLevel, []parquetquery.Iterator{keyIter, valueIter}, nil, nil))
+	}
+
+	if allConditions {
+		return parquetquery.NewLeftJoinIterator(definitionLevel, ittrs, nil, nil), nil
+	}
+	return parquetquery.NewUnionIterator(definitionLevel, ittrs, nil), nil
+}
+
+//func createAttributeIterator(makeIter makeIterFn, conditions []deepql.Condition,
+//	definitionLevel int,
+//	keyPath, strPath, intPath, floatPath, boolPath string,
+//	allConditions bool,
+//) (parquetquery.Iterator, error) {
+//	var (
+//		attrKeys        = []string{}
+//		attrStringPreds = []parquetquery.Predicate{}
+//		attrIntPreds    = []parquetquery.Predicate{}
+//		attrFltPreds    = []parquetquery.Predicate{}
+//		boolPreds       = []parquetquery.Predicate{}
+//	)
+//	for _, cond := range conditions {
+//
+//		attrKeys = append(attrKeys, cond.Attribute.Name)
+//
+//		if cond.Op == deepql.OpNone {
+//			// This means we have to scan all values, we don't know what type
+//			// to expect
+//			attrStringPreds = append(attrStringPreds, nil)
+//			attrIntPreds = append(attrIntPreds, nil)
+//			attrFltPreds = append(attrFltPreds, nil)
+//			boolPreds = append(boolPreds, nil)
+//			continue
+//		}
+//
+//		switch cond.Operands[0].Type {
+//
+//		case deepql.TypeString:
+//			pred, err := createStringPredicate(cond.Op, cond.Operands)
+//			if err != nil {
+//				return nil, errors.Wrap(err, "creating attribute predicate")
+//			}
+//			attrStringPreds = append(attrStringPreds, pred)
+//
+//		case deepql.TypeInt:
+//			pred, err := createIntPredicate(cond.Op, cond.Operands)
+//			if err != nil {
+//				return nil, errors.Wrap(err, "creating attribute predicate")
+//			}
+//			attrIntPreds = append(attrIntPreds, pred)
+//
+//		case deepql.TypeFloat:
+//			pred, err := createFloatPredicate(cond.Op, cond.Operands)
+//			if err != nil {
+//				return nil, errors.Wrap(err, "creating attribute predicate")
+//			}
+//			attrFltPreds = append(attrFltPreds, pred)
+//
+//		case deepql.TypeBoolean:
+//			pred, err := createBoolPredicate(cond.Op, cond.Operands)
+//			if err != nil {
+//				return nil, errors.Wrap(err, "creating attribute predicate")
+//			}
+//			boolPreds = append(boolPreds, pred)
+//		}
+//	}
+//
+//	var valueIters []parquetquery.Iterator
+//	if len(attrStringPreds) > 0 {
+//		valueIters = append(valueIters, makeIter(strPath, parquetquery.NewOrPredicate(attrStringPreds...), "string"))
+//	}
+//	if len(attrIntPreds) > 0 {
+//		valueIters = append(valueIters, makeIter(intPath, parquetquery.NewOrPredicate(attrIntPreds...), "int"))
+//	}
+//	if len(attrFltPreds) > 0 {
+//		valueIters = append(valueIters, makeIter(floatPath, parquetquery.NewOrPredicate(attrFltPreds...), "float"))
+//	}
+//	if len(boolPreds) > 0 {
+//		valueIters = append(valueIters, makeIter(boolPath, parquetquery.NewOrPredicate(boolPreds...), "bool"))
+//	}
+//
+//	if len(valueIters) > 0 {
+//		// LeftJoin means only look at rows where the key is what we want.
+//		// Bring in any of the typed values as needed.
+//
+//		// if all conditions must be true we can use a simple join iterator to test the values one column at a time.
+//		// len(valueIters) must be 1 to handle queries like `{ span.foo = "x" && span.bar > 1}`
+//		if allConditions && len(valueIters) == 1 {
+//			iters := append([]parquetquery.Iterator{makeIter(keyPath, parquetquery.NewStringInPredicate(attrKeys), "key")}, valueIters...)
+//			return parquetquery.NewJoinIterator(definitionLevel,
+//				iters,
+//				&attributeCollector{}), nil
+//		}
+//
+//		return parquetquery.NewLeftJoinIterator(definitionLevel,
+//			[]parquetquery.Iterator{makeIter(keyPath, parquetquery.NewStringInPredicate(attrKeys), "key")},
+//			valueIters,
+//			&attributeCollector{}), nil
+//	}
+//
+//	return nil, nil
+//}
+
+// attributeCollector receives rows from the individual key/string/int/etc
+// columns and joins them together into map[key]value entries with the
+// right type.
+type attributeCollector struct {
+}
+
+var _ parquetquery.GroupPredicate = (*attributeCollector)(nil)
+
+func (c *attributeCollector) String() string {
+	return "attributeCollector{}"
+}
+
+func (c *attributeCollector) KeepGroup(res *parquetquery.IteratorResult) bool {
+
+	var key string
+	var val deepql.Static
+
+	for _, e := range res.Entries {
+		// Ignore nulls, this leaves val as the remaining found value,
+		// or nil if the key was found but no matching values
+		if e.Value.Kind() < 0 {
+			continue
+		}
+
+		switch e.Key {
+		case "key":
+			key = e.Value.String()
+		case "string":
+			val = deepql.NewStaticString(e.Value.String())
+		case "int":
+			val = deepql.NewStaticInt(int(e.Value.Int64()))
+		case "float":
+			val = deepql.NewStaticFloat(e.Value.Double())
+		case "bool":
+			val = deepql.NewStaticBool(e.Value.Boolean())
+		}
+	}
+
+	res.Entries = res.Entries[:0]
+	res.OtherEntries = res.OtherEntries[:0]
+	res.AppendOtherValue(key, val)
+
+	return true
 }

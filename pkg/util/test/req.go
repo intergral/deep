@@ -19,6 +19,7 @@ package test
 
 import (
 	crand "crypto/rand"
+	"math/rand"
 )
 
 func ValidSnapshotID(snapshotID []byte) []byte {
@@ -35,4 +36,18 @@ func ValidSnapshotID(snapshotID []byte) []byte {
 	}
 
 	return snapshotID
+}
+
+func RandomString() string {
+	return RandomStringLen(10)
+}
+
+func RandomStringLen(length int) string {
+	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+	s := make([]rune, length)
+	for i := range s {
+		s[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(s)
 }

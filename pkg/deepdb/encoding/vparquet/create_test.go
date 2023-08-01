@@ -17,119 +17,76 @@
 
 package vparquet
 
-//
-//import (
-//	"context"
-//	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
-//	"io"
-//	"testing"
-//	"time"
-//
-//	"github.com/google/uuid"
-//	"github.com/intergral/deep/pkg/deepdb/backend"
-//	"github.com/intergral/deep/pkg/deepdb/backend/local"
-//	"github.com/intergral/deep/pkg/deepdb/encoding/common"
-//	"github.com/intergral/deep/pkg/util/test"
-//	"github.com/stretchr/testify/require"
-//)
-//
-//func TestCreateBlockHonorsTraceStartEndTimesFromWalMeta(t *testing.T) {
-//	ctx := context.Background()
-//
-//	rawR, rawW, _, err := local.New(&local.Config{
-//		Path: t.TempDir(),
-//	})
-//	require.NoError(t, err)
-//
-//	r := backend.NewReader(rawR)
-//	w := backend.NewWriter(rawW)
-//
-//	iter := newTestIterator()
-//
-//	iter.Add(test.MakeTrace(10, nil), 100, 401)
-//	iter.Add(test.MakeTrace(10, nil), 101, 402)
-//	iter.Add(test.MakeTrace(10, nil), 102, 403)
-//
-//	cfg := &common.BlockConfig{
-//		BloomFP:             0.01,
-//		BloomShardSizeBytes: 100 * 1024,
-//	}
-//
-//	meta := backend.NewBlockMeta("fake", uuid.New(), VersionString, backend.EncNone, "")
-//	meta.TotalObjects = 1
-//	meta.StartTime = time.Unix(300, 0)
-//	meta.EndTime = time.Unix(305, 0)
-//
-//	outMeta, err := CreateBlock(ctx, cfg, meta, iter, r, w)
-//	require.NoError(t, err)
-//	require.Equal(t, 300, int(outMeta.StartTime.Unix()))
-//	require.Equal(t, 305, int(outMeta.EndTime.Unix()))
-//}
+import (
+	"context"
+	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	"io"
+	"testing"
+	"time"
 
-// func TestEstimateTraceSize(t *testing.T) {
-// 	f := "<put data.parquet file here>"
-// 	file, err := os.OpenFile(f, os.O_RDONLY, 0644)
-// 	require.NoError(t, err)
+	"github.com/google/uuid"
+	"github.com/intergral/deep/pkg/deepdb/backend"
+	"github.com/intergral/deep/pkg/deepdb/backend/local"
+	"github.com/intergral/deep/pkg/deepdb/encoding/common"
+	"github.com/intergral/deep/pkg/util/test"
+	"github.com/stretchr/testify/require"
+)
 
-// 	count := 10000
+func TestCreateBlockHonorsSnapshotStartEndTimesFromWalMeta(t *testing.T) {
+	ctx := context.Background()
 
-// 	totalProtoSz := 0
-// 	totalParqSz := 0
+	rawR, rawW, _, err := local.New(&local.Config{
+		Path: t.TempDir(),
+	})
+	require.NoError(t, err)
 
-// 	r := parquet.NewGenericReader[*Trace](file)
-// 	tr := make([]*Trace, 1)
-// 	for {
-// 		count--
-// 		if count == 0 {
-// 			break
-// 		}
+	r := backend.NewReader(rawR)
+	w := backend.NewWriter(rawW)
 
-// 		_, err := r.Read(tr)
-// 		require.NoError(t, err)
+	iter := newTestIterator()
 
-// 		if tr[0] == nil {
-// 			break
-// 		}
-// 		protoTr, err := parquetTraceToTempopbTrace(tr[0])
-// 		require.NoError(t, err)
+	iter.Add(test.GenerateSnapshot(1, nil), 100, 401)
+	iter.Add(test.GenerateSnapshot(2, nil), 101, 402)
+	iter.Add(test.GenerateSnapshot(3, nil), 102, 403)
 
-// 		protoSz := protoTr.Size()
-// 		parqSz := estimateTraceSize(tr[0])
+	cfg := &common.BlockConfig{
+		BloomFP:             0.01,
+		BloomShardSizeBytes: 100 * 1024,
+	}
 
-// 		totalProtoSz += protoSz
-// 		totalParqSz += parqSz
+	meta := backend.NewBlockMeta("fake", uuid.New(), VersionString, backend.EncNone, "")
+	meta.TotalObjects = 1
+	meta.StartTime = time.Unix(300, 0)
+	meta.EndTime = time.Unix(305, 0)
 
-// 		if float64(parqSz)/float64(protoSz) < .7 ||
-// 			float64(parqSz)/float64(protoSz) > 1.3 {
-// 			fmt.Println(protoTr)
-// 			break
-// 		}
-// 	}
-// 	fmt.Println(totalParqSz, totalProtoSz)
-// }
-//
-//type testIterator struct {
-//	snapshots []*deep_tp.Snapshot
-//}
-//
-//var _ common.Iterator = (*testIterator)(nil)
-//
-//func newTestIterator() *testIterator {
-//	return &testIterator{}
-//}
-//
-//func (i *testIterator) Add(tr *deep_tp.Snapshot, start, end uint32) {
-//	i.snapshots = append(i.snapshots, tr)
-//}
-//
-//func (i *testIterator) Next(ctx context.Context) (common.ID, *deep_tp.Snapshot, error) {
-//	if len(i.snapshots) == 0 {
-//		return nil, nil, io.EOF
-//	}
-//	tr := i.snapshots[0]
-//	i.snapshots = i.snapshots[1:]
-//	return nil, tr, nil
-//}
-//
-//func (i *testIterator) Close() {
-//}
+	outMeta, err := CreateBlock(ctx, cfg, meta, iter, r, w)
+	require.NoError(t, err)
+	require.Equal(t, 300, int(outMeta.StartTime.Unix()))
+	require.Equal(t, 305, int(outMeta.EndTime.Unix()))
+}
+
+type testIterator struct {
+	snapshots []*deep_tp.Snapshot
+}
+
+var _ common.Iterator = (*testIterator)(nil)
+
+func newTestIterator() *testIterator {
+	return &testIterator{}
+}
+
+func (i *testIterator) Add(tr *deep_tp.Snapshot, start, end uint32) {
+	i.snapshots = append(i.snapshots, tr)
+}
+
+func (i *testIterator) Next(ctx context.Context) (common.ID, *deep_tp.Snapshot, error) {
+	if len(i.snapshots) == 0 {
+		return nil, nil, io.EOF
+	}
+	tr := i.snapshots[0]
+	i.snapshots = i.snapshots[1:]
+	return nil, tr, nil
+}
+
+func (i *testIterator) Close() {
+}

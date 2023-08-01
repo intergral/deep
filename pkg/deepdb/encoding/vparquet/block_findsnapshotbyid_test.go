@@ -36,7 +36,7 @@ import (
 	"github.com/intergral/deep/pkg/util/test"
 )
 
-func TestBackendBlockFindTraceByID(t *testing.T) {
+func TestBackendBlockFindSnapshotByID(t *testing.T) {
 	rawR, rawW, _, err := local.New(&local.Config{
 		Path: t.TempDir(),
 	})
@@ -51,12 +51,12 @@ func TestBackendBlockFindTraceByID(t *testing.T) {
 		BloomShardSizeBytes: 100 * 1024,
 	}
 
-	// Test data - sorted by trace ID
-	// Find trace by ID uses the column and page bounds,
+	// Test data - sorted by snapshot ID
+	// Find snapshot by ID uses the column and page bounds,
 	// which by default only stores 16 bytes, which is the first
-	// half of the trace ID (which is stored as 32 hex text)
+	// half of the snapshot ID (which is stored as 32 hex text)
 	// Therefore it is important that the test data here has
-	// full-length trace IDs.
+	// full-length snapshot IDs.
 	var snapshots []*Snapshot
 	for i := 0; i < 16; i++ {
 		bar := "bar"
@@ -93,7 +93,7 @@ func TestBackendBlockFindTraceByID(t *testing.T) {
 
 	b := newBackendBlock(s.meta, r)
 
-	// Now find and verify all test traces
+	// Now find and verify all test snapshots
 	for _, snap := range snapshots {
 		wantProto := parquetToDeepSnapshot(snap)
 
@@ -105,7 +105,7 @@ func TestBackendBlockFindTraceByID(t *testing.T) {
 	}
 }
 
-func TestBackendBlockFindTraceByID_TestData(t *testing.T) {
+func TestBackendBlockFindSnapshotByID_TestData(t *testing.T) {
 	rawR, _, _, err := local.New(&local.Config{
 		Path: "./test-data",
 	})
@@ -145,7 +145,7 @@ func TestBackendBlockFindTraceByID_TestData(t *testing.T) {
 	}
 }
 
-func BenchmarkFindTraceByID(b *testing.B) {
+func BenchmarkFindSnapshotByID(b *testing.B) {
 	ctx := context.TODO()
 	tenantID := "1"
 	blockID := uuid.MustParse("3685ee3d-cbbf-4f36-bf28-93447a19dea6")
@@ -161,16 +161,14 @@ func BenchmarkFindTraceByID(b *testing.B) {
 	meta, err := rr.BlockMeta(ctx, blockID, tenantID)
 	require.NoError(b, err)
 
-	traceID := meta.MinID
-	// traceID, err := util.HexStringToTraceID("1a029f7ace79c7f2")
-	// require.NoError(b, err)
+	snapshotID := meta.MinID
 
 	block := newBackendBlock(meta, rr)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		tr, err := block.FindSnapshotByID(ctx, traceID, common.DefaultSearchOptions())
+		tr, err := block.FindSnapshotByID(ctx, snapshotID, common.DefaultSearchOptions())
 		require.NoError(b, err)
 		require.NotNil(b, tr)
 	}

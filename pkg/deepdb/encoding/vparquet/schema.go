@@ -19,8 +19,8 @@ package vparquet
 
 import (
 	"bytes"
-	deep_common "github.com/intergral/deep/pkg/deeppb/common/v1"
-	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	deepCommon "github.com/intergral/deep/pkg/deeppb/common/v1"
+	deepTP "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 
 	"github.com/golang/protobuf/jsonpb" //nolint:all //deprecated
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
@@ -29,6 +29,8 @@ import (
 
 // Label names for conversion b/n Proto <> Parquet
 const (
+	Id = "id"
+
 	LabelServiceName = "service.name"
 	LabelCluster     = "cluster"
 	LabelNamespace   = "namespace"
@@ -61,7 +63,7 @@ const (
 )
 
 var (
-	jsonMarshaler = new(jsonpb.Marshaler)
+	jsonMarshaller = new(jsonpb.Marshaler)
 
 	labelMappings = map[string]string{
 		LabelServiceName:      "rs.ServiceName",
@@ -161,7 +163,7 @@ type Snapshot struct {
 	Resource      Resource            `parquet:"rs"`
 }
 
-func attrToParquet(a *deep_common.KeyValue, p *Attribute) {
+func attrToParquet(a *deepCommon.KeyValue, p *Attribute) {
 	p.Key = a.Key
 	p.Value = nil
 	p.ValueArray = ""
@@ -171,32 +173,32 @@ func attrToParquet(a *deep_common.KeyValue, p *Attribute) {
 	p.ValueKVList = ""
 
 	switch v := a.GetValue().Value.(type) {
-	case *deep_common.AnyValue_StringValue:
+	case *deepCommon.AnyValue_StringValue:
 		p.Value = &v.StringValue
-	case *deep_common.AnyValue_IntValue:
+	case *deepCommon.AnyValue_IntValue:
 		p.ValueInt = &v.IntValue
-	case *deep_common.AnyValue_DoubleValue:
+	case *deepCommon.AnyValue_DoubleValue:
 		p.ValueDouble = &v.DoubleValue
-	case *deep_common.AnyValue_BoolValue:
+	case *deepCommon.AnyValue_BoolValue:
 		p.ValueBool = &v.BoolValue
-	case *deep_common.AnyValue_ArrayValue:
+	case *deepCommon.AnyValue_ArrayValue:
 		jsonBytes := &bytes.Buffer{}
-		_ = jsonMarshaler.Marshal(jsonBytes, a.Value) // deliberately marshalling a.Value because of AnyValue logic
+		_ = jsonMarshaller.Marshal(jsonBytes, a.Value) // deliberately marshalling a.Value because of AnyValue logic
 		p.ValueArray = jsonBytes.String()
-	case *deep_common.AnyValue_KvlistValue:
+	case *deepCommon.AnyValue_KvlistValue:
 		jsonBytes := &bytes.Buffer{}
-		_ = jsonMarshaler.Marshal(jsonBytes, a.Value) // deliberately marshalling a.Value because of AnyValue logic
+		_ = jsonMarshaller.Marshal(jsonBytes, a.Value) // deliberately marshalling a.Value because of AnyValue logic
 		p.ValueKVList = jsonBytes.String()
 	}
 }
 
-func snapshotToParquet(id common.ID, snapshot *deep_tp.Snapshot, sp *Snapshot) *Snapshot {
+func snapshotToParquet(id common.ID, snapshot *deepTP.Snapshot, sp *Snapshot) *Snapshot {
 	if sp == nil {
 		sp = &Snapshot{}
 	}
 
-	sp.ID = util.PadTraceIDTo16Bytes(id)
-	sp.IDText = util.TraceIDToHexString(id)
+	sp.ID = util.PadSnapshotIDTo16Bytes(id)
+	sp.IDText = util.SnapshotIDToHexString(id)
 
 	sp.Tracepoint = convertTracepoint(snapshot.Tracepoint)
 	sp.VarLookup = convertLookup(snapshot.VarLookup)
@@ -222,7 +224,7 @@ func snapshotToParquet(id common.ID, snapshot *deep_tp.Snapshot, sp *Snapshot) *
 		sp.Resource.Attrs = extendReuseSlice(len(snapshot.Resource), sp.Resource.Attrs)
 		attrCount := 0
 		for _, a := range snapshot.Resource {
-			strVal, ok := a.Value.Value.(*deep_common.AnyValue_StringValue)
+			strVal, ok := a.Value.Value.(*deepCommon.AnyValue_StringValue)
 			special := ok
 			if ok {
 				switch a.Key {
@@ -262,7 +264,7 @@ func snapshotToParquet(id common.ID, snapshot *deep_tp.Snapshot, sp *Snapshot) *
 	return sp
 }
 
-func convertAttributes(attributes []*deep_common.KeyValue) []Attribute {
+func convertAttributes(attributes []*deepCommon.KeyValue) []Attribute {
 	var parAttributes = make([]Attribute, len(attributes))
 	for i, attribute := range attributes {
 		attrToParquet(attribute, &parAttributes[i])
@@ -270,7 +272,7 @@ func convertAttributes(attributes []*deep_common.KeyValue) []Attribute {
 	return parAttributes
 }
 
-func convertWatches(watches []*deep_tp.WatchResult) []WatchResult {
+func convertWatches(watches []*deepTP.WatchResult) []WatchResult {
 	var parWatches = make([]WatchResult, len(watches))
 	for i, watch := range watches {
 		parWatches[i] = convertWatch(watch)
@@ -278,7 +280,7 @@ func convertWatches(watches []*deep_tp.WatchResult) []WatchResult {
 	return parWatches
 }
 
-func convertWatch(watch *deep_tp.WatchResult) WatchResult {
+func convertWatch(watch *deepTP.WatchResult) WatchResult {
 	goodResult := watch.GetGoodResult()
 	if goodResult != nil {
 		variableId := convertVariableId(goodResult)
@@ -295,7 +297,7 @@ func convertWatch(watch *deep_tp.WatchResult) WatchResult {
 	}
 }
 
-func convertFrames(frames []*deep_tp.StackFrame) []StackFrame {
+func convertFrames(frames []*deepTP.StackFrame) []StackFrame {
 	var parFrames = make([]StackFrame, len(frames))
 	for i, frame := range frames {
 		parFrames[i] = convertFrame(frame)
@@ -303,7 +305,7 @@ func convertFrames(frames []*deep_tp.StackFrame) []StackFrame {
 	return parFrames
 }
 
-func convertFrame(frame *deep_tp.StackFrame) StackFrame {
+func convertFrame(frame *deepTP.StackFrame) StackFrame {
 	var isAsync = false
 	if frame.IsAsync != nil {
 		isAsync = *frame.IsAsync
@@ -327,7 +329,7 @@ func convertFrame(frame *deep_tp.StackFrame) StackFrame {
 	}
 }
 
-func convertLookup(lookup map[string]*deep_tp.Variable) map[string]Variable {
+func convertLookup(lookup map[string]*deepTP.Variable) map[string]Variable {
 	var parLookup = make(map[string]Variable, len(lookup))
 	for varId, variable := range lookup {
 		parLookup[varId] = convertVariable(variable)
@@ -335,7 +337,7 @@ func convertLookup(lookup map[string]*deep_tp.Variable) map[string]Variable {
 	return parLookup
 }
 
-func convertVariable(variable *deep_tp.Variable) Variable {
+func convertVariable(variable *deepTP.Variable) Variable {
 	var truncated = false
 	if variable.Truncated != nil {
 		truncated = *variable.Truncated
@@ -349,7 +351,7 @@ func convertVariable(variable *deep_tp.Variable) Variable {
 	}
 }
 
-func convertChildren(children []*deep_tp.VariableID) []VariableID {
+func convertChildren(children []*deepTP.VariableID) []VariableID {
 	var parChildren = make([]VariableID, len(children))
 	for i, child := range children {
 		parChildren[i] = convertVariableId(child)
@@ -357,7 +359,7 @@ func convertChildren(children []*deep_tp.VariableID) []VariableID {
 	return parChildren
 }
 
-func convertVariableId(child *deep_tp.VariableID) VariableID {
+func convertVariableId(child *deepTP.VariableID) VariableID {
 	return VariableID{
 		ID:           child.ID,
 		Name:         child.Name,
@@ -366,7 +368,10 @@ func convertVariableId(child *deep_tp.VariableID) VariableID {
 	}
 }
 
-func convertTracepoint(tracepoint *deep_tp.TracePointConfig) TracePointConfig {
+func convertTracepoint(tracepoint *deepTP.TracePointConfig) TracePointConfig {
+	if tracepoint == nil {
+		return TracePointConfig{}
+	}
 	return TracePointConfig{
 		ID:         tracepoint.ID,
 		Path:       tracepoint.Path,
@@ -387,10 +392,10 @@ func extendReuseSlice[T any](sz int, in []T) []T {
 	return append(in, make([]T, sz-len(in))...)
 }
 
-func parquetToDeepSnapshot(snap *Snapshot) *deep_tp.Snapshot {
-	return &deep_tp.Snapshot{
+func parquetToDeepSnapshot(snap *Snapshot) *deepTP.Snapshot {
+	return &deepTP.Snapshot{
 		ID: snap.ID,
-		Tracepoint: &deep_tp.TracePointConfig{
+		Tracepoint: &deepTP.TracePointConfig{
 			ID:         snap.Tracepoint.ID,
 			Path:       snap.Tracepoint.Path,
 			LineNumber: snap.Tracepoint.LineNumber,
@@ -407,7 +412,7 @@ func parquetToDeepSnapshot(snap *Snapshot) *deep_tp.Snapshot {
 	}
 }
 
-func parquetConvertResource(resource Resource) []*deep_common.KeyValue {
+func parquetConvertResource(resource Resource) []*deepCommon.KeyValue {
 	protoAttrs := parquetConvertAttributes(resource.Attrs)
 
 	for _, attr := range []struct {
@@ -425,10 +430,10 @@ func parquetConvertResource(resource Resource) []*deep_common.KeyValue {
 		{Key: LabelK8sContainerName, Value: resource.K8sContainerName},
 	} {
 		if attr.Value != nil {
-			protoAttrs = append(protoAttrs, &deep_common.KeyValue{
+			protoAttrs = append(protoAttrs, &deepCommon.KeyValue{
 				Key: attr.Key,
-				Value: &deep_common.AnyValue{
-					Value: &deep_common.AnyValue_StringValue{
+				Value: &deepCommon.AnyValue{
+					Value: &deepCommon.AnyValue_StringValue{
 						StringValue: *attr.Value,
 					},
 				},
@@ -439,26 +444,26 @@ func parquetConvertResource(resource Resource) []*deep_common.KeyValue {
 	return protoAttrs
 }
 
-func parquetConvertAttributes(parquetAttrs []Attribute) []*deep_common.KeyValue {
-	var protoAttrs []*deep_common.KeyValue
+func parquetConvertAttributes(parquetAttrs []Attribute) []*deepCommon.KeyValue {
+	var protoAttrs []*deepCommon.KeyValue
 
 	for _, attr := range parquetAttrs {
-		protoVal := &deep_common.AnyValue{}
+		protoVal := &deepCommon.AnyValue{}
 
 		if attr.Value != nil {
-			protoVal.Value = &deep_common.AnyValue_StringValue{
+			protoVal.Value = &deepCommon.AnyValue_StringValue{
 				StringValue: *attr.Value,
 			}
 		} else if attr.ValueInt != nil {
-			protoVal.Value = &deep_common.AnyValue_IntValue{
+			protoVal.Value = &deepCommon.AnyValue_IntValue{
 				IntValue: *attr.ValueInt,
 			}
 		} else if attr.ValueDouble != nil {
-			protoVal.Value = &deep_common.AnyValue_DoubleValue{
+			protoVal.Value = &deepCommon.AnyValue_DoubleValue{
 				DoubleValue: *attr.ValueDouble,
 			}
 		} else if attr.ValueBool != nil {
-			protoVal.Value = &deep_common.AnyValue_BoolValue{
+			protoVal.Value = &deepCommon.AnyValue_BoolValue{
 				BoolValue: *attr.ValueBool,
 			}
 		} else if attr.ValueArray != "" {
@@ -467,7 +472,7 @@ func parquetConvertAttributes(parquetAttrs []Attribute) []*deep_common.KeyValue 
 			_ = jsonpb.Unmarshal(bytes.NewBufferString(attr.ValueKVList), protoVal)
 		}
 
-		protoAttrs = append(protoAttrs, &deep_common.KeyValue{
+		protoAttrs = append(protoAttrs, &deepCommon.KeyValue{
 			Key:   attr.Key,
 			Value: protoVal,
 		})
@@ -476,37 +481,37 @@ func parquetConvertAttributes(parquetAttrs []Attribute) []*deep_common.KeyValue 
 	return protoAttrs
 }
 
-func parquetConvertWatches(watches []WatchResult) []*deep_tp.WatchResult {
-	var varWatches = make([]*deep_tp.WatchResult, len(watches))
+func parquetConvertWatches(watches []WatchResult) []*deepTP.WatchResult {
+	var varWatches = make([]*deepTP.WatchResult, len(watches))
 	for i, watch := range watches {
 		varWatches[i] = parquetConvertWatchResult(watch)
 	}
 	return varWatches
 }
 
-func parquetConvertWatchResult(watch WatchResult) *deep_tp.WatchResult {
+func parquetConvertWatchResult(watch WatchResult) *deepTP.WatchResult {
 	if watch.GoodResult != nil {
-		return &deep_tp.WatchResult{
+		return &deepTP.WatchResult{
 			Expression: watch.Expression,
-			Result:     &deep_tp.WatchResult_GoodResult{GoodResult: parquetConvertVariableID(*watch.GoodResult)},
+			Result:     &deepTP.WatchResult_GoodResult{GoodResult: parquetConvertVariableID(*watch.GoodResult)},
 		}
 	} else {
-		return &deep_tp.WatchResult{
+		return &deepTP.WatchResult{
 			Expression: watch.Expression,
-			Result:     &deep_tp.WatchResult_ErrorResult{ErrorResult: *watch.ErrorResult},
+			Result:     &deepTP.WatchResult_ErrorResult{ErrorResult: *watch.ErrorResult},
 		}
 	}
 }
 
-func parquetConvertFrames(frames []StackFrame) []*deep_tp.StackFrame {
-	var varFrames = make([]*deep_tp.StackFrame, len(frames))
+func parquetConvertFrames(frames []StackFrame) []*deepTP.StackFrame {
+	var varFrames = make([]*deepTP.StackFrame, len(frames))
 	for i, frame := range frames {
 		varFrames[i] = parquetConvertFrame(frame)
 	}
 	return varFrames
 }
 
-func parquetConvertFrame(frame StackFrame) *deep_tp.StackFrame {
+func parquetConvertFrame(frame StackFrame) *deepTP.StackFrame {
 	trueBool := true
 	var isAsync *bool = nil
 	if frame.IsAsync {
@@ -516,7 +521,7 @@ func parquetConvertFrame(frame StackFrame) *deep_tp.StackFrame {
 	if frame.AppFrame {
 		appFrame = &trueBool
 	}
-	return &deep_tp.StackFrame{
+	return &deepTP.StackFrame{
 		FileName:               frame.FileName,
 		MethodName:             frame.MethodName,
 		LineNumber:             frame.LineNumber,
@@ -531,21 +536,21 @@ func parquetConvertFrame(frame StackFrame) *deep_tp.StackFrame {
 	}
 }
 
-func parquetConvertVariables(lookup map[string]Variable) map[string]*deep_tp.Variable {
-	var varLookup = make(map[string]*deep_tp.Variable, len(lookup))
+func parquetConvertVariables(lookup map[string]Variable) map[string]*deepTP.Variable {
+	var varLookup = make(map[string]*deepTP.Variable, len(lookup))
 	for varId, variable := range lookup {
 		varLookup[varId] = parquetConvertVariable(variable)
 	}
 	return varLookup
 }
 
-func parquetConvertVariable(variable Variable) *deep_tp.Variable {
+func parquetConvertVariable(variable Variable) *deepTP.Variable {
 	var truncated *bool = nil
 	if variable.Truncated {
 		trueBool := true
 		truncated = &trueBool
 	}
-	return &deep_tp.Variable{
+	return &deepTP.Variable{
 		Type:      variable.Type,
 		Value:     variable.Value,
 		Hash:      variable.Hash,
@@ -554,16 +559,19 @@ func parquetConvertVariable(variable Variable) *deep_tp.Variable {
 	}
 }
 
-func parquetConvertChildren(children []VariableID) []*deep_tp.VariableID {
-	var varChildren = make([]*deep_tp.VariableID, len(children))
+func parquetConvertChildren(children []VariableID) []*deepTP.VariableID {
+	if len(children) == 0 {
+		return nil
+	}
+	var varChildren = make([]*deepTP.VariableID, len(children))
 	for i, child := range children {
 		varChildren[i] = parquetConvertVariableID(child)
 	}
 	return varChildren
 }
 
-func parquetConvertVariableID(child VariableID) *deep_tp.VariableID {
-	return &deep_tp.VariableID{
+func parquetConvertVariableID(child VariableID) *deepTP.VariableID {
+	return &deepTP.VariableID{
 		ID:           child.ID,
 		Name:         child.Name,
 		OriginalName: child.OriginalName,

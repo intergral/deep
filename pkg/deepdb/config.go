@@ -42,10 +42,10 @@ const (
 	DefaultRetentionConcurrency     = uint(10)
 	DefaultTenantIndexBuilders      = 2
 
-	DefaultPrefetchTraceCount   = 1000
-	DefaultSearchChunkSizeBytes = 1_000_000
-	DefaultReadBufferCount      = 32
-	DefaultReadBufferSize       = 1 * 1024 * 1024
+	DefaultPrefetchSnapshotCount = 1000
+	DefaultSearchChunkSizeBytes  = 1_000_000
+	DefaultReadBufferCount       = 32
+	DefaultReadBufferSize        = 1 * 1024 * 1024
 )
 
 // Config holds the entirety of deepdb configuration
@@ -81,8 +81,8 @@ type Config struct {
 
 type SearchConfig struct {
 	// v2 blocks
-	ChunkSizeBytes     uint32 `yaml:"chunk_size_bytes"`
-	PrefetchTraceCount int    `yaml:"prefetch_trace_count"`
+	ChunkSizeBytes        uint32 `yaml:"chunk_size_bytes"`
+	PrefetchSnapshotCount int    `yaml:"prefetch_snapshot_count"`
 
 	// vParquet blocks
 	ReadBufferCount     int `yaml:"read_buffer_count"`
@@ -96,15 +96,15 @@ type SearchConfig struct {
 
 func (c SearchConfig) ApplyToOptions(o *common.SearchOptions) {
 	o.ChunkSizeBytes = c.ChunkSizeBytes
-	o.PrefetchTraceCount = c.PrefetchTraceCount
+	o.PrefetchSnapshotCount = c.PrefetchSnapshotCount
 	o.ReadBufferCount = c.ReadBufferCount
 	o.ReadBufferSize = c.ReadBufferSizeBytes
 
 	if o.ChunkSizeBytes == 0 {
 		o.ChunkSizeBytes = DefaultSearchChunkSizeBytes
 	}
-	if o.PrefetchTraceCount <= 0 {
-		o.PrefetchTraceCount = DefaultPrefetchTraceCount
+	if o.PrefetchSnapshotCount <= 0 {
+		o.PrefetchSnapshotCount = DefaultPrefetchSnapshotCount
 	}
 	if o.ReadBufferSize <= 0 {
 		o.ReadBufferSize = DefaultReadBufferSize
@@ -122,7 +122,7 @@ func (c SearchConfig) ApplyToOptions(o *common.SearchOptions) {
 type CompactorConfig struct {
 	ChunkSizeBytes          uint32        `yaml:"v2_in_buffer_bytes"`
 	FlushSizeBytes          uint32        `yaml:"v2_out_buffer_bytes"`
-	IteratorBufferSize      int           `yaml:"v2_prefetch_traces_count"`
+	IteratorBufferSize      int           `yaml:"v2_prefetch_snapshot_count"`
 	MaxCompactionRange      time.Duration `yaml:"compaction_window"`
 	MaxCompactionObjects    int           `yaml:"max_compaction_objects"`
 	MaxBlockBytes           uint64        `yaml:"max_block_bytes"`

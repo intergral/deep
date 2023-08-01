@@ -45,7 +45,7 @@ func TestHexStringToTraceID(t *testing.T) {
 		{
 			id:          "121234567890abcdef1234567890abcdef", // value too long
 			expected:    []byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef},
-			expectError: errors.New("trace IDs can't be larger than 128 bits"),
+			expectError: errors.New("snapshot IDs can't be larger than 128 bits"),
 		},
 		{
 			id:       "234567890abcdef", // odd length
@@ -54,13 +54,13 @@ func TestHexStringToTraceID(t *testing.T) {
 		{
 			id:          "1234567890abcdef ", // trailing space
 			expected:    nil,
-			expectError: errors.New("trace IDs can only contain hex characters: invalid character ' ' at position 17"),
+			expectError: errors.New("snapshot IDs can only contain hex characters: invalid character ' ' at position 17"),
 		},
 	}
 
 	for _, tt := range tc {
 		t.Run(tt.id, func(t *testing.T) {
-			actual, err := HexStringToTraceID(tt.id)
+			actual, err := HexStringToSnapshotID(tt.id)
 
 			if tt.expectError != nil {
 				assert.Equal(t, tt.expectError, err)
@@ -99,49 +99,9 @@ func TestTraceIDToHexString(t *testing.T) {
 
 	for _, tt := range tc {
 		t.Run(tt.traceID, func(t *testing.T) {
-			actual := TraceIDToHexString(tt.byteID)
+			actual := SnapshotIDToHexString(tt.byteID)
 
 			assert.Equal(t, tt.traceID, actual)
-		})
-	}
-}
-
-func TestSpanIDToHexString(t *testing.T) {
-	tc := []struct {
-		byteID []byte
-		spanID string
-	}{
-		{
-			byteID: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12},
-			spanID: "0000000000000012",
-		},
-		{
-			byteID: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef},
-			spanID: "1234567890abcdef", // 64 bit
-		},
-		{
-			byteID: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0xa0},
-			spanID: "00000000000012a0", // trailing zero
-		},
-		{
-			byteID: []byte{0x12, 0xa0},
-			spanID: "00000000000012a0", // less than 64 bytes
-		},
-		{
-			byteID: []byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef},
-			spanID: "1234567890abcdef1234567890abcdef", // 128 bit
-		},
-		{
-			byteID: []byte{0x00, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef},
-			spanID: "34567890abcdef1234567890abcdef", // 128 bit with leading zeroes
-		},
-	}
-
-	for _, tt := range tc {
-		t.Run(tt.spanID, func(t *testing.T) {
-			actual := SpanIDToHexString(tt.byteID)
-
-			assert.Equal(t, tt.spanID, actual)
 		})
 	}
 }
@@ -150,7 +110,7 @@ func TestEqualHexStringTraceIDs(t *testing.T) {
 	a := "82f6471b46d25e23418a0a99d4c2cda"
 	b := "082f6471b46d25e23418a0a99d4c2cda"
 
-	v, err := EqualHexStringTraceIDs(a, b)
+	v, err := EqualHexStringSnapshotIDs(a, b)
 	assert.Nil(t, err)
 	assert.True(t, v)
 }
@@ -181,7 +141,7 @@ func TestPadTraceIDTo16Bytes(t *testing.T) {
 
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, PadTraceIDTo16Bytes(tt.tid))
+			assert.Equal(t, tt.expected, PadSnapshotIDTo16Bytes(tt.tid))
 		})
 	}
 }

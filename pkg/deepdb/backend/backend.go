@@ -33,12 +33,12 @@ var (
 	ErrBadSeedFile   = fmt.Errorf("bad seed file")
 )
 
-// AppendTracker is an empty interface usable by the backend to track a long running append operation
+// AppendTracker is an empty interface usable by the backend to track a long-running append operation
 type AppendTracker interface{}
 
 // Writer is a collection of methods to write data to deepdb backends
 type Writer interface {
-	// Write is for in memory data. shouldCache specifies whether or not caching should be attempted.
+	// Write is for in memory data. shouldCache specifies whether caching should be attempted.
 	Write(ctx context.Context, name string, blockID uuid.UUID, tenantID string, buffer []byte, shouldCache bool) error
 	// StreamWriter is for larger data payloads streamed through an io.Reader.  It is expected this will _not_ be cached.
 	StreamWriter(ctx context.Context, name string, blockID uuid.UUID, tenantID string, data io.Reader, size int64) error
@@ -68,7 +68,7 @@ type Reader interface {
 	Tenants(ctx context.Context) ([]string, error)
 	// Blocks returns a list of block UUIDs given a tenant
 	Blocks(ctx context.Context, tenantID string) ([]uuid.UUID, error)
-	// BlockMeta returns the blockmeta given a block and tenant id
+	// BlockMeta returns the block meta given a block and tenant id
 	BlockMeta(ctx context.Context, blockID uuid.UUID, tenantID string) (*BlockMeta, error)
 	// TenantIndex returns lists of all metas given a tenant
 	TenantIndex(ctx context.Context, tenantID string) (*TenantIndex, error)
@@ -84,6 +84,6 @@ type Compactor interface {
 	MarkBlockCompacted(blockID uuid.UUID, tenantID string) error
 	// ClearBlock removes a block from the backend
 	ClearBlock(blockID uuid.UUID, tenantID string) error
-	// CompactedBlockMeta returns the compacted blockmeta given a block and tenant id
+	// CompactedBlockMeta returns the compacted block meta given a block and tenant id
 	CompactedBlockMeta(blockID uuid.UUID, tenantID string) (*CompactedBlockMeta, error)
 }
