@@ -35,11 +35,11 @@ var (
 )
 
 type Config struct {
-	Config               v1.Config       `yaml:",inline"`
-	MaxRetries           int             `yaml:"max_retries,omitempty"`
-	TolerateFailedBlocks int             `yaml:"tolerate_failed_blocks,omitempty"`
-	Search               SearchConfig    `yaml:"search"`
-	TraceByID            TraceByIDConfig `yaml:"trace_by_id"`
+	Config               v1.Config          `yaml:",inline"`
+	MaxRetries           int                `yaml:"max_retries,omitempty"`
+	TolerateFailedBlocks int                `yaml:"tolerate_failed_blocks,omitempty"`
+	Search               SearchConfig       `yaml:"search"`
+	SnapshotByID         SnapshotByIDConfig `yaml:"snapshot_by_id"`
 }
 
 type SearchConfig struct {
@@ -47,7 +47,7 @@ type SearchConfig struct {
 	SLO     SLOConfig           `yaml:",inline"`
 }
 
-type TraceByIDConfig struct {
+type SnapshotByIDConfig struct {
 	QueryShards int           `yaml:"query_shards,omitempty"`
 	Hedging     HedgingConfig `yaml:",inline"`
 	SLO         SLOConfig     `yaml:",inline"`
@@ -84,7 +84,7 @@ func (cfg *Config) RegisterFlagsAndApplyDefaults(string, *flag.FlagSet) {
 		},
 		SLO: slo,
 	}
-	cfg.TraceByID = TraceByIDConfig{
+	cfg.SnapshotByID = SnapshotByIDConfig{
 		QueryShards: 50,
 		SLO:         slo,
 		Hedging: HedgingConfig{

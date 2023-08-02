@@ -149,9 +149,6 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 				return
 			}
 
-			// marshal into a trace to combine.
-			// todo: better define responsibilities between middleware. the parent middleware in frontend.go actually sets the header
-			//  which forces the body here to be a proto encoded tempopb.Trace{}
 			snapshotResponse := &deeppb.SnapshotByIDResponse{}
 			err = proto.Unmarshal(buff, snapshotResponse)
 			if err != nil {
@@ -185,8 +182,9 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 	wg.Wait()
 
 	reqTime := time.Since(reqStart)
+	foundSnapshot := handler.Result()
 
-	if overallError != nil {
+	if overallError != nil && foundSnapshot == nil {
 		return nil, overallError
 	}
 
@@ -194,7 +192,6 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 		_ = level.Warn(s.logger).Log("msg", "some blocks failed. returning success due to tolerate_failed_blocks", "failed", totalFailedBlocks, "tolerate_failed_blocks", s.maxFailedBlocks)
 	}
 
-	foundSnapshot := handler.Result()
 	if foundSnapshot == nil || statusCode != http.StatusOK {
 		// translate non-404s into 500s. if, for instance, we get a 400 back from an internal component
 		// it means that we created a bad request. 400 should not be propagated back to the user b/c
@@ -208,6 +205,15 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 			Body:       io.NopCloser(strings.NewReader(statusMsg)),
 			Header:     http.Header{},
 		}, nil
+	}
+
+	if foundSnapshot == nil {
+		return &http.Response{
+			StatusCode: http.StatusNotFound,
+			Body:       io.NopCloser(strings.NewReader("snapshot not found")),
+			Header:     http.Header{},
+		}, nil
+
 	}
 
 	buff, err := proto.Marshal(&deeppb.SnapshotByIDResponse{
@@ -225,8 +231,8 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 	if s.sloCfg.DurationSLO != 0 {
 		if reqTime < s.sloCfg.DurationSLO {
 			// we are within SLO if query returned 200 within DurationSLO seconds
-			// TODO: we don't have throughput metrics for TraceByID.
-			sloTraceByIDCounter.WithLabelValues(tenantID).Inc()
+			// TODO: we don't have throughput metrics for SnapshotByID.
+			sloSnapshotByIDCounter.WithLabelValues(tenantID).Inc()
 		}
 	}
 

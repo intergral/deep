@@ -59,7 +59,7 @@ type QueryFrontend struct {
 func New(cfg Config, next http.RoundTripper, tpNext http.RoundTripper, o *overrides.Overrides, store storage.Store, logger log.Logger, registerer prometheus.Registerer) (*QueryFrontend, error) {
 	level.Info(logger).Log("msg", "creating middleware in query frontend")
 
-	if cfg.TraceByID.QueryShards < minQueryShards || cfg.TraceByID.QueryShards > maxQueryShards {
+	if cfg.SnapshotByID.QueryShards < minQueryShards || cfg.SnapshotByID.QueryShards > maxQueryShards {
 		return nil, fmt.Errorf("frontend query shards should be between %d and %d (both inclusive)", minQueryShards, maxQueryShards)
 	}
 
@@ -83,7 +83,7 @@ func New(cfg Config, next http.RoundTripper, tpNext http.RoundTripper, o *overri
 
 	retryWare := newRetryWare(cfg.MaxRetries, registerer)
 
-	traceByIDMiddleware := MergeMiddlewares(newTraceByIDMiddleware(cfg, logger), retryWare)
+	snapshotByIDMiddleware := MergeMiddlewares(newSnapshotByIDMiddleware(cfg, logger), retryWare)
 	searchMiddleware := MergeMiddlewares(newSearchMiddleware(cfg, o, store, logger), retryWare)
 
 	snapshotByIDCounter := queriesPerTenant.MustCurryWith(prometheus.Labels{"op": snapshotByIDOp})
@@ -91,7 +91,7 @@ func New(cfg Config, next http.RoundTripper, tpNext http.RoundTripper, o *overri
 	loadTp := queriesPerTenant.MustCurryWith(prometheus.Labels{"op": "loadtp"})
 	delTp := queriesPerTenant.MustCurryWith(prometheus.Labels{"op": "deltp"})
 
-	snapshots := traceByIDMiddleware.Wrap(next)
+	snapshots := snapshotByIDMiddleware.Wrap(next)
 	search := searchMiddleware.Wrap(next)
 
 	tpMiddleware := newTracepointForwardMiddleware()
@@ -118,21 +118,20 @@ func newTracepointForwardMiddleware() Middleware {
 	})
 }
 
-// newTraceByIDMiddleware creates a new frontend middleware responsible for handling get traces requests.
-func newTraceByIDMiddleware(cfg Config, logger log.Logger) Middleware {
+// newSnapshotByIDMiddleware creates a new frontend middleware responsible for handling get snapshot requests.
+func newSnapshotByIDMiddleware(cfg Config, logger log.Logger) Middleware {
 	return MiddlewareFunc(func(next http.RoundTripper) http.RoundTripper {
 		// We're constructing middleware in this statement, each middleware wraps the next one from left-to-right
-		// - the Deduper dedupes Span IDs for Zipkin support
 		// - the ShardingWare shards queries by splitting the block ID space
 		// - the RetryWare retries requests that have failed (error or http status 500)
 		rt := NewRoundTripper(
 			next,
-			newSnapshotByIDSharder(cfg.TraceByID.QueryShards, cfg.TolerateFailedBlocks, cfg.TraceByID.SLO, logger),
-			newHedgedRequestWare(cfg.TraceByID.Hedging),
+			newSnapshotByIDSharder(cfg.SnapshotByID.QueryShards, cfg.TolerateFailedBlocks, cfg.SnapshotByID.SLO, logger),
+			newHedgedRequestWare(cfg.SnapshotByID.Hedging),
 		)
 
 		return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
-			// validate traceID
+			// validate snapshot
 			_, err := api.ParseSnapshotID(r)
 			if err != nil {
 				return &http.Response{
@@ -158,7 +157,7 @@ func newTraceByIDMiddleware(cfg Config, logger log.Logger) Middleware {
 				marshallingFormat = api.HeaderAcceptProtobuf
 			}
 
-			// enforce all communication internal to Tempo to be in protobuf bytes
+			// enforce all communication internal to Deep to be in protobuf bytes
 			r.Header.Set(api.HeaderAccept, api.HeaderAcceptProtobuf)
 
 			resp, err := rt.RoundTrip(r)
