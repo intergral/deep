@@ -164,6 +164,7 @@ func (os *orgStore) forResource(resource []*cp.KeyValue) (ResourceTPStore, error
 	}
 
 	os.userStores[key] = &resourceStore{tenantID: os.tenantID, resource: resource, tps: tps, os: os}
+	os.userStores[key].rehash()
 
 	return os.userStores[key], nil
 }

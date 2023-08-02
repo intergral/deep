@@ -26,94 +26,93 @@ import (
 
 func TestTargeting(t *testing.T) {
 
-	tp := &deeptp.TracePointConfig{
-		ID:        "one",
-		Targeting: nil, // to targeting matches all
-	}
-
-	block := &tpBlock{}
-
-	matches := block.matches(tp, []*cp.KeyValue{})
-
-	assert.True(t, matches)
-}
-
-func TestTargeting_1(t *testing.T) {
-
-	tp := &deeptp.TracePointConfig{
-		ID:        "one",
-		Targeting: nil, // to targeting matches all
-	}
-
-	block := &tpBlock{}
-
-	matches := block.matches(tp, []*cp.KeyValue{{
-		Key:   "service.name",
-		Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: "test"}},
-	}})
-
-	assert.True(t, matches)
-}
-
-func TestTargeting_2(t *testing.T) {
-
-	tp := &deeptp.TracePointConfig{
-		ID: "one",
-		Targeting: []*cp.KeyValue{
-			{Key: "service.name", Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: "other"}}},
-		},
-	}
-
-	block := &tpBlock{}
-
-	matches := block.matches(tp, []*cp.KeyValue{{
-		Key:   "service.name",
-		Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: "test"}},
-	}})
-
-	assert.False(t, matches)
-}
-
-func TestTargeting_3(t *testing.T) {
-
-	tp := &deeptp.TracePointConfig{
-		ID: "one",
-		Targeting: []*cp.KeyValue{
-			{Key: "service.name", Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: "test"}}},
-		},
-	}
-
-	block := &tpBlock{}
-
-	matches := block.matches(tp, []*cp.KeyValue{{
-		Key:   "service.name",
-		Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: "test"}},
-	}})
-
-	assert.True(t, matches)
-}
-
-func TestTargeting_4(t *testing.T) {
-
-	tp := &deeptp.TracePointConfig{
-		ID: "one",
-		Targeting: []*cp.KeyValue{
-			{Key: "service.name", Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: "test"}}},
-		},
-	}
-
-	block := &tpBlock{}
-
-	matches := block.matches(tp, []*cp.KeyValue{{
-		Key:   "service.name",
-		Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: "test"}},
-	},
+	exampleResource := []*cp.KeyValue{
 		{
-			Key:   "some.tag",
-			Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: "value"}},
+			Key:   "service.name",
+			Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: "test"}},
 		},
-	},
-	)
+		{
+			Key:   "sdk.language",
+			Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: "python"}},
+		},
+		{
+			Key:   "os.name",
+			Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: "linux"}},
+		},
+	}
 
-	assert.True(t, matches)
+	tests := []struct {
+		name      string
+		expected  bool
+		targeting []*cp.KeyValue
+		resource  []*cp.KeyValue
+	}{
+		{
+			name:      "Match All",
+			expected:  true,
+			targeting: nil,
+			resource:  exampleResource,
+		},
+		{
+			name:     "Match None",
+			expected: false,
+			targeting: []*cp.KeyValue{{
+				Key:   "os.name",
+				Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: "windows"}},
+			}},
+			resource: exampleResource,
+		},
+		{
+			name:     "Match single",
+			expected: true,
+			targeting: []*cp.KeyValue{{
+				Key:   "os.name",
+				Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: "linux"}},
+			}},
+			resource: exampleResource,
+		},
+		{
+			name:     "Match many",
+			expected: true,
+			targeting: []*cp.KeyValue{
+				{
+					Key:   "os.name",
+					Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: "linux"}},
+				}, {
+					Key:   "sdk.language",
+					Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: "python"}},
+				},
+			},
+			resource: exampleResource,
+		},
+		{
+			name:     "Not match one",
+			expected: false,
+			targeting: []*cp.KeyValue{
+				{
+					Key:   "os.name",
+					Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: "windows"}},
+				}, {
+					Key:   "sdk.language",
+					Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: "python"}},
+				},
+			},
+			resource: exampleResource,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+
+			tp := &deeptp.TracePointConfig{
+				ID:        "one",
+				Targeting: test.targeting,
+			}
+			block := &tpBlock{}
+
+			matches := block.matches(tp, test.resource)
+
+			assert.Equal(t, test.expected, matches)
+		})
+	}
 }
