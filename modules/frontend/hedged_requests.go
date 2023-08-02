@@ -35,7 +35,7 @@ var (
 		prometheus.GaugeOpts{
 			Namespace: "deep",
 			Name:      "query_frontend_hedged_roundtrips_total",
-			Help:      "Total number of hedged trace by ID requests. Registered as a gauge for code sanity. This is a counter.",
+			Help:      "Total number of hedged snapshot by ID requests. Registered as a gauge for code sanity. This is a counter.",
 		},
 	)
 )
