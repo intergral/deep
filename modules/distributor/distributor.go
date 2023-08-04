@@ -56,13 +56,13 @@ import (
 )
 
 const (
-	// reasonRateLimited indicates that the tenants spans/second exceeded their limits
+	// reasonRateLimited indicates that the tenants snapshots/second exceeded their limits
 	reasonRateLimited = "rate_limited"
-	// reasonTraceTooLarge indicates that a single trace has too many spans
-	reasonTraceTooLarge = "trace_too_large"
-	// reasonLiveTracesExceeded indicates that deep is already tracking too many live traces in the ingesters for this user
-	reasonLiveTracesExceeded = "live_traces_exceeded"
-	// reasonInternalError indicates an unexpected error occurred processing these spans. analogous to a 500
+	// reasonSnapshotTooLarge indicates that a single snapshots is too large
+	reasonSnapshotTooLarge = "snapshot_too_large"
+	// reasonLiveSnapshotsExceeded indicates that deep is already tracking too many live snapshots in the ingesters for this user
+	reasonLiveSnapshotsExceeded = "live_snapshots_exceeded"
+	// reasonInternalError indicates an unexpected error occurred processing this snapshot, analogous to a 500
 	reasonInternalError = "internal_error"
 
 	distributorRingKey = "distributor"
@@ -437,7 +437,7 @@ func extractKeys(snapshot *deeppb_tp.Snapshot, userId string) ([]uint32, error) 
 }
 
 func logSnapshot(snapshot *deeppb_tp.Snapshot, logger log.Logger) {
-	level.Info(logger).Log("msg", "received", "snapshotId", snapshot.GetID())
+	level.Info(logger).Log("msg", "received", "snapshotId", util.SnapshotIDToHexString(snapshot.GetID()))
 }
 
 func logSnapshotWithAllAttributes(snapshot *deeppb_tp.Snapshot, logger log.Logger) {
@@ -550,9 +550,9 @@ func recordDiscardedSnapshots(err error, userID string) {
 
 	var reason = reasonInternalError
 	if strings.HasPrefix(desc, overrides.ErrorPrefixLiveSnapshotsExceeded) {
-		reason = reasonLiveTracesExceeded
+		reason = reasonLiveSnapshotsExceeded
 	} else if strings.HasPrefix(desc, overrides.ErrorPrefixSnapshotTooLarge) {
-		reason = reasonTraceTooLarge
+		reason = reasonSnapshotTooLarge
 	}
 
 	metricDiscardedSnapshots.WithLabelValues(reason, userID).Add(1)

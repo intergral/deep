@@ -96,7 +96,7 @@ func TestConfig_CheckConfig(t *testing.T) {
 			expect: []ConfigWarning{
 				newV2Warning("v2_in_buffer_bytes"),
 				newV2Warning("v2_out_buffer_bytes"),
-				newV2Warning("v2_prefetch_traces_count"),
+				newV2Warning("v2_prefetch_snapshot_count"),
 			},
 		},
 	}

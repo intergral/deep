@@ -176,19 +176,19 @@ func newSnapshotByIDMiddleware(cfg Config, logger log.Logger) Middleware {
 				}
 
 				if marshallingFormat == api.HeaderAcceptJSON {
-					var jsonTrace bytes.Buffer
+					var jsonSnapshot bytes.Buffer
 					marshaller := &jsonpb.Marshaler{}
-					err = marshaller.Marshal(&jsonTrace, responseObject.Snapshot)
+					err = marshaller.Marshal(&jsonSnapshot, responseObject.Snapshot)
 					if err != nil {
 						return nil, err
 					}
-					resp.Body = io.NopCloser(bytes.NewReader(jsonTrace.Bytes()))
+					resp.Body = io.NopCloser(bytes.NewReader(jsonSnapshot.Bytes()))
 				} else {
-					traceBuffer, err := proto.Marshal(responseObject.Snapshot)
+					snapshotBuffer, err := proto.Marshal(responseObject.Snapshot)
 					if err != nil {
 						return nil, err
 					}
-					resp.Body = io.NopCloser(bytes.NewReader(traceBuffer))
+					resp.Body = io.NopCloser(bytes.NewReader(snapshotBuffer))
 				}
 
 				if resp.Header != nil {

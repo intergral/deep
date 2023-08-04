@@ -200,7 +200,7 @@ gen-deepql-local:
 vendor-check: gen-proto update-mod gen-deepql
 	git diff --exit-code -- **/go.sum **/go.mod vendor/ pkg/deeppb/ pkg/deepql/ modules/querier/stats modules/frontend/v1/frontendv1pb
 
-### Tidy dependencies for tempo and tempo-serverless modules
+### Tidy dependencies for deep modules
 .PHONY: update-mod
 update-mod:
 	go mod vendor

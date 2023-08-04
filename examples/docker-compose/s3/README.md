@@ -28,7 +28,7 @@ s3_deep_1         /deep -config.file=/etc/d  ...   Up      0.0.0.0:43315->43315/
    http://localhost:9001 and use the username/password of `deep`/`supersecret`.
 
 3. Navigate to [Grafana](http://localhost:3000/explore) select the Deep data source and use the "Search"
-   tab to find traces. Also notice that you can query Deep metrics from the Prometheus data source setup in
+   tab to find snapshots. Also notice that you can query Deep metrics from the Prometheus data source setup in
    Grafana.
 
 4. To stop the setup use -

@@ -275,7 +275,7 @@ func TestManager_ForTenant_List_ForwardTraces_ReturnsNoErrorAndCorrectlyForwards
 }
 
 func TestManager_ForTenant_List_ForwardTraces_ReturnsNoErrorAndCorrectlyForwardsBatchesToProperForwardersWhenNewForwarderIsAddedToOverridesConfig(t *testing.T) {
-	// Step 1 - Setup manager with two forwarders for tenant and verify that both forwarders receive the trace.
+	// Step 1 - Setup manager with two forwarders for tenant and verify that both forwarders receive the snapshot.
 
 	// Given
 	logger := log.NewNopLogger()
@@ -321,7 +321,7 @@ func TestManager_ForTenant_List_ForwardTraces_ReturnsNoErrorAndCorrectlyForwards
 	require.Equal(t, traces1, <-forwarder2Ch)
 	require.Len(t, forwarder3Ch, 0)
 
-	// Step 2 - Add additional forwarder, simulate "tick" and verify that all three forwarders receive the trace.
+	// Step 2 - Add additional forwarder, simulate "tick" and verify that all three forwarders receive the snapshot.
 	currentForwardersForTenant := o.tenantIDToForwarders["testTenantID"]
 	o.tenantIDToForwarders["testTenantID"] = append(currentForwardersForTenant, "testForwarder3")
 	manager.updateQueueLists()
@@ -337,7 +337,7 @@ func TestManager_ForTenant_List_ForwardTraces_ReturnsNoErrorAndCorrectlyForwards
 }
 
 func TestManager_ForTenant_List_ForwardTraces_ReturnsNoErrorAndCorrectlyForwardsBatchesToProperForwardersWhenOldForwarderIsRemovedFromOverridesConfig(t *testing.T) {
-	// Step 1 - Setup manager with three forwarders for tenant and verify that all three forwarders receive the trace.
+	// Step 1 - Setup manager with three forwarders for tenant and verify that all three forwarders receive the snapshot.
 
 	// Given
 	logger := log.NewNopLogger()
@@ -383,7 +383,7 @@ func TestManager_ForTenant_List_ForwardTraces_ReturnsNoErrorAndCorrectlyForwards
 	require.Equal(t, traces1, <-forwarder2Ch)
 	require.Equal(t, traces1, <-forwarder3Ch)
 
-	// Step 2 - Remove one forwarder, simulate "tick" and verify that remaining forwarders receive the trace.
+	// Step 2 - Remove one forwarder, simulate "tick" and verify that remaining forwarders receive the snapshot.
 	idx := slices.Index(o.tenantIDToForwarders["testTenantID"], "testForwarder2")
 	require.NotEqual(t, -1, idx)
 	slices.Delete(o.tenantIDToForwarders["testTenantID"], idx, idx)
@@ -483,7 +483,7 @@ func TestManager_ForTenant_List_ForwardTraces_ReturnsNoErrorAndCorrectlyForwards
 	require.Len(t, forwarder1Ch, 0)
 	require.Len(t, forwarder2Ch, 0)
 
-	// Step 2 - Add tenant to overrides config, simulate "tick", and verify that both forwarders receive the traces.
+	// Step 2 - Add tenant to overrides config, simulate "tick", and verify that both forwarders receive the snapshots.
 	o.tenantIDs = []string{"testTenantID"}
 	o.tenantIDToForwarders = map[string][]string{
 		"testTenantID": {"testForwarder1", "testForwarder2"},
@@ -502,7 +502,7 @@ func TestManager_ForTenant_List_ForwardTraces_ReturnsNoErrorAndCorrectlyForwards
 }
 
 func TestManager_ForTenant_List_ForwardTraces_ReturnsNoErrorAndCorrectlyDoesNotForwardTracesToForwardersWhenTenantIsRemovedFromOverridesConfig(t *testing.T) {
-	// Step 1 - Setup manager with two forwarders for tenant and verify that both forwarders receive the trace.
+	// Step 1 - Setup manager with two forwarders for tenant and verify that both forwarders receive the snapshot.
 
 	// Given
 	logger := log.NewNopLogger()
@@ -541,7 +541,7 @@ func TestManager_ForTenant_List_ForwardTraces_ReturnsNoErrorAndCorrectlyDoesNotF
 	require.Equal(t, traces, <-forwarder1Ch)
 	require.Equal(t, traces, <-forwarder2Ch)
 
-	// Step 2 - Remove forwarder from overrides config and verify that the traces are no longer forwarded.
+	// Step 2 - Remove forwarder from overrides config and verify that the snapshots are no longer forwarded.
 	o.tenantIDs = []string{}
 	o.tenantIDToForwarders = map[string][]string{}
 	manager.updateQueueLists()

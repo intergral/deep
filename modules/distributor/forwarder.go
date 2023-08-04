@@ -62,7 +62,7 @@ type request struct {
 	snapshot *tp.Snapshot
 }
 
-// generatorForwarder queues up traces to be sent to the metrics-generators
+// generatorForwarder queues up snapshots to be sent to the metrics-generators
 type generatorForwarder struct {
 	services.Service
 

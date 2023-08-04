@@ -566,7 +566,7 @@ func (q *Querier) postProcessIngesterSearchResults(req *deeppb.SearchRequest, rr
 	for _, r := range rr {
 		sr := r.response.(*deeppb.SearchResponse)
 		for _, t := range sr.Snapshots {
-			// Just simply take first result for each trace
+			// Just simply take first result for each snapshot
 			if _, ok := snapshots[t.SnapshotID]; !ok {
 				snapshots[t.SnapshotID] = t
 			}

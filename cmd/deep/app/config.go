@@ -183,7 +183,7 @@ func (c *Config) CheckConfig() []ConfigWarning {
 	}
 
 	if c.StorageConfig.TracePoint.Block.Version != "v2" && c.Compactor.Compactor.IteratorBufferSize != deepdb.DefaultIteratorBufferSize {
-		warnings = append(warnings, newV2Warning("v2_prefetch_traces_count"))
+		warnings = append(warnings, newV2Warning("v2_prefetch_snapshot_count"))
 	}
 
 	return warnings
@@ -242,7 +242,7 @@ var (
 
 func newV2Warning(setting string) ConfigWarning {
 	return ConfigWarning{
-		Message: "c.StorageConfig.Trace.Block.Version != \"v2\" but " + setting + " is set",
+		Message: "c.StorageConfig.TracePoint.Block.Version != \"v2\" but " + setting + " is set",
 		Explain: "This setting is only used in v2 blocks",
 	}
 }

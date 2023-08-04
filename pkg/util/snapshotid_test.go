@@ -74,6 +74,14 @@ func TestHexStringToSnapshotID(t *testing.T) {
 	}
 }
 
+func TestSnapshotIDToFromString(t *testing.T) {
+	id, _ := HexStringToSnapshotID("123")
+
+	hexString := SnapshotIDToHexString(id)
+
+	assert.Equal(t, "123", hexString)
+}
+
 func TestSnapshotIDToHexString(t *testing.T) {
 	tc := []struct {
 		byteID     []byte
