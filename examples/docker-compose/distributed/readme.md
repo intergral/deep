@@ -38,7 +38,7 @@ distributed_test-app-1            pythong src/simple_te      ...   Up
 http://localhost:9001 and use the username/password of `deep`/`supersecret`.
 
 3. Navigate to [Grafana](http://localhost:3000/explore) select the Deep data source and use the "Search"
-tab to find traces.
+tab to find snapshots.
 
 4. To stop the setup use -
 

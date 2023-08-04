@@ -28,12 +28,12 @@ import (
 const (
 	// LocalIngestionRateStrategy indicates that this limit can be evaluated in local terms only
 	LocalIngestionRateStrategy = "local"
-	// GlobalIngestionRateStrategy indicates that an attempt should be made to consider this limit across the entire Tempo cluster
+	// GlobalIngestionRateStrategy indicates that an attempt should be made to consider this limit across the entire Deep cluster
 	GlobalIngestionRateStrategy = "global"
 
-	// ErrorPrefixLiveSnapshotsExceeded is used to flag batches from the ingester that were rejected b/c they had too many traces
+	// ErrorPrefixLiveSnapshotsExceeded is used to flag batches from the ingester that were rejected b/c they had too many snapshots
 	ErrorPrefixLiveSnapshotsExceeded = "LIVE_SNAPSHOTS_EXCEEDED:"
-	// ErrorPrefixSnapshotTooLarge is used to flag batches from the ingester that were rejected b/c they exceeded the single trace limit
+	// ErrorPrefixSnapshotTooLarge is used to flag batches from the ingester that were rejected b/c they exceeded the single snapshot limit
 	ErrorPrefixSnapshotTooLarge = "SNAPSHOT_TOO_LARGE:"
 	// ErrorPrefixRateLimited is used to flag batches that have exceeded the snapshot/second of the tenant
 	ErrorPrefixRateLimited = "RATE_LIMITED:"
@@ -97,7 +97,7 @@ type Limits struct {
 	MaxSearchDuration model.Duration `yaml:"max_search_duration" json:"max_search_duration"`
 
 	// MaxBytesPerSnapshot is enforced in the Ingester, Compactor, Querier (Search) and Serverless (Search). It
-	//  is not used when doing a trace by id lookup.
+	//  is not used when doing a snapshot by id lookup.
 	MaxBytesPerSnapshot int `yaml:"max_bytes_per_snapshot" json:"max_bytes_per_snapshot"`
 
 	// PerTenantOverrideConfig is the path to the per-tenant config

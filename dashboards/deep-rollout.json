@@ -128,7 +128,7 @@
           },
           "editorMode": "code",
           "expr": "(\n  sum by(deep_service) (\n    label_replace(\n      kube_statefulset_status_replicas_updated{cluster=~\"$cluster\", namespace=~\"$namespace\",statefulset=~\".*(distributor|ingester|query-frontend|querier|compactor|metrics-generator).*\"},\n      \"deep_service\", \"$1\", \"statefulset\", \"(.*?)(?:-zone-[a-z])?\"\n    )\n  )\n  /\n  sum by(deep_service) (\n    label_replace(\n      kube_statefulset_replicas{cluster=~\"$cluster\", namespace=~\"$namespace\"},\n      \"deep_service\", \"$1\", \"statefulset\", \"(.*?)(?:-zone-[a-z])?\"\n    )\n  )\n) and (\n  sum by(deep_service) (\n    label_replace(\n      kube_statefulset_replicas{cluster=~\"$cluster\", namespace=~\"$namespace\"},\n      \"deep_service\", \"$1\", \"statefulset\", \"(.*?)(?:-zone-[a-z])?\"\n    )\n  )\n  > 0\n)\n",
-          "legendFormat": "{{tempo_service}}",
+          "legendFormat": "{{deep_service}}",
           "range": true,
           "refId": "A"
         },
@@ -138,7 +138,7 @@
           },
           "editorMode": "code",
           "expr": "(\n  sum by(deep_service) (\n    label_replace(\n      kube_deployment_status_replicas_updated{cluster=~\"$cluster\", namespace=~\"$namespace\",deployment=~\".*(distributor|ingester|query-frontend|querier|compactor|metrics-generator).*\"},\n      \"deep_service\", \"$1\", \"deployment\", \"(.*?)(?:-zone-[a-z])?\"\n    )\n  )\n  /\n  sum by(deep_service) (\n    label_replace(\n      kube_deployment_spec_replicas{cluster=~\"$cluster\", namespace=~\"$namespace\"},\n      \"deep_service\", \"$1\", \"deployment\", \"(.*?)(?:-zone-[a-z])?\"\n    )\n  )\n) and (\n  sum by(deep_service) (\n    label_replace(\n      kube_deployment_spec_replicas{cluster=~\"$cluster\", namespace=~\"$namespace\"},\n      \"deep_service\", \"$1\", \"deployment\", \"(.*?)(?:-zone-[a-z])?\"\n    )\n  )\n  > 0\n)\n",
-          "legendFormat": "{{tempo_service}}",
+          "legendFormat": "{{deep_service}}",
           "range": true,
           "refId": "B"
         }

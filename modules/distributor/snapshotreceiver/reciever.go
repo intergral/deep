@@ -86,7 +86,7 @@ var (
 )
 
 type SnapshotPusher interface {
-	PushSnapshot(ctx context.Context, traces *tp.Snapshot) (*tp.SnapshotResponse, error)
+	PushSnapshot(ctx context.Context, snapshot *tp.Snapshot) (*tp.SnapshotResponse, error)
 	PushPoll(ctx context.Context, pollRequest *pb.PollRequest) (*pb.PollResponse, error)
 }
 
@@ -127,7 +127,7 @@ func (sr *snapshotReceiver) Poll(ctx context.Context, pollRequest *pb.PollReques
 	tenantID, _ := util.ExtractTenantID(ctx)
 
 	if err != nil {
-		sr.logger.Log("msg", "pusher failed to consume trace data", "err", err)
+		sr.logger.Log("msg", "pusher failed to consume snapshot data", "err", err)
 		metricPollRefused.WithLabelValues(tenantID, name).Inc()
 	}
 	metricPollAccepted.WithLabelValues(tenantID, name).Inc()
@@ -150,7 +150,7 @@ func (sr *snapshotReceiver) Send(ctx context.Context, in *tp.Snapshot) (*tp.Snap
 	tenantID, _ := util.ExtractTenantID(ctx)
 
 	if err != nil {
-		sr.logger.Log("msg", "pusher failed to consume trace data", "err", err)
+		sr.logger.Log("msg", "pusher failed to consume snapshot data", "err", err)
 		metricDistributorRefused.WithLabelValues(tenantID, name).Inc()
 	}
 

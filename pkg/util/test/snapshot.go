@@ -24,6 +24,19 @@ type GenerateOptions struct {
 	NoVars          bool
 	RandomStrings   bool
 	ServiceName     string
+	DurationNanos   uint64
+}
+
+func AppendFrame(snapshot *tp.Snapshot) {
+	variables := make([]*tp.Variable, len(snapshot.VarLookup))
+
+	snapshot.Frames = append(snapshot.Frames, generateFrames(GenerateOptions{}, variables)...)
+
+	lookup := generateVarLookup(variables)
+
+	for key, variable := range lookup {
+		snapshot.VarLookup[key] = variable
+	}
 }
 
 func GenerateSnapshot(index int, options *GenerateOptions) *tp.Snapshot {
@@ -41,6 +54,7 @@ func GenerateSnapshot(index int, options *GenerateOptions) *tp.Snapshot {
 			NoVars:          false,
 			RandomStrings:   false,
 			ServiceName:     "test-service",
+			DurationNanos:   1010101,
 		}
 	}
 
@@ -59,7 +73,7 @@ func GenerateSnapshot(index int, options *GenerateOptions) *tp.Snapshot {
 		Frames:        generateFrames(*options, vars),
 		Watches:       generateWatchResults(),
 		Attributes:    generateAttributes(point, *options),
-		DurationNanos: 1010101,
+		DurationNanos: options.DurationNanos,
 		Resource:      generateResource(*options),
 	}
 	if !options.NoVars {

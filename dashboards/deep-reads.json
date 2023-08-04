@@ -379,7 +379,7 @@
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "sum(rate(tempo_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/cortex-gw(-internal)?\",route=~\"api_.*\"}[$__interval])) by (route) * 1e3 / sum(rate(tempo_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/cortex-gw(-internal)?\",route=~\"api_.*\"}[$__interval])) by (route)",
+          "expr": "sum(rate(deep_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/cortex-gw(-internal)?\",route=~\"api_.*\"}[$__interval])) by (route) * 1e3 / sum(rate(deep_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/cortex-gw(-internal)?\",route=~\"api_.*\"}[$__interval])) by (route)",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,

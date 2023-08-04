@@ -35,15 +35,15 @@ import (
 func TestOverrides(t *testing.T) {
 
 	tests := []struct {
-		name                        string
-		limits                      Limits
-		overrides                   *perTenantOverrides
-		expectedMaxLocalTraces      map[string]int
-		expectedMaxGlobalTraces     map[string]int
-		expectedMaxBytesPerTrace    map[string]int
-		expectedIngestionRateSpans  map[string]int
-		expectedIngestionBurstSpans map[string]int
-		expectedMaxSearchDuration   map[string]int
+		name                           string
+		limits                         Limits
+		overrides                      *perTenantOverrides
+		expectedMaxLocalSnapshots      map[string]int
+		expectedMaxGlobalSnapshots     map[string]int
+		expectedMaxBytesPerSnapshot    map[string]int
+		expectedIngestionRateSnapshot  map[string]int
+		expectedIngestionBurstSnapshot map[string]int
+		expectedMaxSearchDuration      map[string]int
 	}{
 		{
 			name: "limits only",
@@ -54,12 +54,12 @@ func TestOverrides(t *testing.T) {
 				IngestionBurstSizeBytes:     4,
 				IngestionRateLimitBytes:     5,
 			},
-			expectedMaxGlobalTraces:     map[string]int{"user1": 1, "user2": 1},
-			expectedMaxLocalTraces:      map[string]int{"user1": 2, "user2": 2},
-			expectedMaxBytesPerTrace:    map[string]int{"user1": 3, "user2": 3},
-			expectedIngestionBurstSpans: map[string]int{"user1": 4, "user2": 4},
-			expectedIngestionRateSpans:  map[string]int{"user1": 5, "user2": 5},
-			expectedMaxSearchDuration:   map[string]int{"user1": 0, "user2": 0},
+			expectedMaxGlobalSnapshots:     map[string]int{"user1": 1, "user2": 1},
+			expectedMaxLocalSnapshots:      map[string]int{"user1": 2, "user2": 2},
+			expectedMaxBytesPerSnapshot:    map[string]int{"user1": 3, "user2": 3},
+			expectedIngestionBurstSnapshot: map[string]int{"user1": 4, "user2": 4},
+			expectedIngestionRateSnapshot:  map[string]int{"user1": 5, "user2": 5},
+			expectedMaxSearchDuration:      map[string]int{"user1": 0, "user2": 0},
 		},
 		{
 			name: "basic overrides",
@@ -82,12 +82,12 @@ func TestOverrides(t *testing.T) {
 					},
 				},
 			},
-			expectedMaxGlobalTraces:     map[string]int{"user1": 6, "user2": 1},
-			expectedMaxLocalTraces:      map[string]int{"user1": 7, "user2": 2},
-			expectedMaxBytesPerTrace:    map[string]int{"user1": 8, "user2": 3},
-			expectedIngestionBurstSpans: map[string]int{"user1": 9, "user2": 4},
-			expectedIngestionRateSpans:  map[string]int{"user1": 10, "user2": 5},
-			expectedMaxSearchDuration:   map[string]int{"user1": int(11 * time.Second), "user2": 0},
+			expectedMaxGlobalSnapshots:     map[string]int{"user1": 6, "user2": 1},
+			expectedMaxLocalSnapshots:      map[string]int{"user1": 7, "user2": 2},
+			expectedMaxBytesPerSnapshot:    map[string]int{"user1": 8, "user2": 3},
+			expectedIngestionBurstSnapshot: map[string]int{"user1": 9, "user2": 4},
+			expectedIngestionRateSnapshot:  map[string]int{"user1": 10, "user2": 5},
+			expectedMaxSearchDuration:      map[string]int{"user1": int(11 * time.Second), "user2": 0},
 		},
 		{
 			name: "wildcard override",
@@ -117,12 +117,12 @@ func TestOverrides(t *testing.T) {
 					},
 				},
 			},
-			expectedMaxGlobalTraces:     map[string]int{"user1": 6, "user2": 11},
-			expectedMaxLocalTraces:      map[string]int{"user1": 7, "user2": 12},
-			expectedMaxBytesPerTrace:    map[string]int{"user1": 8, "user2": 13},
-			expectedIngestionBurstSpans: map[string]int{"user1": 9, "user2": 14},
-			expectedIngestionRateSpans:  map[string]int{"user1": 10, "user2": 15},
-			expectedMaxSearchDuration:   map[string]int{"user1": 0, "user2": int(16 * time.Second)},
+			expectedMaxGlobalSnapshots:     map[string]int{"user1": 6, "user2": 11},
+			expectedMaxLocalSnapshots:      map[string]int{"user1": 7, "user2": 12},
+			expectedMaxBytesPerSnapshot:    map[string]int{"user1": 8, "user2": 13},
+			expectedIngestionBurstSnapshot: map[string]int{"user1": 9, "user2": 14},
+			expectedIngestionRateSnapshot:  map[string]int{"user1": 10, "user2": 15},
+			expectedMaxSearchDuration:      map[string]int{"user1": 0, "user2": int(16 * time.Second)},
 		},
 	}
 
@@ -147,19 +147,19 @@ func TestOverrides(t *testing.T) {
 			err = services.StartAndAwaitRunning(context.TODO(), overrides)
 			require.NoError(t, err)
 
-			for user, expectedVal := range tt.expectedMaxLocalTraces {
+			for user, expectedVal := range tt.expectedMaxLocalSnapshots {
 				assert.Equal(t, expectedVal, overrides.MaxLocalSnapshotsPerTenant(user))
 			}
 
-			for user, expectedVal := range tt.expectedMaxGlobalTraces {
+			for user, expectedVal := range tt.expectedMaxGlobalSnapshots {
 				assert.Equal(t, expectedVal, overrides.MaxGlobalSnapshotsPerTenant(user))
 			}
 
-			for user, expectedVal := range tt.expectedIngestionBurstSpans {
+			for user, expectedVal := range tt.expectedIngestionBurstSnapshot {
 				assert.Equal(t, expectedVal, overrides.IngestionBurstSizeBytes(user))
 			}
 
-			for user, expectedVal := range tt.expectedIngestionRateSpans {
+			for user, expectedVal := range tt.expectedIngestionRateSnapshot {
 				assert.Equal(t, float64(expectedVal), overrides.IngestionRateLimitBytes(user))
 			}
 

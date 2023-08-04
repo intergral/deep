@@ -32,7 +32,7 @@ import (
 )
 
 type globalOptions struct {
-	ConfigFile string `type:"path" short:"c" help:"Path to tempo config file"`
+	ConfigFile string `type:"path" short:"c" help:"Path to deep config file"`
 }
 
 type frontendOptions struct {

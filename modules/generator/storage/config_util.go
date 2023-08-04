@@ -29,7 +29,7 @@ import (
 )
 
 // generateTenantRemoteWriteConfigs creates a copy of the remote write configurations with the
-// X-Scope-OrgID header present for the given tenant, unless Tempo is run in single tenant mode.
+// X-Scope-OrgID header present for the given tenant, unless Deep is run in single tenant mode.
 func generateTenantRemoteWriteConfigs(originalCfgs []prometheus_config.RemoteWriteConfig, tenant string, logger log.Logger) []*prometheus_config.RemoteWriteConfig {
 	var cloneCfgs []*prometheus_config.RemoteWriteConfig
 

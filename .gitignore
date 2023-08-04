@@ -7,7 +7,7 @@
 .DS_Store
 /deepdb/encoding/benchmark_block
 /cmd/deep-serverless/vendor/
-/pkg/traceql/y.output
+/pkg/deepql/y.output
 private-key.key
 /vendor
 /pkg/.patched-proto

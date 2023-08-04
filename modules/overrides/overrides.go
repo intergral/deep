@@ -252,19 +252,19 @@ func (o *Overrides) IngestionRateStrategy() string {
 	return o.getOverridesForTenant("").IngestionRateStrategy
 }
 
-// MaxLocalSnapshotsPerTenant returns the maximum number of traces a user is allowed to store
+// MaxLocalSnapshotsPerTenant returns the maximum number of snapshots a user is allowed to store
 // in a single ingester.
 func (o *Overrides) MaxLocalSnapshotsPerTenant(tenantID string) int {
 	return o.getOverridesForTenant(tenantID).MaxLocalSnapshotsPerTenant
 }
 
-// MaxGlobalSnapshotsPerTenant returns the maximum number of traces a user is allowed to store
+// MaxGlobalSnapshotsPerTenant returns the maximum number of snapshots a user is allowed to store
 // across the cluster.
 func (o *Overrides) MaxGlobalSnapshotsPerTenant(tenantID string) int {
 	return o.getOverridesForTenant(tenantID).MaxGlobalSnapshotsPerTenant
 }
 
-// MaxBytesPerSnapshot returns the maximum size of a single trace in bytes allowed for a user.
+// MaxBytesPerSnapshot returns the maximum size of a single snapshot in bytes allowed for a user.
 func (o *Overrides) MaxBytesPerSnapshot(tenantID string) int {
 	return o.getOverridesForTenant(tenantID).MaxBytesPerSnapshot
 }

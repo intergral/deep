@@ -388,7 +388,7 @@ func (t *App) initQueryFrontend() (services.Service, error) {
 	// register grpc server for workers to connect to
 	frontend_v1pb.RegisterFrontendServer(t.Server.GRPC, t.frontend)
 
-	// http trace by id endpoint
+	// http snapshot by id endpoint
 	t.Server.HTTP.Handle(addHTTPAPIPrefix(&t.cfg, api.PathSnapshots), traceByIDHandler)
 
 	// http search endpoints

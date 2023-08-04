@@ -40,10 +40,10 @@ func newAssertingConsumer(t *testing.T, assertFunc assertFunc) receivers.Process
 	return testConsumer{
 		t:          t,
 		assertFunc: assertFunc,
-	}.ConsumeTraces
+	}.ConsumeSnapshots
 }
 
-func (tc testConsumer) ConsumeTraces(ctx context.Context, _ *tp.Snapshot) (*tp.SnapshotResponse, error) {
+func (tc testConsumer) ConsumeSnapshots(ctx context.Context, _ *tp.Snapshot) (*tp.SnapshotResponse, error) {
 	tc.assertFunc(tc.t, ctx)
 	return nil, nil
 }
