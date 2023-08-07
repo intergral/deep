@@ -1,8 +1,22 @@
 <!-- 0.1.5 START -->
 # 0.1.5 (xx/xx/2023)
 
- - **[FEATURE]**: add basic deepql support [#74](https://github.com/intergral/deep/pull/74) [@Umaaz](https://github.com/Umaaz)
- - **[CHANGE]**: remove gotestsum usage [#74](https://github.com/intergral/deep/pull/74) [@Umaaz](https://github.com/Umaaz)
+ - **[FEATURE]**: add basic distributor metrics [#34](https://github.com/intergral/deep/pull/34) [@Umaaz](https://github.com/Umaaz)
+ - **[FEATURE]**: add basic deepql support [#47](https://github.com/intergral/deep/pull/47) [@Umaaz](https://github.com/Umaaz)
+ - **[CHANGE]**: remove gotestsum usage [#47](https://github.com/intergral/deep/pull/47) [@Umaaz](https://github.com/Umaaz)
+ - **[CHANGE]**: disable metrics gen [#52](https://github.com/intergral/deep/pull/52) [@Umaaz](https://github.com/Umaaz)
+ - **[CHANGE]**: compactor - clean up trace and Tempo references [#53](https://github.com/intergral/deep/pull/53) [@Umaaz](https://github.com/Umaaz)
+ - **[CHANGE]**: frontend - clean up trace and Tempo references [#50](https://github.com/intergral/deep/pull/50) [@Umaaz](https://github.com/Umaaz)
+ - **[CHANGE]**: querier - clean up trace and Tempo references [#49](https://github.com/intergral/deep/pull/49) [@Umaaz](https://github.com/Umaaz)
+ - **[CHANGE]**: ingester - clean up trace and Tempo references [#32](https://github.com/intergral/deep/pull/32) [@Umaaz](https://github.com/Umaaz)
+ - **[CHANGE]**: tracepoint - clean up trace and Tempo references [#51](https://github.com/intergral/deep/pull/51) [@Umaaz](https://github.com/Umaaz)
+ - **[CHANGE]**: overrides - clean up trace and Tempo references [#35](https://github.com/intergral/deep/pull/35) [@Umaaz](https://github.com/Umaaz)
+ - **[CHANGE]**: storage - clean up trace and Tempo references [#47](https://github.com/intergral/deep/pull/47) [@Umaaz](https://github.com/Umaaz)
+ - **[CHANGE]**: pkg - clean up trace and Tempo references [#48](https://github.com/intergral/deep/pull/48) [@Umaaz](https://github.com/Umaaz)
+ - **[CHANGE]**: general - clean up trace and Tempo references [#54](https://github.com/intergral/deep/pull/54) [@Umaaz](https://github.com/Umaaz)
+ - **[CHANGE]**: ensure consistent naming of tenant ID, Org ID [#36](https://github.com/intergral/deep/pull/36) [@Umaaz](https://github.com/Umaaz)
+ - **[CHANGE]**: add issue templates [#29](https://github.com/intergral/deep/pull/29) [@Umaaz](https://github.com/Umaaz)
+ - **[CHANGE]**: add pull request templates [#30](https://github.com/intergral/deep/pull/30) [@Umaaz](https://github.com/Umaaz)
 <!-- 0.1.5 END -->
 
 <!-- 0.1.4 START -->
