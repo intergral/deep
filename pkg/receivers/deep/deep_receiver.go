@@ -19,7 +19,10 @@ package deep
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-kit/log"
+	"github.com/go-kit/log/level"
+	"github.com/gogo/protobuf/proto"
 	"github.com/intergral/deep/pkg/receivers/config/configgrpc"
 	"github.com/intergral/deep/pkg/receivers/config/confignet"
 	"github.com/intergral/deep/pkg/receivers/types"
@@ -36,7 +39,8 @@ type Protocols struct {
 }
 
 type DeepConfig struct {
-	Protocols Protocols `mapstructure:"protocols"`
+	Protocols *Protocols `mapstructure:"protocols"`
+	Debug     bool       `mapstructure:"debug"`
 }
 
 type deepReceiver struct {
@@ -52,20 +56,27 @@ type deepReceiver struct {
 }
 
 func CreateConfig(cfg interface{}) (*DeepConfig, error) {
-	if cfg == nil {
-		return &DeepConfig{
-			Protocols: Protocols{
-				GRPC: &configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "0.0.0.0:43315",
-						Transport: "tcp",
-					},
+	defaultCfg := &DeepConfig{
+		Protocols: &Protocols{
+			GRPC: &configgrpc.GRPCServerSettings{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "0.0.0.0:43315",
+					Transport: "tcp",
 				},
 			},
-		}, nil
+		},
+		Debug: false,
+	}
+	if cfg == nil {
+		return defaultCfg, nil
 	}
 	var result DeepConfig
 	err := mapstructure.Decode(cfg, &result)
+	// if there is a config that is empty or has set debug, but not changed the protocols
+	// then set the protocols to the default
+	if result.Protocols == nil {
+		result.Protocols = defaultCfg.Protocols
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -107,15 +118,21 @@ func (d *deepReceiver) startProtocolServers(host types.Host) error {
 }
 
 func (d *deepReceiver) Send(ctx context.Context, in *tp.Snapshot) (*tp.SnapshotResponse, error) {
+	if d.cfg.Debug {
+		d.logMessage("Received snapshot", in)
+	}
 	return d.next(ctx, in)
 }
 
 func (d *deepReceiver) Poll(ctx context.Context, pollRequest *pb.PollRequest) (*pb.PollResponse, error) {
+	if d.cfg.Debug {
+		d.logMessage("Received poll", pollRequest)
+	}
 	return d.pollNext(ctx, pollRequest)
 }
 
 func (d *deepReceiver) startGRPCServer(host types.Host) error {
-	d.logger.Log("msg", "Starting GRPC server on endpoint "+d.cfg.Protocols.GRPC.NetAddr.Endpoint)
+	level.Info(d.logger).Log("msg", "Starting GRPC server on endpoint "+d.cfg.Protocols.GRPC.NetAddr.Endpoint)
 
 	gln, err := d.cfg.Protocols.GRPC.ToListener()
 	if err != nil {
@@ -130,4 +147,8 @@ func (d *deepReceiver) startGRPCServer(host types.Host) error {
 		}
 	}()
 	return nil
+}
+
+func (d *deepReceiver) logMessage(s string, in proto.Message) {
+	level.Info(d.logger).Log("msg", s, "proto", fmt.Sprintf("%+v", in))
 }

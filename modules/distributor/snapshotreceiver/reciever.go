@@ -19,6 +19,7 @@ package snapshotreceiver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	gkLog "github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -167,6 +168,9 @@ func New(receiverCfg map[string]interface{}, pusher SnapshotPusher, middleware M
 	}
 
 	receiversFor, err := receivers.ForConfig(receiverCfg, middleware.WrapSnapshots(receiver.Send), middleware.WrapPoll(receiver.Poll), logger)
+	if len(receiversFor) == 0 {
+		return nil, nil, errors.New("no receivers configured")
+	}
 	if err != nil {
 		return nil, nil, err
 	}

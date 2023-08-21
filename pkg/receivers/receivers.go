@@ -20,6 +20,7 @@ package receivers
 import (
 	"context"
 	"github.com/go-kit/log"
+	"github.com/go-kit/log/level"
 	"github.com/intergral/deep/pkg/receivers/deep"
 	"github.com/intergral/deep/pkg/receivers/types"
 	pb "github.com/intergral/go-deep-proto/poll/v1"
@@ -29,6 +30,7 @@ import (
 func ForConfig(receiverCfg map[string]interface{}, snapshotNext types.ProcessSnapshots, pollNext types.ProcessPoll, logger log.Logger) ([]types.Receiver, error) {
 	var receivers []types.Receiver
 	for key, cfg := range receiverCfg {
+		level.Info(logger).Log("msg", "Configuring and starting receiver: "+key)
 		switch key {
 		case "deep":
 			deepCfg, err := deep.CreateConfig(cfg)

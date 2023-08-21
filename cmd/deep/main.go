@@ -215,6 +215,10 @@ func loadConfig() (*app.Config, error) {
 		//// Generator's ring
 		config.Generator.Ring.KVStore.Store = "inmemory"
 		config.Generator.Ring.InstanceAddr = "127.0.0.1"
+
+		config.Tracepoint.LifecyclerConfig.RingConfig.KVStore.Store = "inmemory"
+		config.Tracepoint.LifecyclerConfig.RingConfig.ReplicationFactor = 1
+		config.Tracepoint.LifecyclerConfig.Addr = "127.0.0.1"
 	}
 
 	// after finalizing the configuration, verify its validity and exit if config.verify flag is true.
