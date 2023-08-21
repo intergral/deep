@@ -39,7 +39,24 @@ func TestCreateConfig(t *testing.T) {
 				cfg: nil,
 			},
 			want: &DeepConfig{
-				Protocols: Protocols{
+				Debug: false,
+				Protocols: &Protocols{
+					GRPC: &configgrpc.GRPCServerSettings{
+						NetAddr: confignet.NetAddr{
+							Endpoint:  "0.0.0.0:43315",
+							Transport: "tcp",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "will default protocols if not set",
+			args: args{
+				cfg: map[string]interface{}{},
+			},
+			want: &DeepConfig{
+				Protocols: &Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
 							Endpoint:  "0.0.0.0:43315",
@@ -61,7 +78,8 @@ func TestCreateConfig(t *testing.T) {
 				},
 			},
 			want: &DeepConfig{
-				Protocols: Protocols{
+				Debug: false,
+				Protocols: &Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
 							Endpoint: "4444",
@@ -74,7 +92,7 @@ func TestCreateConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got, _ := CreateConfig(tt.args.cfg); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CreateConfig() = %v, want %v", got, tt.want)
+				t.Errorf("CreateConfig() = got: %v, expected: %v", got, tt.want)
 			}
 		})
 	}
