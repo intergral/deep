@@ -88,6 +88,7 @@ If you have any suggestions, or preferences on languages then please let us know
 
 - [Deployment Examples](./examples/README.md)
     - [Docker Compose](./examples/docker-compose/README.md)
+    - [Kubernetes](./examples/kubernetes/README.md)
 
 ## Acknowledgements
 
