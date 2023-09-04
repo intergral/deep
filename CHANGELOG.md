@@ -1,5 +1,17 @@
-<!-- 0.1.5 START -->
-# 0.1.5 (xx/xx/2023)
+<!-- 0.1.6 START -->
+# 0.1.6 (xx/xx/2023)
+ - **[CHANGE]**: change examples to use official grafana docker image [#58](https://github.com/intergral/deep/pull/58) [@Umaaz](https://github.com/Umaaz)
+ - **[CHANGE]**: change examples to use docker hub hosted images [#58](https://github.com/intergral/deep/pull/58) [@Umaaz](https://github.com/Umaaz)
+<!-- 0.1.6 END -->
+
+<!-- 0.1.6 START -->
+# 0.1.6 (21/07/2023)
+ - **[BUGFIX]**: fix issue with parsing config when using kubernetes/helm [#56](https://github.com/intergral/deep/pull/56) [@Umaaz](https://github.com/Umaaz)
+
+<!-- 0.1.6 END -->
+
+<!-- 0.1.6 START -->
+# 0.1.5 (07/08/2023)
 
  - **[FEATURE]**: add basic distributor metrics [#34](https://github.com/intergral/deep/pull/34) [@Umaaz](https://github.com/Umaaz)
  - **[FEATURE]**: add basic deepql support [#47](https://github.com/intergral/deep/pull/47) [@Umaaz](https://github.com/Umaaz)
