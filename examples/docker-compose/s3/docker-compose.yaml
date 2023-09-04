@@ -27,7 +27,7 @@ services:
       - mkdir -p /data/deep && /opt/bin/minio server /data --console-address ':9001'
 
   test_app:
-    image: ghcr.io/intergral/deep-python-client:simple-app
+    image: intergral/deep-python:latest
     environment:
       - DEEP_SERVICE_SECURE=False
     depends_on:
