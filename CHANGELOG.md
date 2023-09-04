@@ -1,5 +1,6 @@
 <!-- 0.1.6 START -->
 # 0.1.6 (xx/xx/2023)
+ - **[CHANGE]**: change examples to use official grafana docker image [#58](https://github.com/intergral/deep/pull/58) [@Umaaz](https://github.com/Umaaz)
  - **[CHANGE]**: change examples to use docker hub hosted images [#58](https://github.com/intergral/deep/pull/58) [@Umaaz](https://github.com/Umaaz)
 <!-- 0.1.6 END -->
 
