@@ -95,7 +95,7 @@ exe-debug:
 .PHONY: fmt check-fmt
 fmt:
 	echo $(FILES_TO_FMT)
-	@gofmt -s -w $(FILES_TO_FMT)
+	@gofumpt -l -w .
 	@goimports -w $(FILES_TO_FMT)
 
 check-fmt: fmt
