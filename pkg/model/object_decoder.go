@@ -19,6 +19,7 @@ package model
 
 import (
 	"fmt"
+
 	deeppb_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 
 	v1 "github.com/intergral/deep/pkg/model/v1"

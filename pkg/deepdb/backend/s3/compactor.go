@@ -20,6 +20,7 @@ package s3
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/minio/minio-go/v7"
 
 	"github.com/go-kit/log/level"

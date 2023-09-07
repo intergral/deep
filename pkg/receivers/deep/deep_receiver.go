@@ -20,6 +20,8 @@ package deep
 import (
 	"context"
 	"fmt"
+	"sync"
+
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/gogo/protobuf/proto"
@@ -31,7 +33,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	"sync"
 )
 
 type Protocols struct {

@@ -47,9 +47,7 @@ const (
 	compactorRingKey = "compactor"
 )
 
-var (
-	ringOp = ring.NewOp([]ring.InstanceState{ring.ACTIVE}, nil)
-)
+var ringOp = ring.NewOp([]ring.InstanceState{ring.ACTIVE}, nil)
 
 type Compactor struct {
 	services.Service
@@ -232,7 +230,7 @@ func (c *Compactor) Owns(hash string) bool {
 // RecordDiscardedSnapshots implements deepdb.CompactorSharder
 func (c *Compactor) RecordDiscardedSnapshots(count int, tenantID string, snapshotID string) {
 	level.Warn(log.Logger).Log("msg", "max size of trace exceeded", "tenantID", tenantID, "snapshotID", snapshotID, "discarded_snapshot_count", count)
-	//overrides.RecordDiscardedSnapshots(count, reasonCompactorDiscardedSpans, tenantID)
+	// overrides.RecordDiscardedSnapshots(count, reasonCompactorDiscardedSpans, tenantID)
 }
 
 // BlockRetentionForTenant implements CompactorOverrides

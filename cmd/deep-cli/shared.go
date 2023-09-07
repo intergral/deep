@@ -21,12 +21,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"sort"
 	"strconv"
 	"time"
+
+	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/google/uuid"
 	"github.com/intergral/deep/pkg/boundedwaitgroup"

@@ -19,8 +19,9 @@ package util
 
 import (
 	"context"
-	"github.com/weaveworks/common/user"
 	"net/http"
+
+	"github.com/weaveworks/common/user"
 )
 
 const (

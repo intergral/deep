@@ -27,7 +27,6 @@ import (
 )
 
 func TestBoundedWaitGroupExecutesCorrectNumberOfTimes(t *testing.T) {
-
 	run := func(capacity uint, runs int) (executed int32) {
 		executed = 0
 		bg := New(capacity)
@@ -47,7 +46,6 @@ func TestBoundedWaitGroupExecutesCorrectNumberOfTimes(t *testing.T) {
 }
 
 func TestBoundedWaitGroupDoesntExceedCapacity(t *testing.T) {
-
 	m := sync.Mutex{}
 	currExecuting := int32(0)
 	maxExecuting := uint(0)

@@ -24,7 +24,6 @@ import (
 )
 
 func LoadBackend(store storage.Store) (types.TPBackend, error) {
-
 	return &v1.TPEncoder{
 		Reader: store,
 		Writer: store,

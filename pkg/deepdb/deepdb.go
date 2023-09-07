@@ -22,11 +22,12 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"io"
+	"time"
+
 	"github.com/intergral/deep/pkg/deeppb"
 	deepTP "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/deepql"
-	"io"
-	"time"
 
 	gkLog "github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -244,7 +245,6 @@ func (rw *readerWriter) CompleteBlock(ctx context.Context, block common.WALBlock
 // CompleteBlockWithBackend iterates the given WAL block but flushes it to the given backend instead of the default deepdb backend. The
 // new block will have the same ID as the input block.
 func (rw *readerWriter) CompleteBlockWithBackend(ctx context.Context, block common.WALBlock, r backend.Reader, w backend.Writer) (common.BackendBlock, error) {
-
 	// The destination block format:
 	vers, err := encoding.FromVersion(rw.cfg.Block.Version)
 	if err != nil {

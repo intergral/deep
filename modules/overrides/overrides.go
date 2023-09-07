@@ -35,13 +35,11 @@ import (
 
 const wildcardTenant = "*"
 
-var (
-	metricOverridesLimitsDesc = prometheus.NewDesc(
-		"deep_limits_overrides",
-		"Resource limit overrides applied to tenants",
-		[]string{"limit_name", "tenant"},
-		nil,
-	)
+var metricOverridesLimitsDesc = prometheus.NewDesc(
+	"deep_limits_overrides",
+	"Resource limit overrides applied to tenants",
+	[]string{"limit_name", "tenant"},
+	nil,
 )
 
 // perTenantOverrides represents the overrides config file
@@ -60,7 +58,7 @@ func (o *perTenantOverrides) forTenant(tenantID string) *Limits {
 
 // loadPerTenantOverrides is of type runtimeconfig.Loader
 func loadPerTenantOverrides(r io.Reader) (interface{}, error) {
-	var overrides = &perTenantOverrides{}
+	overrides := &perTenantOverrides{}
 
 	decoder := yaml.NewDecoder(r)
 	decoder.SetStrict(true)

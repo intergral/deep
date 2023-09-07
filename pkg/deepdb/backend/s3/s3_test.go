@@ -21,13 +21,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/minio/minio-go/v7"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/minio/minio-go/v7"
 
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/grafana/dskit/flagext"
@@ -36,8 +37,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const tagHeader = "X-Amz-Tagging"
-const storageClassHeader = "X-Amz-Storage-Class"
+const (
+	tagHeader          = "X-Amz-Tagging"
+	storageClassHeader = "X-Amz-Storage-Class"
+)
 
 func TestHedge(t *testing.T) {
 	tests := []struct {
@@ -158,7 +161,6 @@ func fakeServerWithHeader(t *testing.T, obj *url.Values, testedHeaderName string
 		<ListBucketResult>
 		</ListBucketResult>`))
 		}
-
 	}))
 	t.Cleanup(server.Close)
 
@@ -166,7 +168,6 @@ func fakeServerWithHeader(t *testing.T, obj *url.Values, testedHeaderName string
 }
 
 func TestObjectBlockTags(t *testing.T) {
-
 	tests := []struct {
 		name string
 		tags map[string]string
@@ -207,7 +208,6 @@ func TestObjectBlockTags(t *testing.T) {
 }
 
 func TestObjectStorageClass(t *testing.T) {
-
 	tests := []struct {
 		name         string
 		StorageClass string

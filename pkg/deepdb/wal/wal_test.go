@@ -22,9 +22,6 @@ import (
 	"context"
 	crand "crypto/rand"
 	"fmt"
-	"github.com/intergral/deep/pkg/deeppb"
-	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
-	"github.com/intergral/deep/pkg/deepql"
 	"io"
 	"math/rand"
 	"os"
@@ -33,6 +30,10 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/intergral/deep/pkg/deeppb"
+	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	"github.com/intergral/deep/pkg/deepql"
 
 	"github.com/go-kit/log" //nolint:all
 	"github.com/google/uuid"
@@ -142,7 +143,6 @@ func TestIngestionSlack(t *testing.T) {
 }
 
 func testIngestionSlack(t *testing.T, e encoding.VersionedEncoding) {
-
 	wal, err := New(&Config{
 		Filepath:       t.TempDir(),
 		Encoding:       backend.EncNone,
@@ -360,12 +360,12 @@ func TestInvalidFilesAndFoldersAreHandled(t *testing.T) {
 	}
 
 	// create unparseable filename
-	err = os.WriteFile(filepath.Join(tempDir, "fe0b83eb-a86b-4b6c-9a74-dc272cd5700e:tenant:vParquet:notanencoding"), []byte{}, 0644)
+	err = os.WriteFile(filepath.Join(tempDir, "fe0b83eb-a86b-4b6c-9a74-dc272cd5700e:tenant:vParquet:notanencoding"), []byte{}, 0o644)
 	require.NoError(t, err)
 
 	// create empty block
 	require.NoError(t, os.MkdirAll(filepath.Join(tempDir, "fe0b83eb-a86b-4b6c-9a74-dc272cd5700e:blerg:vParquet:gzip"), os.ModePerm))
-	err = os.WriteFile(filepath.Join(tempDir, "fe0b83eb-a86b-4b6c-9a74-dc272cd5700e:blerg:vParquet:gzip", "meta.json"), []byte{}, 0644)
+	err = os.WriteFile(filepath.Join(tempDir, "fe0b83eb-a86b-4b6c-9a74-dc272cd5700e:blerg:vParquet:gzip", "meta.json"), []byte{}, 0o644)
 	require.NoError(t, err)
 
 	// create unparseable block

@@ -20,10 +20,11 @@ package transport
 import (
 	"bytes"
 	"context"
-	frontend_v1pb "github.com/intergral/deep/modules/frontend/v1/frontendv1pb"
 	"io"
 	"io/ioutil"
 	"net/http"
+
+	frontend_v1pb "github.com/intergral/deep/modules/frontend/v1/frontendv1pb"
 )
 
 // GrpcRoundTripper is similar to http.RoundTripper, but works with HTTP requests converted to protobuf messages.

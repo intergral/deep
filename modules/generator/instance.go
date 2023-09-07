@@ -20,11 +20,12 @@ package generator
 import (
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	"reflect"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/golang/protobuf/proto"
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"

@@ -19,8 +19,9 @@ package client
 
 import (
 	"flag"
-	"github.com/grafana/dskit/grpcclient"
 	"time"
+
+	"github.com/grafana/dskit/grpcclient"
 
 	ring_client "github.com/grafana/dskit/ring/client"
 )

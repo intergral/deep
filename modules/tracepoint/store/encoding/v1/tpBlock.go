@@ -18,9 +18,10 @@
 package v1
 
 import (
+	"time"
+
 	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
 	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
-	"time"
 )
 
 type tpBlock struct {
@@ -58,7 +59,7 @@ func (t *tpBlock) AddTracepoint(tp *deep_tp.TracePointConfig) {
 }
 
 func (t *tpBlock) DeleteTracepoint(tpID string) {
-	var tpToRemoveIndex = -1
+	tpToRemoveIndex := -1
 	for i, config := range t.tps {
 		if config.ID == tpID {
 			tpToRemoveIndex = i
@@ -67,7 +68,7 @@ func (t *tpBlock) DeleteTracepoint(tpID string) {
 	}
 
 	if tpToRemoveIndex == -1 {
-		//todo return error?
+		// todo return error?
 		return
 	}
 

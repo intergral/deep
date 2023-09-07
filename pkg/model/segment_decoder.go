@@ -19,6 +19,7 @@ package model
 
 import (
 	"fmt"
+
 	deeppb_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 
 	v1 "github.com/intergral/deep/pkg/model/v1"
@@ -60,7 +61,6 @@ func NewSegmentDecoder(dataEncoding string) (SegmentDecoder, error) {
 // MustNewSegmentDecoder creates a new encoding or it panics
 func MustNewSegmentDecoder(dataEncoding string) SegmentDecoder {
 	decoder, err := NewSegmentDecoder(dataEncoding)
-
 	if err != nil {
 		panic(err)
 	}

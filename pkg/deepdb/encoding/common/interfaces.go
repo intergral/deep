@@ -19,9 +19,10 @@ package common
 
 import (
 	"context"
+	"time"
+
 	"github.com/intergral/deep/pkg/deeppb"
 	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
-	"time"
 
 	"github.com/go-kit/log"
 

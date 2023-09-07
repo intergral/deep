@@ -19,11 +19,12 @@ package receivers
 
 import (
 	"context"
+	"reflect"
+	"testing"
+
 	"github.com/intergral/deep/pkg/util/log"
 	pb "github.com/intergral/go-deep-proto/poll/v1"
 	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
-	"reflect"
-	"testing"
 )
 
 func Snapshot(ctx context.Context, in *tp.Snapshot) (*tp.SnapshotResponse, error) {

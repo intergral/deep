@@ -23,13 +23,14 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/intergral/deep/pkg/model/snapshot"
-	"github.com/intergral/deep/pkg/util"
 	"io"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/intergral/deep/pkg/model/snapshot"
+	"github.com/intergral/deep/pkg/util"
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -100,7 +101,7 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 	statusCode := http.StatusNotFound
 	statusMsg := "snapshot not found"
 
-	//todo: We want the first result from below, i think there is a better way to do this
+	// todo: We want the first result from below, i think there is a better way to do this
 
 	for _, req := range reqs {
 		wg.Add(1)
@@ -213,7 +214,6 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 			Body:       io.NopCloser(strings.NewReader("snapshot not found")),
 			Header:     http.Header{},
 		}, nil
-
 	}
 
 	buff, err := proto.Marshal(&deeppb.SnapshotByIDResponse{

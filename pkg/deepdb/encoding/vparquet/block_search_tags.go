@@ -20,8 +20,9 @@ package vparquet
 import (
 	"context"
 	"fmt"
-	"github.com/segmentio/parquet-go"
 	"io"
+
+	"github.com/segmentio/parquet-go"
 
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	"github.com/intergral/deep/pkg/deepql"
@@ -175,7 +176,6 @@ func searchTags(_ context.Context, cb common.TagCallback, pf *parquet.File) erro
 }
 
 func (b *backendBlock) SearchTagValues(ctx context.Context, tag string, cb common.TagCallback, opts common.SearchOptions) error {
-
 	att, ok := translateTagToAttribute[tag]
 	if !ok {
 		att = deepql.NewAttribute(tag)
@@ -294,7 +294,7 @@ func searchKeyValues(definitionLevel int, keyPath, stringPath, intPath, floatPat
 	return nil
 }
 
-//todo incorporate this into tag search
+// todo incorporate this into tag search
 
 // searchSpecialTagValues searches a parquet file for all values for the provided column. It first attempts
 // to only pull all values from the column's dictionary. If this fails it falls back to scanning the entire path.

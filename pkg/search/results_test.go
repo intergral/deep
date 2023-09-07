@@ -20,14 +20,14 @@ package search
 import (
 	"context"
 	"errors"
-	"github.com/intergral/deep/pkg/deeppb"
 	"testing"
+
+	"github.com/intergral/deep/pkg/deeppb"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestResultsDoesNotRace(t *testing.T) {
-
 	testCases := []struct {
 		name           string
 		consumeResults bool

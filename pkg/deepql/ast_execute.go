@@ -25,7 +25,6 @@ import (
 )
 
 func (o SnapshotOperation) evaluate(input []*SnapshotResult) (output []*SnapshotResult, err error) {
-
 	for i := range input {
 		curr := input[i : i+1]
 
@@ -61,7 +60,6 @@ func (o SnapshotOperation) evaluate(input []*SnapshotResult) (output []*Snapshot
 }
 
 func (f ScalarFilter) evaluate(input []*SnapshotResult) (output []*SnapshotResult, err error) {
-
 	// TODO we solve this gap where pipeline elements and scalar binary
 	// operations meet in a generic way. For now we only support well-defined
 	// case: aggregate binop static
@@ -96,7 +94,6 @@ func (f ScalarFilter) evaluate(input []*SnapshotResult) (output []*SnapshotResul
 }
 
 func (a Aggregate) evaluate(input []*SnapshotResult) (output []*SnapshotResult, err error) {
-
 	for _, ss := range input {
 		switch a.op {
 		case aggregateCount:

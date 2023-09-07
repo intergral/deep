@@ -30,14 +30,12 @@ const (
 	hedgedMetricsPublishDuration = 10 * time.Second
 )
 
-var (
-	hedgedRequestsMetrics = promauto.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: "deep",
-			Name:      "query_frontend_hedged_roundtrips_total",
-			Help:      "Total number of hedged snapshot by ID requests. Registered as a gauge for code sanity. This is a counter.",
-		},
-	)
+var hedgedRequestsMetrics = promauto.NewGauge(
+	prometheus.GaugeOpts{
+		Namespace: "deep",
+		Name:      "query_frontend_hedged_roundtrips_total",
+		Help:      "Total number of hedged snapshot by ID requests. Registered as a gauge for code sanity. This is a counter.",
+	},
 )
 
 func newHedgedRequestWare(cfg HedgingConfig) Middleware {

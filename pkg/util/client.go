@@ -19,13 +19,14 @@ package util
 
 import (
 	"fmt"
-	"github.com/intergral/deep/pkg/deeppb"
-	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/intergral/deep/pkg/deeppb"
+	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 
 	"github.com/golang/protobuf/jsonpb" //nolint:all
 	"github.com/golang/protobuf/proto"  //nolint:all

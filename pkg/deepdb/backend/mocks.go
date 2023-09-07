@@ -27,11 +27,13 @@ import (
 	"github.com/google/uuid"
 )
 
-var _ RawReader = (*MockRawReader)(nil)
-var _ RawWriter = (*MockRawWriter)(nil)
-var _ Reader = (*MockReader)(nil)
-var _ Writer = (*MockWriter)(nil)
-var _ Compactor = (*MockCompactor)(nil)
+var (
+	_ RawReader = (*MockRawReader)(nil)
+	_ RawWriter = (*MockRawWriter)(nil)
+	_ Reader    = (*MockReader)(nil)
+	_ Writer    = (*MockWriter)(nil)
+	_ Compactor = (*MockCompactor)(nil)
+)
 
 // MockRawReader
 type MockRawReader struct {
@@ -49,6 +51,7 @@ func (m *MockRawReader) List(ctx context.Context, keypath KeyPath) ([]string, er
 
 	return m.L, nil
 }
+
 func (m *MockRawReader) Read(ctx context.Context, name string, keypath KeyPath, shouldCache bool) (io.ReadCloser, int64, error) {
 	if m.ReadFn != nil {
 		return m.ReadFn(ctx, name, keypath, shouldCache)
@@ -56,6 +59,7 @@ func (m *MockRawReader) Read(ctx context.Context, name string, keypath KeyPath, 
 
 	return io.NopCloser(bytes.NewReader(m.R)), int64(len(m.R)), nil
 }
+
 func (m *MockRawReader) ReadRange(ctx context.Context, name string, keypath KeyPath, offset uint64, buffer []byte, _ bool) error {
 	copy(buffer, m.Range)
 
@@ -75,10 +79,12 @@ func (m *MockRawWriter) Write(ctx context.Context, name string, keypath KeyPath,
 	m.writeBuffer, err = deep_io.ReadAllWithEstimate(data, size)
 	return err
 }
+
 func (m *MockRawWriter) Append(ctx context.Context, name string, keypath KeyPath, tracker AppendTracker, buffer []byte) (AppendTracker, error) {
 	m.appendBuffer = buffer
 	return nil, nil
 }
+
 func (m *MockRawWriter) CloseAppend(ctx context.Context, tracker AppendTracker) error {
 	m.closeAppendCalled = true
 	return nil
@@ -115,13 +121,14 @@ type MockReader struct {
 }
 
 func (m *MockReader) ReadTracepointBlock(ctx context.Context, name string) (io.ReadCloser, int64, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockReader) Tenants(ctx context.Context) ([]string, error) {
 	return m.T, nil
 }
+
 func (m *MockReader) Blocks(ctx context.Context, tenantID string) ([]uuid.UUID, error) {
 	if m.BlockFn != nil {
 		return m.BlockFn(ctx, tenantID)
@@ -129,6 +136,7 @@ func (m *MockReader) Blocks(ctx context.Context, tenantID string) ([]uuid.UUID, 
 
 	return m.B, nil
 }
+
 func (m *MockReader) BlockMeta(ctx context.Context, blockID uuid.UUID, tenantID string) (*BlockMeta, error) {
 	if m.BlockMetaFn != nil {
 		return m.BlockMetaFn(ctx, blockID, tenantID)
@@ -178,18 +186,23 @@ func (m *MockWriter) WriteTracepointBlock(ctx context.Context, name string, data
 func (m *MockWriter) Write(ctx context.Context, name string, blockID uuid.UUID, tenantID string, buffer []byte, shouldCache bool) error {
 	return nil
 }
+
 func (m *MockWriter) StreamWriter(ctx context.Context, name string, blockID uuid.UUID, tenantID string, data io.Reader, size int64) error {
 	return nil
 }
+
 func (m *MockWriter) WriteBlockMeta(ctx context.Context, meta *BlockMeta) error {
 	return nil
 }
+
 func (m *MockWriter) Append(ctx context.Context, name string, blockID uuid.UUID, tenantID string, tracker AppendTracker, buffer []byte) (AppendTracker, error) {
 	return nil, nil
 }
+
 func (m *MockWriter) CloseAppend(ctx context.Context, tracker AppendTracker) error {
 	return nil
 }
+
 func (m *MockWriter) WriteTenantIndex(ctx context.Context, tenantID string, meta []*BlockMeta, compactedMeta []*CompactedBlockMeta) error {
 	if m.IndexMeta == nil {
 		m.IndexMeta = make(map[string][]*BlockMeta)

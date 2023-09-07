@@ -17,9 +17,10 @@ package configgrpc
 import (
 	"context"
 	"errors"
-	"github.com/intergral/deep/pkg/receivers/config/client"
 	"net"
 	"time"
+
+	"github.com/intergral/deep/pkg/receivers/config/client"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"

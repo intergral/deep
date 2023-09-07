@@ -19,6 +19,7 @@ package vparquet
 
 import (
 	"fmt"
+
 	"github.com/intergral/deep/pkg/deepql"
 	"github.com/intergral/deep/pkg/parquetquery"
 	"github.com/segmentio/parquet-go"

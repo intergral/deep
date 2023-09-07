@@ -20,13 +20,14 @@ package api
 import (
 	"errors"
 	"fmt"
-	"github.com/intergral/deep/pkg/deeppb"
-	"github.com/intergral/deep/pkg/deepql"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/deepql"
 
 	"github.com/go-logfmt/logfmt"
 	"github.com/google/uuid"

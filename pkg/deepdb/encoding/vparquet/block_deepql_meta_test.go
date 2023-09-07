@@ -19,10 +19,11 @@ package vparquet
 
 import (
 	"context"
+	"testing"
+
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	"github.com/intergral/deep/pkg/deepql"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestBackendBlockSearchFetchMetaData(t *testing.T) {

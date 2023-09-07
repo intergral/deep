@@ -33,7 +33,6 @@ import (
 )
 
 func TestOverrides(t *testing.T) {
-
 	tests := []struct {
 		name                           string
 		limits                         Limits
@@ -167,7 +166,7 @@ func TestOverrides(t *testing.T) {
 				assert.Equal(t, time.Duration(expectedVal), overrides.MaxSearchDuration(user))
 			}
 
-			//if srv != nil {
+			// if srv != nil {
 			err = services.StopAndAwaitTerminated(context.TODO(), overrides)
 			require.NoError(t, err)
 			//}

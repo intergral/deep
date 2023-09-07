@@ -19,6 +19,7 @@ package vparquet
 
 import (
 	"context"
+
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	"github.com/intergral/deep/pkg/deepql"
 	"github.com/intergral/deep/pkg/parquetquery"
@@ -176,7 +177,6 @@ func fetch(ctx context.Context, req deepql.FetchSnapshotRequest, pf *parquet.Fil
 }
 
 func createSnapshotMetaIterator(makeIter makeIterFn, snapshotIter parquetquery.Iterator) (*snapshotMetadataIterator, error) {
-
 	snapshotIterators := []parquetquery.Iterator{
 		snapshotIter,
 		// Add static columns that are always return
@@ -232,8 +232,7 @@ func createAttributeIterator(makeIter makeIterFn, conditions []deepql.Condition,
 	return parquetquery.NewUnionIterator(definitionLevel, ittrs, nil), nil
 }
 
-type attributeCollector struct {
-}
+type attributeCollector struct{}
 
 var _ parquetquery.GroupPredicate = (*attributeCollector)(nil)
 
@@ -242,7 +241,6 @@ func (c *attributeCollector) String() string {
 }
 
 func (c *attributeCollector) KeepGroup(res *parquetquery.IteratorResult) bool {
-
 	var key string
 	var val deepql.Static
 

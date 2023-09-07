@@ -20,6 +20,8 @@ package app
 import (
 	"flag"
 	"fmt"
+	"time"
+
 	"github.com/intergral/deep/modules/compactor"
 	"github.com/intergral/deep/modules/distributor"
 	"github.com/intergral/deep/modules/frontend"
@@ -31,7 +33,6 @@ import (
 	"github.com/intergral/deep/pkg/deepdb"
 	"github.com/intergral/deep/pkg/usagestats"
 	"github.com/intergral/deep/pkg/util"
-	"time"
 
 	"github.com/grafana/dskit/flagext"
 	"github.com/grafana/dskit/kv/memberlist"
@@ -194,7 +195,6 @@ func (c *Config) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c *Config) Collect(ch chan<- prometheus.Metric) {
-
 	features := map[string]int{
 		"search_external_endpoints": 0,
 	}

@@ -19,6 +19,7 @@ package snapshotreceiver
 
 import (
 	"context"
+
 	"github.com/intergral/deep/pkg/receivers/config/client"
 	receivers "github.com/intergral/deep/pkg/receivers/types"
 	"github.com/intergral/deep/pkg/util"

@@ -24,10 +24,11 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
-	backend2 "github.com/intergral/deep/pkg/deepdb/backend"
 	"io"
 	"path"
 	"strings"
+
+	backend2 "github.com/intergral/deep/pkg/deepdb/backend"
 
 	blob "github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/opentracing/opentracing-go"
@@ -138,7 +139,6 @@ func (rw *readerWriter) List(ctx context.Context, keypath backend2.KeyPath) ([]s
 		})
 		if err != nil {
 			return objects, errors.Wrap(err, "iterating tenants")
-
 		}
 		marker = list.NextMarker
 

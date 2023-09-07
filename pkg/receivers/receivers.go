@@ -19,6 +19,7 @@ package receivers
 
 import (
 	"context"
+
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/intergral/deep/pkg/receivers/deep"

@@ -21,6 +21,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	gkLog "github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/grafana/dskit/services"
@@ -36,7 +38,6 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
-	"time"
 )
 
 const (

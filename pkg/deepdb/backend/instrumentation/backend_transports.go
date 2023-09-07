@@ -26,15 +26,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-var (
-	requestDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace: "deep",
-		Subsystem: "db",
-		Name:      "backend_request_duration_seconds",
-		Help:      "Time spent doing backend storage requests.",
-		Buckets:   prometheus.ExponentialBuckets(0.005, 4, 6),
-	}, []string{"operation", "status_code"})
-)
+var requestDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+	Namespace: "deep",
+	Subsystem: "db",
+	Name:      "backend_request_duration_seconds",
+	Help:      "Time spent doing backend storage requests.",
+	Buckets:   prometheus.ExponentialBuckets(0.005, 4, 6),
+}, []string{"operation", "status_code"})
 
 type instrumentedTransport struct {
 	observer prometheus.ObserverVec

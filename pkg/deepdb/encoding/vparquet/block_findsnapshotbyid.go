@@ -21,9 +21,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+
 	deepTP "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/segmentio/parquet-go"
-	"io"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
@@ -178,7 +179,6 @@ func findSnapshotByID(ctx context.Context, snapshotID common.ID, meta *backend.B
 		// Must be in this group
 		return 0, nil
 	})
-
 	if err != nil {
 		return nil, errors.Wrap(err, "error binary searching row groups")
 	}

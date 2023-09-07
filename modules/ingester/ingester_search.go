@@ -19,6 +19,7 @@ package ingester
 
 import (
 	"context"
+
 	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/util"
 

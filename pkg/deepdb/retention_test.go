@@ -19,6 +19,10 @@ package deepdb
 
 import (
 	"context"
+	"path"
+	"testing"
+	"time"
+
 	"github.com/go-kit/log"
 	"github.com/google/uuid"
 	"github.com/intergral/deep/pkg/deepdb/backend"
@@ -29,9 +33,6 @@ import (
 	"github.com/intergral/deep/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"path"
-	"testing"
-	"time"
 )
 
 func TestRetention(t *testing.T) {

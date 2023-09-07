@@ -20,12 +20,12 @@ package v1
 import (
 	"errors"
 	"fmt"
+
 	"github.com/golang/protobuf/proto"
 	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 )
 
-type SegmentDecoder struct {
-}
+type SegmentDecoder struct{}
 
 func (s *SegmentDecoder) PrepareForWrite(snapshot *deeptp.Snapshot, start uint32) ([]byte, error) {
 	return marshalWithStart(snapshot, start)

@@ -20,6 +20,7 @@ package main
 import (
 	"context"
 	"fmt"
+
 	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/util/test"
 	deep "github.com/intergral/go-deep-proto/tracepoint/v1"
@@ -57,7 +58,6 @@ func (cmd *generateSnapshotCmd) generateSnapshot(index int, options *test.Genera
 }
 
 func (cmd *generateSnapshotCmd) generateTestSnapshots() error {
-
 	client := cmd.connectGrpc()
 	defer func(connection *grpc.ClientConn) {
 		_ = connection.Close()
@@ -73,7 +73,6 @@ func (cmd *generateSnapshotCmd) generateTestSnapshots() error {
 }
 
 func GenerateTestSnapshots() []*tp.Snapshot {
-
 	// Create snapshot with no var lookup
 	snapshotNoVars := test.GenerateSnapshot(0, &test.GenerateOptions{Attrs: map[string]string{"test_id": "no_vars"}, NoVars: true})
 

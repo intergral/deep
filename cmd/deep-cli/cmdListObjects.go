@@ -20,13 +20,14 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/intergral/deep/pkg/deepdb/encoding/vparquet"
 	"github.com/olekukonko/tablewriter"
 	"github.com/segmentio/parquet-go"
-	"os"
-	"strconv"
-	"time"
 )
 
 type listObjectsCmd struct {

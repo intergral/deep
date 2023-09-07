@@ -124,7 +124,6 @@ func TestEqualHexStringSnapshotIDs(t *testing.T) {
 }
 
 func TestPadSnapshotIDTo16Bytes(t *testing.T) {
-
 	tc := []struct {
 		name     string
 		tid      []byte

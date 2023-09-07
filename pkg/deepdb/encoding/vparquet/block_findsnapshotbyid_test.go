@@ -20,10 +20,11 @@ package vparquet
 import (
 	"bytes"
 	"context"
-	"github.com/segmentio/parquet-go"
 	"path"
 	"sort"
 	"testing"
+
+	"github.com/segmentio/parquet-go"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

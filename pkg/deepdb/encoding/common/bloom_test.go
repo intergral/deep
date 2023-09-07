@@ -167,5 +167,4 @@ func TestBloomShardCount(t *testing.T) {
 			assert.Equal(t, int(tt.expectedShards), b.GetShardCount())
 		})
 	}
-
 }

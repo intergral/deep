@@ -3,12 +3,13 @@ package test
 import (
 	"crypto/rand"
 	"fmt"
-	"github.com/google/uuid"
-	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
-	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/google/uuid"
+	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
+	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 )
 
 type GenerateOptions struct {
@@ -240,7 +241,7 @@ func generateFrames(options GenerateOptions, vars []*tp.Variable) []*tp.StackFra
 }
 
 func generateResource(options GenerateOptions) []*cp.KeyValue {
-	var serviceName = "deep-cli"
+	serviceName := "deep-cli"
 	if options.ServiceName != "" {
 		serviceName = options.ServiceName
 	}
@@ -472,7 +473,7 @@ func makeSimpleVariable(vars []*tp.Variable, name string, value interface{}) *tp
 }
 
 func generateVarLookup(vars []*tp.Variable) map[string]*tp.Variable {
-	var varLookup = make(map[string]*tp.Variable, len(vars))
+	varLookup := make(map[string]*tp.Variable, len(vars))
 
 	for i, variable := range vars {
 		varLookup[strconv.Itoa(i)] = variable

@@ -36,9 +36,7 @@ const (
 	TenantIDTagName = "tenant_ids"
 )
 
-var (
-	loggerCtxKey = &loggerCtxMarker{}
-)
+var loggerCtxKey = &loggerCtxMarker{}
 
 // SpanLogger unifies tracing and logging, to reduce repetition.
 type SpanLogger struct {

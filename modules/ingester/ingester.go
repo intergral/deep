@@ -20,10 +20,11 @@ package ingester
 import (
 	"context"
 	"fmt"
-	"github.com/intergral/deep/pkg/deeppb"
-	"github.com/intergral/deep/pkg/util"
 	"sync"
 	"time"
+
+	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/util"
 
 	"github.com/go-kit/log/level"
 	"github.com/grafana/dskit/ring"

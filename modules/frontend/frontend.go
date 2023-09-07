@@ -20,13 +20,14 @@ package frontend
 import (
 	"bytes"
 	"fmt"
-	"github.com/intergral/deep/pkg/deeppb"
-	"github.com/intergral/deep/pkg/util"
 	"io"
 	"net/http"
 	"net/url"
 	"path"
 	"strings"
+
+	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/util"
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"

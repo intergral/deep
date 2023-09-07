@@ -19,6 +19,9 @@ package client
 
 import (
 	"context"
+	"hash/fnv"
+	"io"
+
 	"github.com/go-kit/log"
 	"github.com/grafana/dskit/ring"
 	ring_client "github.com/grafana/dskit/ring/client"
@@ -35,8 +38,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
-	"hash/fnv"
-	"io"
 )
 
 type TPClient struct {
@@ -52,7 +53,6 @@ type tpClient struct {
 }
 
 func New(clientCfg Config, tracepointRing ring.ReadRing, logger log.Logger) (*TPClient, error) {
-
 	metricIngesterClients := promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "deep",
 		Name:      "tracepoint_config_clients",
@@ -133,7 +133,7 @@ func (ts *TPClient) CreateTracepoint(ctx context.Context, req *deeppb.CreateTrac
 
 	get, err := ts.ring.Get(tokenFor, ring.Read, nil, nil, nil)
 	_, err = get.Do(ctx, 0, func(funCtx context.Context, desc *ring.InstanceDesc) (interface{}, error) {
-		//todo error handling
+		// todo error handling
 		client, _ := ts.pool.GetClientFor(desc.Addr)
 
 		grpClient := client.(*tpClient)
@@ -158,7 +158,7 @@ func (ts *TPClient) DeleteTracepoint(ctx context.Context, req *deeppb.DeleteTrac
 
 	get, err := ts.ring.Get(tokenFor, ring.Read, nil, nil, nil)
 	_, err = get.Do(ctx, 0, func(funCtx context.Context, desc *ring.InstanceDesc) (interface{}, error) {
-		//todo error handling
+		// todo error handling
 		client, _ := ts.pool.GetClientFor(desc.Addr)
 
 		grpClient := client.(*tpClient)
@@ -184,7 +184,7 @@ func (ts *TPClient) LoadTracepoints(ctx context.Context, req *deeppb.LoadTracepo
 	get, err := ts.ring.Get(tokenFor, ring.Read, nil, nil, nil)
 
 	doResults, err := get.Do(ctx, 0, func(funCtx context.Context, desc *ring.InstanceDesc) (interface{}, error) {
-		//todo error handling
+		// todo error handling
 		client, _ := ts.pool.GetClientFor(desc.Addr)
 
 		grpClient := client.(*tpClient)

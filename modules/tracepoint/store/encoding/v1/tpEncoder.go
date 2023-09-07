@@ -20,6 +20,7 @@ package v1
 import (
 	"bytes"
 	"context"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/intergral/deep/modules/tracepoint/store/encoding/types"
 	"github.com/intergral/deep/pkg/deepdb"
@@ -33,7 +34,6 @@ type TPEncoder struct {
 }
 
 func (t *TPEncoder) Flush(ctx context.Context, block types.TPBlock) error {
-
 	var positons []byte
 	var tpBytes []byte
 
@@ -71,7 +71,6 @@ func (t *TPEncoder) Flush(ctx context.Context, block types.TPBlock) error {
 
 func (t *TPEncoder) LoadBlock(ctx context.Context, tenantID string) (types.TPBlock, error) {
 	read, i, err := t.Reader.ReadTracepointBlock(ctx, tenantID)
-
 	if err != nil {
 		if err == backend.ErrDoesNotExist {
 			// block doesn't exist so create new
@@ -117,7 +116,7 @@ func (t *TPEncoder) LoadBlock(ctx context.Context, tenantID string) (types.TPBlo
 	}
 
 	tps := make([]*deeptp.TracePointConfig, len(positionBytes))
-	var start = 0
+	start := 0
 	for i, position := range positionBytes {
 		// create slice of the length from start to next position (which is then length of the next tp to read)
 		tpBytes := make([]byte, int(position)-start)
@@ -127,7 +126,7 @@ func (t *TPEncoder) LoadBlock(ctx context.Context, tenantID string) (types.TPBlo
 		}
 
 		// unmarshal the tp to a grpc message
-		var tp = &deeptp.TracePointConfig{}
+		tp := &deeptp.TracePointConfig{}
 
 		err = proto.Unmarshal(tpBytes, tp)
 		if err != nil {

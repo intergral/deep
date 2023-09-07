@@ -48,7 +48,6 @@ type Config struct {
 
 // RegisterFlagsAndApplyDefaults registers the flags.
 func (cfg *Config) RegisterFlagsAndApplyDefaults(prefix string, f *flag.FlagSet) {
-
 	cfg.TracePoint.BlocklistPollFallback = true
 	cfg.TracePoint.BlocklistPollConcurrency = deepdb.DefaultBlocklistPollConcurrency
 	cfg.TracePoint.BlocklistPollTenantIndexBuilders = deepdb.DefaultTenantIndexBuilders

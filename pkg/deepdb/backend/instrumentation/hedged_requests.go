@@ -24,15 +24,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-var (
-	hedgedRequestsMetrics = promauto.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: "deep",
-			Subsystem: "db",
-			Name:      "backend_hedged_roundtrips_total",
-			Help:      "Total number of hedged backend requests. Registered as a gauge for code sanity. This is a counter.",
-		},
-	)
+var hedgedRequestsMetrics = promauto.NewGauge(
+	prometheus.GaugeOpts{
+		Namespace: "deep",
+		Subsystem: "db",
+		Name:      "backend_hedged_roundtrips_total",
+		Help:      "Total number of hedged backend requests. Registered as a gauge for code sanity. This is a counter.",
+	},
 )
 
 // PublishHedgedMetrics flushes metrics from hedged requests every 10 seconds

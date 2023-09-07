@@ -63,7 +63,6 @@ type store struct {
 
 // NewStore creates a new Deep Store using configuration supplied.
 func NewStore(cfg Config, logger log.Logger) (Store, error) {
-
 	statCache.Set(cfg.TracePoint.Cache)
 	statBackend.Set(cfg.TracePoint.Backend)
 	statWalEncoding.Set(cfg.TracePoint.WAL.Encoding.String())

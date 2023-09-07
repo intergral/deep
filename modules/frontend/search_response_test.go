@@ -20,9 +20,10 @@ package frontend
 import (
 	"context"
 	"errors"
-	"github.com/intergral/deep/pkg/deeppb"
 	"testing"
 	"time"
+
+	"github.com/intergral/deep/pkg/deeppb"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -214,5 +215,4 @@ func TestSearchResponseCombineResults(t *testing.T) {
 	}
 
 	assert.Equal(t, expected, sr.result())
-
 }

@@ -19,9 +19,10 @@ package otlpgrpc
 
 import (
 	"context"
-	"github.com/intergral/deep/pkg/util"
 	"net"
 	"testing"
+
+	"github.com/intergral/deep/pkg/util"
 
 	"github.com/go-kit/log"
 	"github.com/stretchr/testify/require"

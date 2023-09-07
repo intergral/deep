@@ -19,6 +19,8 @@ package main
 
 import (
 	"context"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/intergral/deep/modules/storage"
 	"github.com/intergral/deep/pkg/deepdb/backend"
@@ -29,7 +31,6 @@ import (
 	"github.com/intergral/deep/pkg/model"
 	v1 "github.com/intergral/deep/pkg/model/v1"
 	"github.com/intergral/deep/pkg/util/test"
-	"time"
 )
 
 type cmdGenerateBlock struct {

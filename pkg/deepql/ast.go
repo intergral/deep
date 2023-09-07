@@ -19,8 +19,7 @@ package deepql
 
 import "fmt"
 
-//region RootExpr
-
+// region RootExpr
 type RootExpr struct {
 	Pipeline Pipeline
 }
@@ -36,10 +35,9 @@ func newRootExpr(e pipelineElement) *RootExpr {
 	}
 }
 
-//endregion
+// endregion
 
-//region Pipeline
-
+// region Pipeline
 type Pipeline struct {
 	Elements []pipelineElement
 }
@@ -107,8 +105,7 @@ type pipelineElement interface {
 	evaluate([]*SnapshotResult) ([]*SnapshotResult, error)
 }
 
-//endregion
-
+// endregion
 type typedExpression interface {
 	impliedType() StaticType
 }
@@ -118,8 +115,7 @@ type Element interface {
 	validate() error
 }
 
-//region GroupOperation
-
+// region GroupOperation
 type GroupOperation struct {
 	Expression FieldExpression
 }
@@ -138,11 +134,10 @@ func newGroupOperation(e FieldExpression) GroupOperation {
 	}
 }
 
-//endregion
+// endregion
 
 // region CoalesceOperation
-type CoalesceOperation struct {
-}
+type CoalesceOperation struct{}
 
 func (CoalesceOperation) evaluate(ss []*SnapshotResult) ([]*SnapshotResult, error) {
 	return ss, nil
@@ -155,7 +150,7 @@ func newCoalesceOperation() CoalesceOperation {
 	return CoalesceOperation{}
 }
 
-//endregion
+// endregion
 
 // **********************
 // Expressions
@@ -239,10 +234,9 @@ func newScalarOperation(op Operator, lhs ScalarExpression, rhs ScalarExpression)
 	}
 }
 
-//endregion
+// endregion
 
-//region Aggregate
-
+// region Aggregate
 type Aggregate struct {
 	op AggregateOp
 	e  FieldExpression
@@ -263,6 +257,7 @@ func (a Aggregate) extractConditions(request *FetchSnapshotRequest) {
 		a.e.extractConditions(request)
 	}
 }
+
 func newAggregate(agg AggregateOp, e FieldExpression) Aggregate {
 	return Aggregate{
 		op: agg,
@@ -270,8 +265,7 @@ func newAggregate(agg AggregateOp, e FieldExpression) Aggregate {
 	}
 }
 
-//endregion
-
+// endregion
 type SnapshotExpression interface {
 	pipelineElement
 
@@ -317,7 +311,7 @@ func newSnapshotFilter(e FieldExpression) SnapshotFilter {
 	return SnapshotFilter{e}
 }
 
-//endregion
+// endregion
 
 // region Snapshots
 
@@ -343,10 +337,9 @@ func newSnapshotOperation(op Operator, lhs SnapshotExpression, rhs SnapshotExpre
 	}
 }
 
-//endregion
+// endregion
 
-//region BinaryOperation
-
+// region BinaryOperation
 type BinaryOperation struct {
 	Op  Operator
 	LHS FieldExpression
@@ -435,10 +428,9 @@ func newBinaryOperation(op Operator, lhs FieldExpression, rhs FieldExpression) B
 	}
 }
 
-//endregion
+// endregion
 
-//region UnaryOperation
-
+// region UnaryOperation
 type UnaryOperation struct {
 	Op         Operator
 	Expression FieldExpression
@@ -467,8 +459,7 @@ func newUnaryOperation(op Operator, e FieldExpression) UnaryOperation {
 	}
 }
 
-//endregion
-
+// endregion
 func NewIntrinsic(n Intrinsic) Attribute {
 	return Attribute{
 		Scope:     AttributeScopeNone,

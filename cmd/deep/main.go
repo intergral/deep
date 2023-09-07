@@ -21,6 +21,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
+	"os"
+	"reflect"
+	"runtime"
+	"time"
+
 	"github.com/drone/envsubst"
 	"github.com/go-kit/log/level"
 	"github.com/grafana/dskit/flagext"
@@ -43,11 +49,6 @@ import (
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"gopkg.in/yaml.v2"
-	"io"
-	"os"
-	"reflect"
-	"runtime"
-	"time"
 )
 
 const appName = "deep"

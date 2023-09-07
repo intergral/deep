@@ -43,7 +43,7 @@ func RandomString() string {
 }
 
 func RandomStringLen(length int) string {
-	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 	s := make([]rune, length)
 	for i := range s {

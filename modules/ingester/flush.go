@@ -20,11 +20,12 @@ package ingester
 import (
 	"context"
 	"fmt"
-	"github.com/intergral/deep/pkg/util"
 	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/intergral/deep/pkg/util"
 
 	gklog "github.com/go-kit/log"
 	"github.com/go-kit/log/level"

@@ -19,6 +19,8 @@ package store
 
 import (
 	"context"
+	"testing"
+
 	"github.com/intergral/deep/modules/storage"
 	"github.com/intergral/deep/pkg/deepdb"
 	"github.com/intergral/deep/pkg/deepdb/backend"
@@ -30,7 +32,6 @@ import (
 	deeppb_poll "github.com/intergral/deep/pkg/deeppb/poll/v1"
 	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func createStore(t *testing.T, tempDir string) *TPStore {
@@ -63,7 +64,6 @@ func createStore(t *testing.T, tempDir string) *TPStore {
 }
 
 func TestNewOrgIsHandled(t *testing.T) {
-
 	tpStore := createStore(t, "")
 
 	org, err := tpStore.ForOrg(context.Background(), "test-org")
@@ -246,5 +246,4 @@ func TestGetNewTracepointsOnPoll(t *testing.T) {
 		assert.Equal(t, response.Response.CurrentHash, currentHash)
 		assert.Equal(t, response.Response.ResponseType, deeppb_poll.ResponseType_NO_CHANGE)
 	}
-
 }

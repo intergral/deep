@@ -19,9 +19,10 @@ package distributor
 
 import (
 	"context"
-	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"sync"
 	"time"
+
+	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -200,7 +201,6 @@ func (f *generatorForwarder) start(_ context.Context) error {
 	go f.watchOverrides()
 
 	return nil
-
 }
 
 func (f *generatorForwarder) stop(_ error) error {

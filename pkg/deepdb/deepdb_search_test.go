@@ -20,15 +20,16 @@ package deepdb
 import (
 	"context"
 	"fmt"
-	"github.com/intergral/deep/pkg/deeppb"
-	v1_common "github.com/intergral/deep/pkg/deeppb/common/v1"
-	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
-	"github.com/intergral/deep/pkg/deepql"
 	"math/rand"
 	"path"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/intergral/deep/pkg/deeppb"
+	v1_common "github.com/intergral/deep/pkg/deeppb/common/v1"
+	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	"github.com/intergral/deep/pkg/deepql"
 
 	"github.com/go-kit/log"
 	"github.com/google/uuid"
@@ -295,7 +296,6 @@ func actualForExpectedMeta(wantMeta *deeppb.SnapshotSearchMetadata, res *deeppb.
 type runnerFn func(*deeptp.Snapshot, *deeppb.SnapshotSearchMetadata, []*deeppb.SearchRequest, []*deeppb.SearchRequest, *backend.BlockMeta, Reader)
 
 func runCompleteBlockSearchTest(t testing.TB, blockVersion string, runner runnerFn) {
-
 	tempDir := t.TempDir()
 
 	r, w, _, _, c, err := New(&Config{
@@ -351,7 +351,7 @@ func runCompleteBlockSearchTest(t testing.TB, blockVersion string, runner runner
 		} else {
 			id = test.ValidSnapshotID(nil)
 			tr = test.GenerateSnapshot(i, &test.GenerateOptions{Id: id})
-			//tr = nil
+			// tr = nil
 		}
 		if tr == nil {
 			continue
@@ -492,21 +492,21 @@ func searchTestSuite() (
 		// Well-known resource attributes
 		makeReq("frame", "single_frame"),
 		makeReq("service.name", "deep-cli"),
-		//makeReq("cluster", "MyCluster"),
-		//makeReq("namespace", "MyNamespace"),
-		//makeReq("pod", "MyPod"),
-		//makeReq("container", "MyContainer"),
-		//makeReq("k8s.cluster.name", "k8sCluster"),
-		//makeReq("k8s.namespace.name", "k8sNamespace"),
-		//makeReq("k8s.pod.name", "k8sPod"),
-		//makeReq("k8s.container.name", "k8sContainer"),
-		//makeReq("root.service.name", "RootService"),
-		//makeReq("root.name", "RootSpan"),
+		// makeReq("cluster", "MyCluster"),
+		// makeReq("namespace", "MyNamespace"),
+		// makeReq("pod", "MyPod"),
+		// makeReq("container", "MyContainer"),
+		// makeReq("k8s.cluster.name", "k8sCluster"),
+		// makeReq("k8s.namespace.name", "k8sNamespace"),
+		// makeReq("k8s.pod.name", "k8sPod"),
+		// makeReq("k8s.container.name", "k8sContainer"),
+		// makeReq("root.service.name", "RootService"),
+		// makeReq("root.name", "RootSpan"),
 
 		// Attributes
-		//makeReq("foo", "Bar"),
+		// makeReq("foo", "Bar"),
 		// Resource attributes
-		//makeReq("bat", "Baz"),
+		// makeReq("bat", "Baz"),
 
 		// Multiple
 		//{

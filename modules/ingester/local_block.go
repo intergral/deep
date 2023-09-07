@@ -19,8 +19,9 @@ package ingester
 
 import (
 	"context"
-	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"time"
+
+	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 
 	"go.uber.org/atomic"
 
@@ -48,7 +49,6 @@ var _ common.Finder = (*localBlock)(nil)
 
 // newLocalBlock creates a local block
 func newLocalBlock(ctx context.Context, existingBlock common.BackendBlock, l *local.Backend) *localBlock {
-
 	c := &localBlock{
 		BackendBlock: existingBlock,
 		reader:       backend.NewReader(l),

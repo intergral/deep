@@ -19,11 +19,12 @@ package querier
 
 import (
 	"context"
-	"github.com/intergral/deep/pkg/util"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/intergral/deep/pkg/util"
 
 	"github.com/intergral/deep/modules/ingester/client"
 	"github.com/intergral/deep/modules/overrides"

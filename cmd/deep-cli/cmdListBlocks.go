@@ -19,11 +19,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/dustin/go-humanize"
-	"github.com/olekukonko/tablewriter"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/dustin/go-humanize"
+	"github.com/olekukonko/tablewriter"
 )
 
 type listBlocksCmd struct {
@@ -51,7 +52,6 @@ func (l *listBlocksCmd) Run(ctx *globalOptions) error {
 }
 
 func displayResults(results []blockStats, windowDuration time.Duration, includeCompacted bool) {
-
 	columns := []string{"id", "lvl", "objects", "size", "encoding", "vers", "window", "start", "end", "duration", "age"}
 	if includeCompacted {
 		columns = append(columns, "cmp")

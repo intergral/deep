@@ -21,10 +21,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/intergral/deep/pkg/deeppb"
-	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
-	"github.com/intergral/deep/pkg/deepql"
-	"github.com/intergral/deep/pkg/util"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -32,6 +28,11 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/intergral/deep/pkg/deeppb"
+	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	"github.com/intergral/deep/pkg/deepql"
+	"github.com/intergral/deep/pkg/util"
 
 	"github.com/go-kit/log"
 	"github.com/golang/protobuf/jsonpb" //nolint:all deprecated
@@ -456,7 +457,8 @@ func TestSearchSharderRoundTrip(t *testing.T) {
 					InspectedBytes:     3,
 					SkippedBlocks:      4,
 					SkippedSnapshots:   9,
-				}},
+				},
+			},
 			status2: 200,
 			response2: &deeppb.SearchResponse{
 				Snapshots: []*deeppb.SnapshotSearchMetadata{
@@ -471,7 +473,8 @@ func TestSearchSharderRoundTrip(t *testing.T) {
 					InspectedBytes:     7,
 					SkippedBlocks:      8,
 					SkippedSnapshots:   10,
-				}},
+				},
+			},
 			expectedStatus: 200,
 			expectedResponse: &deeppb.SearchResponse{
 				Snapshots: []*deeppb.SnapshotSearchMetadata{
@@ -491,7 +494,8 @@ func TestSearchSharderRoundTrip(t *testing.T) {
 					SkippedBlocks:      12,
 					SkippedSnapshots:   19,
 					TotalBlockBytes:    defaultTargetBytesPerRequest * 2,
-				}},
+				},
+			},
 		},
 		{
 			name:          "200+err",

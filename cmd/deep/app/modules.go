@@ -19,6 +19,10 @@ package app
 
 import (
 	"fmt"
+	"io"
+	"net/http"
+	"path"
+
 	"github.com/go-kit/log/level"
 	"github.com/grafana/dskit/dns"
 	"github.com/grafana/dskit/kv/codec"
@@ -54,9 +58,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/weaveworks/common/middleware"
 	"github.com/weaveworks/common/server"
-	"io"
-	"net/http"
-	"path"
 )
 
 // The various modules that make up deep.
@@ -125,7 +126,6 @@ func (t *App) initServer() (services.Service, error) {
 }
 
 func (t *App) initInternalServer() (services.Service, error) {
-
 	if !t.cfg.InternalServer.Enable {
 		return services.NewIdleService(nil, nil), nil
 	}

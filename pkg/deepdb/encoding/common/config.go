@@ -39,7 +39,6 @@ type BlockConfig struct {
 
 // ValidateConfig returns true if the config is valid
 func ValidateConfig(b *BlockConfig) error {
-
 	if b.BloomFP <= 0.0 {
 		return fmt.Errorf("invalid bloom filter fp rate %v", b.BloomFP)
 	}

@@ -19,8 +19,9 @@ package ingester
 
 import (
 	"context"
-	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"testing"
+
+	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 
 	"github.com/intergral/deep/pkg/model"
 	"github.com/stretchr/testify/assert"

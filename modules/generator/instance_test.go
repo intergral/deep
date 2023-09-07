@@ -75,7 +75,6 @@ func Test_instance_concurrency(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond)
 	close(end)
-
 }
 
 func Test_instance_updateProcessors(t *testing.T) {

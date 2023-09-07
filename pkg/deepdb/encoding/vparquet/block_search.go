@@ -20,12 +20,13 @@ package vparquet
 import (
 	"context"
 	"fmt"
-	"github.com/intergral/deep/pkg/deeppb"
-	"github.com/intergral/deep/pkg/deepql"
-	"github.com/segmentio/parquet-go"
 	"io"
 	"math"
 	"time"
+
+	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/deepql"
+	"github.com/segmentio/parquet-go"
 
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	deepIO "github.com/intergral/deep/pkg/io"
@@ -225,7 +226,6 @@ func makePipelineWithRowGroups(ctx context.Context, req *deeppb.SearchRequest, p
 }
 
 func searchParquetFile(ctx context.Context, pf *parquet.File, req *deeppb.SearchRequest, rgs []parquet.RowGroup) (*deeppb.SearchResponse, error) {
-
 	// Search happens in 2 phases for an optimization.
 	// Phase 1 is to iterate all columns involved in the request.
 	// Only if there are any matches do we enter phase 2, which

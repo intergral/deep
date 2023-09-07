@@ -19,8 +19,9 @@ package search
 
 import (
 	"context"
-	"github.com/intergral/deep/pkg/deeppb"
 	"sync"
+
+	"github.com/intergral/deep/pkg/deeppb"
 
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	"go.uber.org/atomic"

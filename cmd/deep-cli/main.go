@@ -20,6 +20,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+
 	"github.com/alecthomas/kong"
 	"github.com/intergral/deep/cmd/deep/app"
 	"github.com/intergral/deep/pkg/deepdb/backend"
@@ -28,7 +30,6 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/backend/local"
 	"github.com/intergral/deep/pkg/deepdb/backend/s3"
 	"gopkg.in/yaml.v2"
-	"os"
 )
 
 type globalOptions struct {
@@ -78,7 +79,7 @@ func main() {
 	ctx := kong.Parse(&cli,
 		kong.UsageOnError(),
 		kong.ConfigureHelp(kong.HelpOptions{
-			//Compact: true,
+			// Compact: true,
 		}),
 	)
 	err := ctx.Run(&cli.globalOptions)

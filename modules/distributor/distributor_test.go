@@ -22,14 +22,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	receiver "github.com/intergral/deep/modules/distributor/snapshotreceiver"
-	deepTP "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
-	deep "github.com/intergral/go-deep-proto/tracepoint/v1"
 	"math/rand"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	receiver "github.com/intergral/deep/modules/distributor/snapshotreceiver"
+	deepTP "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	deep "github.com/intergral/go-deep-proto/tracepoint/v1"
 
 	"github.com/go-kit/log"
 	kitlog "github.com/go-kit/log"
@@ -57,9 +58,7 @@ const (
 	numIngesters = 5
 )
 
-var (
-	ctx = util.InjectTenantID(context.Background(), "test")
-)
+var ctx = util.InjectTenantID(context.Background(), "test")
 
 func TestDistributor(t *testing.T) {
 	for i, tc := range []struct {

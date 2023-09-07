@@ -19,11 +19,12 @@ package worker
 
 import (
 	"context"
+	"time"
+
 	"github.com/grafana/dskit/grpcclient"
 	"github.com/intergral/deep/modules/frontend/v1/frontendv1pb"
 	"github.com/weaveworks/common/httpgrpc"
 	"google.golang.org/grpc"
-	"time"
 )
 
 type Config struct {
