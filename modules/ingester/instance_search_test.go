@@ -22,6 +22,12 @@ import (
 	"context"
 	crand "crypto/rand"
 	"fmt"
+	"sort"
+	"strconv"
+	"sync/atomic"
+	"testing"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/intergral/deep/modules/overrides"
 	"github.com/intergral/deep/pkg/deeppb"
@@ -31,21 +37,16 @@ import (
 	"github.com/intergral/deep/pkg/util/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"sort"
-	"strconv"
-	"sync/atomic"
-	"testing"
-	"time"
 )
 
 func TestInstanceSearch(t *testing.T) {
 	i, ingester, tempDir := defaultInstanceAndTmpDir(t)
 
-	var tagKey = "foo"
-	var tagValue = "bar"
+	tagKey := "foo"
+	tagValue := "bar"
 	ids, _ := writeSnapshotsForSearch(t, i, tagKey, tagValue, false)
 
-	var req = &deeppb.SearchRequest{
+	req := &deeppb.SearchRequest{
 		Tags: map[string]string{},
 	}
 	req.Tags[tagKey] = tagValue
@@ -192,8 +193,8 @@ func TestInstanceSearchTags(t *testing.T) {
 	i, _ := defaultInstance(t)
 
 	// add dummy search data
-	var tagKey = "foo"
-	var tagValue = "bar"
+	tagKey := "foo"
+	tagValue := "bar"
 
 	_, expectedTagValues := writeSnapshotsForSearch(t, i, tagKey, tagValue, true)
 
@@ -245,8 +246,8 @@ func TestInstanceSearchMaxBytesPerTagValuesQueryReturnsPartial(t *testing.T) {
 	i, err := ingester.getOrCreateInstance("fake")
 	assert.NoError(t, err, "unexpected error creating new tenantBlockManager")
 
-	var tagKey = "foo"
-	var tagValue = "bar"
+	tagKey := "foo"
+	tagValue := "bar"
 
 	_, _ = writeSnapshotsForSearch(t, i, tagKey, tagValue, true)
 
@@ -305,7 +306,7 @@ func writeSnapshotsForSearch(t *testing.T, i *tenantBlockManager, tagKey string,
 func TestInstanceSearchNoData(t *testing.T) {
 	i, _ := defaultInstance(t)
 
-	var req = &deeppb.SearchRequest{
+	req := &deeppb.SearchRequest{
 		Tags: map[string]string{},
 	}
 
@@ -324,10 +325,10 @@ func TestInstanceSearchDoesNotRace(t *testing.T) {
 	dec := model.MustNewSegmentDecoder(model.CurrentEncoding)
 
 	// add dummy search data
-	var tagKey = "foo"
-	var tagValue = "bar"
+	tagKey := "foo"
+	tagValue := "bar"
 
-	var req = &deeppb.SearchRequest{
+	req := &deeppb.SearchRequest{
 		Tags: map[string]string{tagKey: tagValue},
 	}
 
@@ -606,7 +607,7 @@ func BenchmarkInstanceSearchUnderLoad(b *testing.B) {
 	for j := 0; j < 2; j++ {
 		go concurrent(func() {
 			// time.Sleep(1 * time.Millisecond)
-			var req = &deeppb.SearchRequest{}
+			req := &deeppb.SearchRequest{}
 			resp, err := i.Search(ctx, req)
 			require.NoError(b, err)
 			searches.Add(1)

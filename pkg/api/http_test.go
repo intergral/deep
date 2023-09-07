@@ -19,11 +19,12 @@ package api
 
 import (
 	"fmt"
-	"github.com/intergral/deep/pkg/deeppb"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+
+	"github.com/intergral/deep/pkg/deeppb"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -479,7 +480,6 @@ func TestValidateAndSanitizeRequest(t *testing.T) {
 		assert.Equal(t, tc.startTime, startTime)
 		assert.Equal(t, tc.endTime, endTime)
 	}
-
 }
 
 func TestBuildSearchRequest(t *testing.T) {

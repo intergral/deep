@@ -20,8 +20,9 @@ package vparquet
 import (
 	"context"
 	"fmt"
-	"github.com/segmentio/parquet-go"
 	"io"
+
+	"github.com/segmentio/parquet-go"
 
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	deepIO "github.com/intergral/deep/pkg/io"

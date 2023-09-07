@@ -32,12 +32,10 @@ type cmdCreateTracepoint struct {
 }
 
 func (cmd *cmdCreateTracepoint) Run(ctx *globalOptions) error {
-
-	var jsonData = []byte(fmt.Sprintf("{\"Tracepoint\":{\"path\":\"%s\",\"line_number\":%d, \"args\":{\"fire_count\":\"%s\"}}}", cmd.Path, cmd.LineNumber, cmd.FireCount))
+	jsonData := []byte(fmt.Sprintf("{\"Tracepoint\":{\"path\":\"%s\",\"line_number\":%d, \"args\":{\"fire_count\":\"%s\"}}}", cmd.Path, cmd.LineNumber, cmd.FireCount))
 
 	resp, err := http.Post(fmt.Sprintf("http://%s/tracepoints/api/tracepoints", cmd.Endpoint), "application/json", bytes.NewReader(jsonData))
 	defer resp.Body.Close()
 
 	return err
-
 }

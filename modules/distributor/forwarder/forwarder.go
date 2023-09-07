@@ -20,8 +20,9 @@ package forwarder
 import (
 	"context"
 	"fmt"
-	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"time"
+
+	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 
 	"github.com/go-kit/log"
 	"go.opentelemetry.io/collector/pdata/ptrace"

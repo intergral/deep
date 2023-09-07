@@ -23,7 +23,7 @@ import (
 )
 
 func GetCounterValue(metric prometheus.Counter) (float64, error) {
-	var m = &dto.Metric{}
+	m := &dto.Metric{}
 	err := metric.Write(m)
 	if err != nil {
 		return 0, err
@@ -32,7 +32,7 @@ func GetCounterValue(metric prometheus.Counter) (float64, error) {
 }
 
 func GetGaugeValue(metric prometheus.Gauge) (float64, error) {
-	var m = &dto.Metric{}
+	m := &dto.Metric{}
 	err := metric.Write(m)
 	if err != nil {
 		return 0, err
@@ -41,7 +41,7 @@ func GetGaugeValue(metric prometheus.Gauge) (float64, error) {
 }
 
 func GetGaugeVecValue(metric *prometheus.GaugeVec, labels ...string) (float64, error) {
-	var m = &dto.Metric{}
+	m := &dto.Metric{}
 	err := metric.WithLabelValues(labels...).Write(m)
 	if err != nil {
 		return 0, err
@@ -50,7 +50,7 @@ func GetGaugeVecValue(metric *prometheus.GaugeVec, labels ...string) (float64, e
 }
 
 func GetCounterVecValue(metric *prometheus.CounterVec, label string) (float64, error) {
-	var m = &dto.Metric{}
+	m := &dto.Metric{}
 	if err := metric.WithLabelValues(label).Write(m); err != nil {
 		return 0, err
 	}

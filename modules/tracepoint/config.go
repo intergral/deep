@@ -19,14 +19,15 @@ package tracepoint
 
 import (
 	"flag"
+	"os"
+	"time"
+
 	"github.com/grafana/dskit/backoff"
 	"github.com/grafana/dskit/grpcclient"
 	"github.com/intergral/deep/modules/tracepoint/api"
 	"github.com/intergral/deep/modules/tracepoint/client"
 	"github.com/intergral/deep/modules/tracepoint/worker"
 	pkg_worker "github.com/intergral/deep/pkg/worker"
-	"os"
-	"time"
 
 	"github.com/go-kit/log/level"
 	"github.com/grafana/dskit/flagext"

@@ -19,6 +19,7 @@ package vparquet
 
 import (
 	"bytes"
+
 	deepCommon "github.com/intergral/deep/pkg/deeppb/common/v1"
 	deepTP "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 
@@ -265,7 +266,7 @@ func snapshotToParquet(id common.ID, snapshot *deepTP.Snapshot, sp *Snapshot) *S
 }
 
 func convertAttributes(attributes []*deepCommon.KeyValue) []Attribute {
-	var parAttributes = make([]Attribute, len(attributes))
+	parAttributes := make([]Attribute, len(attributes))
 	for i, attribute := range attributes {
 		attrToParquet(attribute, &parAttributes[i])
 	}
@@ -273,7 +274,7 @@ func convertAttributes(attributes []*deepCommon.KeyValue) []Attribute {
 }
 
 func convertWatches(watches []*deepTP.WatchResult) []WatchResult {
-	var parWatches = make([]WatchResult, len(watches))
+	parWatches := make([]WatchResult, len(watches))
 	for i, watch := range watches {
 		parWatches[i] = convertWatch(watch)
 	}
@@ -298,7 +299,7 @@ func convertWatch(watch *deepTP.WatchResult) WatchResult {
 }
 
 func convertFrames(frames []*deepTP.StackFrame) []StackFrame {
-	var parFrames = make([]StackFrame, len(frames))
+	parFrames := make([]StackFrame, len(frames))
 	for i, frame := range frames {
 		parFrames[i] = convertFrame(frame)
 	}
@@ -306,11 +307,11 @@ func convertFrames(frames []*deepTP.StackFrame) []StackFrame {
 }
 
 func convertFrame(frame *deepTP.StackFrame) StackFrame {
-	var isAsync = false
+	isAsync := false
 	if frame.IsAsync != nil {
 		isAsync = *frame.IsAsync
 	}
-	var appFrame = false
+	appFrame := false
 	if frame.AppFrame != nil {
 		appFrame = *frame.AppFrame
 	}
@@ -330,7 +331,7 @@ func convertFrame(frame *deepTP.StackFrame) StackFrame {
 }
 
 func convertLookup(lookup map[string]*deepTP.Variable) map[string]Variable {
-	var parLookup = make(map[string]Variable, len(lookup))
+	parLookup := make(map[string]Variable, len(lookup))
 	for varId, variable := range lookup {
 		parLookup[varId] = convertVariable(variable)
 	}
@@ -338,7 +339,7 @@ func convertLookup(lookup map[string]*deepTP.Variable) map[string]Variable {
 }
 
 func convertVariable(variable *deepTP.Variable) Variable {
-	var truncated = false
+	truncated := false
 	if variable.Truncated != nil {
 		truncated = *variable.Truncated
 	}
@@ -352,7 +353,7 @@ func convertVariable(variable *deepTP.Variable) Variable {
 }
 
 func convertChildren(children []*deepTP.VariableID) []VariableID {
-	var parChildren = make([]VariableID, len(children))
+	parChildren := make([]VariableID, len(children))
 	for i, child := range children {
 		parChildren[i] = convertVariableId(child)
 	}
@@ -482,7 +483,7 @@ func parquetConvertAttributes(parquetAttrs []Attribute) []*deepCommon.KeyValue {
 }
 
 func parquetConvertWatches(watches []WatchResult) []*deepTP.WatchResult {
-	var varWatches = make([]*deepTP.WatchResult, len(watches))
+	varWatches := make([]*deepTP.WatchResult, len(watches))
 	for i, watch := range watches {
 		varWatches[i] = parquetConvertWatchResult(watch)
 	}
@@ -504,7 +505,7 @@ func parquetConvertWatchResult(watch WatchResult) *deepTP.WatchResult {
 }
 
 func parquetConvertFrames(frames []StackFrame) []*deepTP.StackFrame {
-	var varFrames = make([]*deepTP.StackFrame, len(frames))
+	varFrames := make([]*deepTP.StackFrame, len(frames))
 	for i, frame := range frames {
 		varFrames[i] = parquetConvertFrame(frame)
 	}
@@ -537,7 +538,7 @@ func parquetConvertFrame(frame StackFrame) *deepTP.StackFrame {
 }
 
 func parquetConvertVariables(lookup map[string]Variable) map[string]*deepTP.Variable {
-	var varLookup = make(map[string]*deepTP.Variable, len(lookup))
+	varLookup := make(map[string]*deepTP.Variable, len(lookup))
 	for varId, variable := range lookup {
 		varLookup[varId] = parquetConvertVariable(variable)
 	}
@@ -563,7 +564,7 @@ func parquetConvertChildren(children []VariableID) []*deepTP.VariableID {
 	if len(children) == 0 {
 		return nil
 	}
-	var varChildren = make([]*deepTP.VariableID, len(children))
+	varChildren := make([]*deepTP.VariableID, len(children))
 	for i, child := range children {
 		varChildren[i] = parquetConvertVariableID(child)
 	}

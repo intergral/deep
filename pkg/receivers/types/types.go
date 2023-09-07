@@ -19,6 +19,7 @@ package types
 
 import (
 	"context"
+
 	pb "github.com/intergral/go-deep-proto/poll/v1"
 	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
 )
@@ -33,5 +34,7 @@ type Receiver interface {
 	Shutdown(ctx context.Context) error
 }
 
-type ProcessSnapshots func(ctx context.Context, in *tp.Snapshot) (*tp.SnapshotResponse, error)
-type ProcessPoll func(ctx context.Context, pollRequest *pb.PollRequest) (*pb.PollResponse, error)
+type (
+	ProcessSnapshots func(ctx context.Context, in *tp.Snapshot) (*tp.SnapshotResponse, error)
+	ProcessPoll      func(ctx context.Context, pollRequest *pb.PollRequest) (*pb.PollResponse, error)
+)

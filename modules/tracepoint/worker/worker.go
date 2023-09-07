@@ -19,10 +19,11 @@ package worker
 
 import (
 	"flag"
+	"time"
+
 	"github.com/go-kit/log"
 	pkg_worker "github.com/intergral/deep/pkg/worker"
 	"github.com/pkg/errors"
-	"time"
 )
 
 type TPWorkerConfig struct {

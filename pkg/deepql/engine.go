@@ -19,15 +19,15 @@ package deepql
 
 import (
 	"context"
+	"io"
+	"time"
+
 	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/opentracing/opentracing-go"
-	"io"
-	"time"
 )
 
-type Engine struct {
-}
+type Engine struct{}
 
 func NewEngine() *Engine {
 	return &Engine{}

@@ -19,6 +19,10 @@ package vparquet
 
 import (
 	"context"
+	"math/rand"
+	"path"
+	"testing"
+
 	"github.com/google/uuid"
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/backend/local"
@@ -28,13 +32,9 @@ import (
 	"github.com/intergral/deep/pkg/util"
 	"github.com/intergral/deep/pkg/util/test"
 	"github.com/stretchr/testify/require"
-	"math/rand"
-	"path"
-	"testing"
 )
 
 func TestBackendBlockSearch(t *testing.T) {
-
 	snapshot := fullyPopulatedTestSnapshot(test.ValidSnapshotID(nil))
 
 	// make a bunch of snapshots and include our snapshot above
@@ -171,6 +171,7 @@ func TestBackendBlockSearch(t *testing.T) {
 		require.Nil(t, meta, "search request:", req)
 	}
 }
+
 func makeBackendBlockWithSnapshots(t *testing.T, trs []*Snapshot) *backendBlock {
 	rawR, rawW, _, err := local.New(&local.Config{
 		Path: t.TempDir(),

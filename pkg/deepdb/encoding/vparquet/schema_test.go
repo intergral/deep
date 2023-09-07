@@ -19,12 +19,13 @@ package vparquet
 
 import (
 	"fmt"
-	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
-	"github.com/segmentio/parquet-go"
 	"io"
 	"math/rand"
 	"os"
 	"testing"
+
+	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	"github.com/segmentio/parquet-go"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -93,7 +94,7 @@ func TestParquetRowSizeEstimate(t *testing.T) {
 }
 
 func estimateRowSize(t *testing.T, name string) {
-	f, err := os.OpenFile(name, os.O_RDONLY, 0644)
+	f, err := os.OpenFile(name, os.O_RDONLY, 0o644)
 	require.NoError(t, err)
 
 	fi, err := f.Stat()

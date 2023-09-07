@@ -19,11 +19,12 @@ package snapshotreceiver
 
 import (
 	"context"
+	"testing"
+
 	"github.com/intergral/deep/pkg/receivers/config/client"
 	receivers "github.com/intergral/deep/pkg/receivers/types"
 	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
 	"google.golang.org/grpc/metadata"
-	"testing"
 
 	"github.com/intergral/deep/pkg/util"
 	"github.com/stretchr/testify/require"

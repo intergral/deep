@@ -793,7 +793,6 @@ func (j *LeftJoinIterator) String() string {
 }
 
 func (j *LeftJoinIterator) Next() (*IteratorResult, error) {
-
 	// Here is the algorithm for joins:  On each pass of the iterators
 	// we remember which ones are pointing at the earliest rows. If all
 	// are the lowest (and therefore pointing at the same thing) then

@@ -20,6 +20,9 @@ package worker
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/golang/protobuf/proto"
@@ -28,16 +31,12 @@ import (
 	"github.com/intergral/deep/modules/querier/stats"
 	"github.com/weaveworks/common/httpgrpc"
 	"google.golang.org/grpc"
-	"net/http"
-	"time"
 )
 
-var (
-	processorBackoffConfig = backoff.Config{
-		MinBackoff: 50 * time.Millisecond,
-		MaxBackoff: 1 * time.Second,
-	}
-)
+var processorBackoffConfig = backoff.Config{
+	MinBackoff: 50 * time.Millisecond,
+	MaxBackoff: 1 * time.Second,
+}
 
 func NewFrontendProcessor(cfg Config, handler RequestHandler, log log.Logger, prcFunc ProcessorFunction) Processor {
 	return &frontendProcessor{

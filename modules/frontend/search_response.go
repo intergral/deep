@@ -19,10 +19,11 @@ package frontend
 
 import (
 	"context"
-	"github.com/intergral/deep/pkg/deeppb"
 	"net/http"
 	"sort"
 	"sync"
+
+	"github.com/intergral/deep/pkg/deeppb"
 
 	"github.com/intergral/deep/pkg/search"
 )

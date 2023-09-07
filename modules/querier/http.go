@@ -20,12 +20,13 @@ package querier
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/gorilla/mux"
 	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/deepql"
 	"github.com/pkg/errors"
-	"net/http"
-	"time"
 
 	"github.com/golang/protobuf/jsonpb" //nolint:all //deprecated
 	"github.com/golang/protobuf/proto"  //nolint:all //ProtoReflect
@@ -78,7 +79,6 @@ func (q *Querier) SnapshotByIdHandler(w http.ResponseWriter, r *http.Request) {
 		BlockEnd:   blockEnd,
 		QueryMode:  queryMode,
 	}, timeStart, timeEnd)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

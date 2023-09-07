@@ -511,7 +511,6 @@ func TestBlockListBackendMetrics(t *testing.T) {
 			assert.Equal(t, tc.expectedCompacteddBackendBytesTotal, backendMetaMetrics.compactedBlockMetaTotalBytes)
 		})
 	}
-
 }
 
 func newMockCompactor(list PerTenantCompacted, expectsError bool) backend.Compactor {

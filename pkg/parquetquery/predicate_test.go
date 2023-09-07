@@ -50,7 +50,6 @@ func (p *mockPredicate) KeepPage(parquet.Page) bool               { p.pageCalled
 func (p *mockPredicate) KeepColumnChunk(parquet.ColumnChunk) bool { p.chunkCalled = true; return p.ret }
 
 func TestSubstringPredicate(t *testing.T) {
-
 	// Normal case - all chunks/pages/values inspected
 	testPredicate(t, predicateTestCase{
 		predicate:  NewSubstringPredicate("b"),

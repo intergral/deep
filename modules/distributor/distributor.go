@@ -20,6 +20,9 @@ package distributor
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/intergral/deep/modules/distributor/snapshotreceiver"
 	"github.com/intergral/deep/modules/tracepoint/client"
@@ -28,8 +31,6 @@ import (
 	pb "github.com/intergral/go-deep-proto/poll/v1"
 	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
 	"google.golang.org/grpc/status"
-	"strings"
-	"time"
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -548,7 +549,7 @@ func recordDiscardedSnapshots(err error, userID string) {
 	}
 	desc := s.Message()
 
-	var reason = reasonInternalError
+	reason := reasonInternalError
 	if strings.HasPrefix(desc, overrides.ErrorPrefixLiveSnapshotsExceeded) {
 		reason = reasonLiveSnapshotsExceeded
 	} else if strings.HasPrefix(desc, overrides.ErrorPrefixSnapshotTooLarge) {

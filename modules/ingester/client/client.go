@@ -19,9 +19,10 @@ package client
 
 import (
 	"flag"
-	"github.com/intergral/deep/pkg/deeppb"
 	"io"
 	"time"
+
+	"github.com/intergral/deep/pkg/deeppb"
 
 	"github.com/grafana/dskit/grpcclient"
 	ring_client "github.com/grafana/dskit/ring/client"

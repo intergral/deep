@@ -19,6 +19,9 @@ package worker
 
 import (
 	"context"
+	"os"
+	"sync"
+
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/grafana/dskit/services"
@@ -26,8 +29,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc"
-	"os"
-	"sync"
 )
 
 type querierWorker struct {

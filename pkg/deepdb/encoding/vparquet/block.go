@@ -20,11 +20,12 @@ package vparquet
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"sync"
+
 	"github.com/intergral/deep/pkg/deepql"
 	"github.com/pkg/errors"
 	"github.com/segmentio/parquet-go"
-	"reflect"
-	"sync"
 
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
@@ -60,7 +61,6 @@ func (b *backendBlock) BlockMeta() *backend.BlockMeta {
 // internal consistencies:  operand count matches the operation, all operands in each condition are identical
 // types, and the operand type is compatible with the operation.
 func (b *backendBlock) Fetch(ctx context.Context, req deepql.FetchSnapshotRequest, opts common.SearchOptions) (deepql.FetchSnapshotResponse, error) {
-
 	err := checkConditions(req.Conditions)
 	if err != nil {
 		return deepql.FetchSnapshotResponse{}, errors.Wrap(err, "conditions invalid")

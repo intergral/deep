@@ -19,6 +19,11 @@ package deepdb
 
 import (
 	"context"
+	"math/rand"
+	"path"
+	"testing"
+	"time"
+
 	"github.com/go-kit/log"
 	"github.com/google/uuid"
 	"github.com/intergral/deep/pkg/deepdb/backend"
@@ -32,10 +37,6 @@ import (
 	"github.com/intergral/deep/pkg/util"
 	"github.com/intergral/deep/pkg/util/test"
 	"github.com/stretchr/testify/require"
-	"math/rand"
-	"path"
-	"testing"
-	"time"
 )
 
 func TestSimpleDeepQL(t *testing.T) {
@@ -50,7 +51,6 @@ func TestSimpleDeepQL(t *testing.T) {
 type testFunc func(*deeptp.Snapshot, *deeppb.SnapshotSearchMetadata, *backend.BlockMeta, Reader)
 
 func runBlockQLTest(t testing.TB, blockVersion string, runner testFunc) {
-
 	tempDir := t.TempDir()
 
 	r, w, _, _, c, err := New(&Config{
@@ -129,8 +129,8 @@ func runBlockQLTest(t testing.TB, blockVersion string, runner testFunc) {
 func createTestData() (id []byte,
 	tr *deeptp.Snapshot,
 	start uint32,
-	expected *deeppb.SnapshotSearchMetadata) {
-
+	expected *deeppb.SnapshotSearchMetadata,
+) {
 	snapshot := test.GenerateSnapshot(101, &test.GenerateOptions{ServiceName: "test-data"})
 
 	return snapshot.ID, snapshot, uint32(snapshot.TsNanos / 1e9), &deeppb.SnapshotSearchMetadata{

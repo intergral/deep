@@ -20,10 +20,11 @@ package queue
 import (
 	"context"
 	"fmt"
-	"github.com/intergral/deep/pkg/util"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/intergral/deep/pkg/util"
 
 	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus"
@@ -171,7 +172,7 @@ func (m *Queue[T]) worker() {
 			// This is important during shutdown to ensure that the queue is drained
 			select {
 			case req, ok := <-m.reqChan:
-				if !ok { //closed
+				if !ok { // closed
 					return
 				}
 

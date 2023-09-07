@@ -20,11 +20,12 @@ package vparquet
 import (
 	"context"
 	"fmt"
-	"github.com/segmentio/parquet-go"
 	"io"
 	"runtime"
 	"sync"
 	"time"
+
+	"github.com/segmentio/parquet-go"
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -45,7 +46,6 @@ type Compactor struct {
 }
 
 func (c *Compactor) Compact(ctx context.Context, l log.Logger, r backend.Reader, writerCallback func(*backend.BlockMeta, time.Time) backend.Writer, inputs []*backend.BlockMeta) (newCompactedBlocks []*backend.BlockMeta, err error) {
-
 	var (
 		compactionLevel uint8
 		totalRecords    int
@@ -83,9 +83,7 @@ func (c *Compactor) Compact(ctx context.Context, l log.Logger, r backend.Reader,
 		bookmarks = append(bookmarks, newBookmark[parquet.Row](iter))
 	}
 
-	var (
-		nextCompactionLevel = compactionLevel + 1
-	)
+	nextCompactionLevel := compactionLevel + 1
 
 	var (
 		m               = newMultiblockIterator(bookmarks)

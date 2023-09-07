@@ -29,6 +29,7 @@ func HexStringToSnapshotIDUnsafe(id string) []byte {
 	snapshotID, _ := HexStringToSnapshotID(id)
 	return snapshotID
 }
+
 func HexStringToSnapshotID(id string) ([]byte, error) {
 	// The encoding/hex package does not handle non-hex characters.
 	// Ensure the ID has only the proper characters

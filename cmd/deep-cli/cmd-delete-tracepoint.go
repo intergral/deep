@@ -29,7 +29,6 @@ type cmdDeleteTracepoint struct {
 }
 
 func (cmd *cmdDeleteTracepoint) Run(ctx *globalOptions) error {
-
 	request, err := http.NewRequest("DELETE", fmt.Sprintf("http://%s/tracepoints/api/tracepoints/%s", cmd.Endpoint, cmd.ID), nil)
 	if err != nil {
 		return err
@@ -41,5 +40,4 @@ func (cmd *cmdDeleteTracepoint) Run(ctx *globalOptions) error {
 	defer resp.Body.Close()
 
 	return err
-
 }

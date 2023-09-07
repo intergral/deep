@@ -19,11 +19,12 @@ package vparquet
 
 import (
 	"context"
-	"github.com/intergral/deep/pkg/deepql"
-	"github.com/intergral/deep/pkg/util/test"
 	"path"
 	"strconv"
 	"testing"
+
+	"github.com/intergral/deep/pkg/deepql"
+	"github.com/intergral/deep/pkg/util/test"
 
 	"github.com/google/uuid"
 	"github.com/intergral/deep/pkg/deepdb/backend"
@@ -76,7 +77,7 @@ func TestBackendBlockSearchTags(t *testing.T) {
 	require.NoError(t, err)
 
 	// test that all attrs are in found attrs
-	for key, _ := range attributes {
+	for key := range attributes {
 		_, ok := foundAttrs[key]
 		require.True(t, ok)
 	}

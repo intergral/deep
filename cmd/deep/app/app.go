@@ -21,6 +21,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"sort"
+
 	"github.com/intergral/deep/modules/compactor"
 	"github.com/intergral/deep/modules/distributor"
 	receiver "github.com/intergral/deep/modules/distributor/snapshotreceiver"
@@ -34,9 +38,6 @@ import (
 	"github.com/intergral/deep/pkg/usagestats"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/intergral/deep/pkg/util/log"
-	"io"
-	"net/http"
-	"sort"
 
 	"github.com/go-kit/log/level"
 	"github.com/gorilla/mux"
@@ -59,8 +60,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const metricsNamespace = "deep"
-const apiDocs = "https://intergral.com/docs/deep/latest/api_docs/"
+const (
+	metricsNamespace = "deep"
+	apiDocs          = "https://intergral.com/docs/deep/latest/api_docs/"
+)
 
 var (
 	metricConfigFeatDesc = prometheus.NewDesc(

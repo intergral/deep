@@ -49,13 +49,11 @@ const (
 	MetricMetricsGeneratorMaxActiveSeries = "metrics_generator_max_active_series"
 )
 
-var (
-	metricLimitsDesc = prometheus.NewDesc(
-		"deep_limits_defaults",
-		"Default resource limits",
-		[]string{"limit_name"},
-		nil,
-	)
+var metricLimitsDesc = prometheus.NewDesc(
+	"deep_limits_defaults",
+	"Default resource limits",
+	[]string{"limit_name"},
+	nil,
 )
 
 // Limits describe all the limits for users; can be used to describe global default

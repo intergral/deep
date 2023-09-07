@@ -19,10 +19,11 @@ package vparquet
 
 import (
 	"context"
-	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"io"
 	"testing"
 	"time"
+
+	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 
 	"github.com/google/uuid"
 	"github.com/intergral/deep/pkg/deepdb/backend"

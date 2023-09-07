@@ -20,8 +20,9 @@ package vparquet
 import (
 	"context"
 	"encoding/binary"
-	"github.com/segmentio/parquet-go"
 	"io"
+
+	"github.com/segmentio/parquet-go"
 
 	"github.com/google/uuid"
 	"github.com/intergral/deep/pkg/deepdb/backend"

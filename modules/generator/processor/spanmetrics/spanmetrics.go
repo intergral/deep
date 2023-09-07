@@ -19,11 +19,12 @@ package spanmetrics
 
 import (
 	"context"
+	"strconv"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	deep_util "github.com/intergral/deep/pkg/util"
-	"strconv"
-	"time"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/prometheus/util/strutil"

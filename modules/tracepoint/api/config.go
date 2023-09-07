@@ -18,8 +18,9 @@
 package api
 
 import (
-	"github.com/intergral/deep/modules/tracepoint/worker"
 	"time"
+
+	"github.com/intergral/deep/modules/tracepoint/worker"
 )
 
 type Config struct {

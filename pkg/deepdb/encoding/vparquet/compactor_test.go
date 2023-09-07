@@ -20,10 +20,10 @@ package vparquet
 import (
 	"context"
 	"encoding/binary"
-	"github.com/segmentio/parquet-go"
+	"testing"
 	"time"
 
-	"testing"
+	"github.com/segmentio/parquet-go"
 
 	"github.com/go-kit/log"
 	"github.com/google/uuid"

@@ -19,6 +19,7 @@ package vparquet
 
 import (
 	"context"
+
 	"github.com/intergral/deep/pkg/deepql"
 
 	"github.com/intergral/deep/pkg/parquetquery"

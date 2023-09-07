@@ -20,6 +20,10 @@ package ingester
 import (
 	"context"
 	"crypto/rand"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/go-kit/log"
 	"github.com/golang/protobuf/proto"
 	"github.com/grafana/dskit/flagext"
@@ -42,15 +46,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"os"
-	"testing"
-	"time"
 )
 
 func TestPushQueryAllEncodings(t *testing.T) {
 	for _, e := range model.AllEncodings {
 		t.Run(e, func(t *testing.T) {
-
 			tmpDir := t.TempDir()
 			ctx := util.InjectTenantID(context.Background(), "test")
 			ingester, snapshots, snapshotIds := defaultIngesterWithPush(t, tmpDir, pushBatchV1)

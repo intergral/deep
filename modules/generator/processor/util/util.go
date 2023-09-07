@@ -18,9 +18,10 @@
 package util
 
 import (
+	"strconv"
+
 	v1_common "github.com/intergral/deep/pkg/deeppb/common/v1"
 	semconv "go.opentelemetry.io/collector/semconv/v1.9.0"
-	"strconv"
 )
 
 func FindServiceName(attributes []*v1_common.KeyValue) (string, bool) {

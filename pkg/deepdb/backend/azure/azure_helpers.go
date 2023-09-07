@@ -40,12 +40,10 @@ const (
 	maxRetries = 1
 )
 
-var (
-	defaultAuthFunctions = authFunctions{
-		NewOAuthConfigFunc: adal.NewOAuthConfig,
-		NewServicePrincipalTokenFromFederatedTokenFunc: adal.NewServicePrincipalTokenFromFederatedToken,
-	}
-)
+var defaultAuthFunctions = authFunctions{
+	NewOAuthConfigFunc: adal.NewOAuthConfig,
+	NewServicePrincipalTokenFromFederatedTokenFunc: adal.NewServicePrincipalTokenFromFederatedToken,
+}
 
 type authFunctions struct {
 	NewOAuthConfigFunc                             func(activeDirectoryEndpoint, tenantID string) (*adal.OAuthConfig, error)
@@ -87,7 +85,6 @@ func GetContainerURL(ctx context.Context, cfg *Config, hedge bool) (blob.Contain
 
 	httpSender := pipeline.FactoryFunc(func(next pipeline.Policy, po *pipeline.PolicyOptions) pipeline.PolicyFunc {
 		return func(ctx context.Context, request pipeline.Request) (pipeline.Response, error) {
-
 			// Send the request over the network
 			resp, err := client.Do(request.WithContext(ctx))
 

@@ -20,11 +20,12 @@ package vparquet
 import (
 	"bytes"
 	"context"
-	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
-	"github.com/intergral/deep/pkg/deepql"
 	"os"
 	"path/filepath"
 	"testing"
+
+	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	"github.com/intergral/deep/pkg/deepql"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
@@ -243,7 +244,6 @@ func TestWalBlockFindSnapshotByID(t *testing.T) {
 
 func TestWalBlockIterator(t *testing.T) {
 	testWalBlock(t, func(w *walBlock, ids []common.ID, trs []*deeptp.Snapshot) {
-
 		iter, err := w.Iterator()
 		require.NoError(t, err)
 
@@ -339,7 +339,6 @@ func testWalBlock(t *testing.T, f func(w *walBlock, ids []common.ID, trs []*deep
 }
 
 func BenchmarkWalDeepQL(b *testing.B) {
-
 	reqs := []string{
 		"{ .foo = `bar` }",
 		"{ span.foo = `bar` }",
@@ -370,7 +369,6 @@ func BenchmarkWalDeepQL(b *testing.B) {
 }
 
 func BenchmarkWalSearchTagValues(b *testing.B) {
-
 	tags := []string{
 		"service.name",
 		"name",

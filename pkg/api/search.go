@@ -18,8 +18,9 @@
 package api
 
 import (
-	"github.com/intergral/deep/pkg/deeppb"
 	"net/http"
+
+	"github.com/intergral/deep/pkg/deeppb"
 )
 
 // IsBackendSearch returns true if the request has a start, end and tags parameter and is the /api/search path

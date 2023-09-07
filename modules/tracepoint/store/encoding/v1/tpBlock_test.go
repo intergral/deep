@@ -18,14 +18,14 @@
 package v1
 
 import (
+	"testing"
+
 	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
 	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestTargeting(t *testing.T) {
-
 	exampleResource := []*cp.KeyValue{
 		{
 			Key:   "service.name",
@@ -103,7 +103,6 @@ func TestTargeting(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-
 			tp := &deeptp.TracePointConfig{
 				ID:        "one",
 				Targeting: test.targeting,

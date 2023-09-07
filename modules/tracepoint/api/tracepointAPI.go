@@ -20,6 +20,12 @@ package api
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/go-kit/log"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
@@ -36,11 +42,6 @@ import (
 	"github.com/intergral/deep/pkg/worker"
 	"github.com/opentracing/opentracing-go"
 	httpgrpc_server "github.com/weaveworks/common/httpgrpc/server"
-	"io"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type TracepointAPI struct {
@@ -87,7 +88,6 @@ func (ta *TracepointAPI) stopping(_ error) error {
 }
 
 func NewTracepointAPI(cfg Config, tpClient *client.TPClient, log log.Logger) (*TracepointAPI, error) {
-
 	service := &TracepointAPI{
 		cfg:    cfg,
 		client: tpClient,
@@ -190,7 +190,6 @@ func (ta *TracepointAPI) DeleteTracepointHandler(w http.ResponseWriter, r *http.
 		return
 	}
 	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
-
 }
 
 func (ta *TracepointAPI) CreateTracepointHandler(w http.ResponseWriter, r *http.Request) {
@@ -255,7 +254,6 @@ func (ta *TracepointAPI) parseLoadRequest(r *http.Request) (*deeppb.LoadTracepoi
 				Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: val[0]}},
 			})
 		}
-
 	}
 
 	return &deeppb.LoadTracepointRequest{Request: &pb.PollRequest{

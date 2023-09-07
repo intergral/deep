@@ -30,7 +30,6 @@ const (
 )
 
 func (a AggregateOp) String() string {
-
 	switch a {
 	case aggregateCount:
 		return "count"

@@ -76,7 +76,8 @@ func (cfg *Config) RegisterFlagsAndApplyDefaults(prefix string, f *flag.FlagSet)
 				},
 			},
 			DNSLookupPeriod: 10 * time.Second,
-		}}
+		},
+	}
 
 	f.StringVar(&cfg.Worker.FrontendAddress, prefix+".frontend-address", "", "Address of query frontend service, in host:port format.")
 }

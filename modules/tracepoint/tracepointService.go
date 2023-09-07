@@ -20,6 +20,7 @@ package tracepoint
 import (
 	"context"
 	"fmt"
+
 	gkLog "github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/grafana/dskit/ring"
@@ -103,7 +104,7 @@ func (ts *TPService) running(ctx context.Context) error {
 }
 
 func (ts *TPService) stopping(_ error) error {
-	//todo - do we need to do anything here?
+	// todo - do we need to do anything here?
 	return nil
 }
 

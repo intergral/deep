@@ -20,10 +20,11 @@ package distributor
 import (
 	"context"
 	"flag"
-	deepTP "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"sync"
 	"testing"
 	"time"
+
+	deepTP "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 
 	"github.com/go-kit/log"
 	"github.com/stretchr/testify/assert"

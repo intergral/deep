@@ -19,6 +19,7 @@ package types
 
 import (
 	"context"
+
 	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
 	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 )

@@ -21,14 +21,15 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"testing"
+
 	"github.com/intergral/deep/pkg/deepdb"
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/backend/local"
 	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/stretchr/testify/assert"
-	"io"
-	"os"
-	"testing"
 )
 
 type mockTracepointReaderWriter struct {

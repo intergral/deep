@@ -21,14 +21,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/intergral/deep/pkg/deeppb"
-	"github.com/intergral/deep/pkg/util"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/intergral/deep/pkg/util"
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -367,7 +368,6 @@ func (s *searchSharder) backendRequests(ctx context.Context, tenantID string, pa
 				Size:          m.Size,
 				FooterSize:    m.FooterSize,
 			})
-
 			if err != nil {
 				return nil, err
 			}

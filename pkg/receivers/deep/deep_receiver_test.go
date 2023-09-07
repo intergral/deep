@@ -18,10 +18,11 @@
 package deep
 
 import (
-	"github.com/intergral/deep/pkg/receivers/config/configgrpc"
-	"github.com/intergral/deep/pkg/receivers/config/confignet"
 	"reflect"
 	"testing"
+
+	"github.com/intergral/deep/pkg/receivers/config/configgrpc"
+	"github.com/intergral/deep/pkg/receivers/config/confignet"
 )
 
 func TestCreateConfig(t *testing.T) {

@@ -29,8 +29,10 @@ import (
 
 type noopAppender struct{}
 
-var _ storage.Appendable = (*noopAppender)(nil)
-var _ storage.Appender = (*noopAppender)(nil)
+var (
+	_ storage.Appendable = (*noopAppender)(nil)
+	_ storage.Appender   = (*noopAppender)(nil)
+)
 
 func (n noopAppender) Appender(context.Context) storage.Appender { return n }
 
@@ -87,8 +89,10 @@ func (s sample) String() string {
 	return fmt.Sprintf("%s %d %g", s.l, s.t, s.v)
 }
 
-var _ storage.Appendable = (*capturingAppender)(nil)
-var _ storage.Appender = (*capturingAppender)(nil)
+var (
+	_ storage.Appendable = (*capturingAppender)(nil)
+	_ storage.Appender   = (*capturingAppender)(nil)
+)
 
 func (c *capturingAppender) Appender(ctx context.Context) storage.Appender {
 	return c

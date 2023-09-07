@@ -21,6 +21,9 @@ import (
 	"context"
 	crand "crypto/rand"
 	"encoding/binary"
+	"testing"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/intergral/deep/modules/overrides"
@@ -32,8 +35,6 @@ import (
 	"github.com/intergral/deep/pkg/util/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
-	"time"
 )
 
 const testTenantID = "fake"
@@ -629,9 +630,11 @@ func BenchmarkInstanceFindSnapshotByIDFromCompleteBlock(b *testing.B) {
 func BenchmarkInstanceSearchCompleteParquet(b *testing.B) {
 	benchmarkInstanceSearch(b)
 }
+
 func TestInstanceSearchCompleteParquet(t *testing.T) {
 	benchmarkInstanceSearch(t)
 }
+
 func benchmarkInstanceSearch(b testing.TB) {
 	tenantBlockManager, _ := defaultInstance(b)
 	for i := 0; i < 1000; i++ {
@@ -696,7 +699,6 @@ func makeRequestWithByteLimit(maxBytes int, snapshotID []byte) *deeppb.PushBytes
 }
 
 func makePushBytesRequest(snapshotID []byte, snapshot *deep_tp.Snapshot) *deeppb.PushBytesRequest {
-
 	buffer, err := model.MustNewSegmentDecoder(model.CurrentEncoding).PrepareForWrite(snapshot, 0)
 	if err != nil {
 		panic(err)

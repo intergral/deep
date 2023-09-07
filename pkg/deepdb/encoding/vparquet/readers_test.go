@@ -19,9 +19,10 @@ package vparquet
 
 import (
 	"context"
-	"github.com/segmentio/parquet-go"
 	"io"
 	"testing"
+
+	"github.com/segmentio/parquet-go"
 
 	"github.com/stretchr/testify/require"
 
@@ -30,9 +31,7 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 )
 
-var (
-	tenantID = "single-tenant"
-)
+var tenantID = "single-tenant"
 
 type dummyReader struct {
 	r           io.ReaderAt

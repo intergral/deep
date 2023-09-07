@@ -20,6 +20,11 @@ package deepdb
 import (
 	"context"
 	"fmt"
+	"os"
+	"path"
+	"testing"
+	"time"
+
 	"github.com/go-kit/log"
 	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
@@ -34,10 +39,6 @@ import (
 	"github.com/intergral/deep/pkg/util/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"os"
-	"path"
-	"testing"
-	"time"
 )
 
 const (
@@ -215,6 +216,7 @@ func TestBlockCleanup(t *testing.T) {
 	m := rw.blocklist.Metas(testTenantID)
 	assert.Equal(t, 0, len(m))
 }
+
 func checkBlocklists(t *testing.T, expectedID uuid.UUID, expectedB int, expectedCB int, rw *readerWriter) {
 	rw.pollBlocklist()
 
@@ -224,7 +226,7 @@ func checkBlocklists(t *testing.T, expectedID uuid.UUID, expectedB int, expected
 		assert.Equal(t, expectedID, blocklist[0].BlockID)
 	}
 
-	//confirm blocklists are in starttime ascending order
+	// confirm blocklists are in starttime ascending order
 	lastTime := time.Time{}
 	for _, b := range blocklist {
 		assert.True(t, lastTime.Before(b.StartTime) || lastTime.Equal(b.StartTime))
@@ -504,7 +506,6 @@ func TestIncludeCompactedBlock(t *testing.T) {
 			assert.Equal(t, tc.expected, includeCompactedBlock(tc.meta, tc.searchID, s, e, blocklistPoll, tc.start, tc.end))
 		})
 	}
-
 }
 
 func TestSearchCompactedBlocks(t *testing.T) {
@@ -643,7 +644,6 @@ func TestCompleteBlockHonorsStartStopTimes(t *testing.T) {
 }
 
 func testCompleteBlockHonorsStartStopTimes(t *testing.T, targetBlockVersion string) {
-
 	tempDir := t.TempDir()
 
 	_, w, _, _, _, err := New(&Config{
@@ -750,6 +750,7 @@ func TestShouldCache(t *testing.T) {
 		})
 	}
 }
+
 func writeSnapshotToWal(t require.TestingT, b common.WALBlock, dec model.SegmentDecoder, id common.ID, snapshot *deeptp.Snapshot, start uint32) {
 	b1, err := dec.PrepareForWrite(snapshot, 0)
 	require.NoError(t, err)

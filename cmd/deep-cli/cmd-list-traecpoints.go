@@ -20,12 +20,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golang/protobuf/proto"
-	"github.com/intergral/deep/pkg/deeppb"
-	"github.com/olekukonko/tablewriter"
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/olekukonko/tablewriter"
 )
 
 type listTracepointCmd struct {

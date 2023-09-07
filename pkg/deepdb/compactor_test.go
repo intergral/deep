@@ -20,12 +20,13 @@ package deepdb
 import (
 	"context"
 	"encoding/json"
-	"github.com/intergral/deep/pkg/deepdb/encoding"
-	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
-	"github.com/stretchr/testify/assert"
 	"path"
 	"testing"
 	"time"
+
+	"github.com/intergral/deep/pkg/deepdb/encoding"
+	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/go-kit/log"
 	"github.com/golang/protobuf/proto"
@@ -42,8 +43,7 @@ import (
 	"github.com/intergral/deep/pkg/util/test"
 )
 
-type mockSharder struct {
-}
+type mockSharder struct{}
 
 func (m *mockSharder) Owns(hash string) bool {
 	return true
@@ -397,7 +397,6 @@ func TestCompactionIteratesThroughTenants(t *testing.T) {
 }
 
 func TestCompactionHonorsBlockStartEndTimes(t *testing.T) {
-
 	testEncodings := []string{vparquet.VersionString}
 	for _, enc := range testEncodings {
 		t.Run(enc, func(t *testing.T) {
@@ -493,6 +492,7 @@ func cutTestBlockWithSnapshots(t testing.TB, w Writer, tenantID string, data []t
 
 	return b
 }
+
 func cutTestBlocks(t testing.TB, w Writer, tenantID string, blockCount int, recordCount int) ([]common.BackendBlock, [][]byte) {
 	blocks := make([]common.BackendBlock, 0)
 	dec := model.MustNewSegmentDecoder(model.CurrentEncoding)

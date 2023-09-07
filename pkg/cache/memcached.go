@@ -180,7 +180,6 @@ func (c *Memcached) fetch(ctx context.Context, keys []string) (found []string, b
 		}
 		return err
 	})
-
 	if err != nil {
 		return found, bufs, keys
 	}

@@ -19,6 +19,12 @@ package store
 
 import (
 	"context"
+	"hash/fnv"
+	"sort"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/intergral/deep/modules/storage"
 	"github.com/intergral/deep/modules/tracepoint/store/encoding"
 	"github.com/intergral/deep/modules/tracepoint/store/encoding/types"
@@ -27,11 +33,6 @@ import (
 	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
 	pb "github.com/intergral/deep/pkg/deeppb/poll/v1"
 	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
-	"hash/fnv"
-	"sort"
-	"strconv"
-	"sync"
-	"time"
 )
 
 type TPStore struct {
@@ -85,7 +86,6 @@ func (s *TPStore) Flush(ctx context.Context, store OrgTPStore) error {
 // ForResource will find or create a new in memory store for the defined resource
 // these stores are partitioned by org id
 func (s *TPStore) ForResource(ctx context.Context, id string, resource []*cp.KeyValue) (ResourceTPStore, error) {
-
 	org, err := s.ForOrg(ctx, id)
 	if err != nil {
 		return nil, err
@@ -97,7 +97,6 @@ func (s *TPStore) ForResource(ctx context.Context, id string, resource []*cp.Key
 // ForOrg will find or create a in memory store for the given org id
 // this will load the org block from storage, if we do not already have a copy
 func (s *TPStore) ForOrg(ctx context.Context, id string) (OrgTPStore, error) {
-
 	if s.orgStores[id] != nil {
 		return s.orgStores[id], nil
 	}
@@ -211,7 +210,7 @@ type resourceStore struct {
 
 // ProcessRequest will process a request to load the tracepoints for a resource
 func (us *resourceStore) ProcessRequest(req *deeppb.LoadTracepointRequest) (*deeppb.LoadTracepointResponse, error) {
-	var responseType = pb.ResponseType_UPDATE
+	responseType := pb.ResponseType_UPDATE
 	// if the incoming hash is the same has the hash we have then there is no change between the client and us
 	if req.Request.CurrentHash != "" && req.Request.CurrentHash == us.currentHash {
 		responseType = pb.ResponseType_NO_CHANGE
@@ -234,7 +233,7 @@ func (us *resourceStore) AddTracepoint(tp *tp.TracePointConfig) error {
 
 // DeleteTracepoint from this resource
 func (us *resourceStore) DeleteTracepoint(tpID string) error {
-	var tpToRemoveIndex = -1
+	tpToRemoveIndex := -1
 	for i, config := range us.tps {
 		if config.ID == tpID {
 			tpToRemoveIndex = i
@@ -243,7 +242,7 @@ func (us *resourceStore) DeleteTracepoint(tpID string) error {
 	}
 
 	if tpToRemoveIndex == -1 {
-		//todo return error?
+		// todo return error?
 		return nil
 	}
 

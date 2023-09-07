@@ -22,14 +22,15 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/intergral/deep/pkg/deeppb"
-	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
-	"google.golang.org/grpc/status"
 	"hash"
 	"hash/fnv"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/intergral/deep/pkg/deeppb"
+	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	"google.golang.org/grpc/status"
 
 	"github.com/go-kit/log/level"
 	"github.com/google/uuid"
@@ -475,7 +476,6 @@ func (i *tenantBlockManager) tokenForSnapshotID(id []byte) uint32 {
 
 // resetHeadBlock() should be called under lock
 func (i *tenantBlockManager) resetHeadBlock() error {
-
 	// Reset snapshot sizes when cutting block
 	i.snapshotMtx.Lock()
 	i.snapshotSizes = make(map[uint32]uint32, len(i.snapshotSizes))

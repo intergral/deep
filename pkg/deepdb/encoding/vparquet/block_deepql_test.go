@@ -21,11 +21,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/intergral/deep/pkg/deepql"
 	"math/rand"
 	"path"
 	"testing"
 	"time"
+
+	"github.com/intergral/deep/pkg/deepql"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -100,9 +101,9 @@ func TestBackendBlockSearchDeepql(t *testing.T) {
 		deepql.MustExtractFetchSnapshotRequest(`{` + LabelDuration + ` <  101s}`),
 		deepql.MustExtractFetchSnapshotRequest(`{` + LabelDuration + ` <= 100s}`),
 		deepql.MustExtractFetchSnapshotRequest(`{` + LabelDuration + ` <= 100s}`),
-		//deepql.MustExtractFetchSnapshotRequest(`{` + LabelStatus + ` = error}`),
-		//deepql.MustExtractFetchSnapshotRequest(`{` + LabelStatus + ` = 2}`),
-		//deepql.MustExtractFetchSnapshotRequest(`{` + LabelKind + ` = client }`),
+		// deepql.MustExtractFetchSnapshotRequest(`{` + LabelStatus + ` = error}`),
+		// deepql.MustExtractFetchSnapshotRequest(`{` + LabelStatus + ` = 2}`),
+		// deepql.MustExtractFetchSnapshotRequest(`{` + LabelKind + ` = client }`),
 		// Resource well-known attributes
 		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelServiceName + ` = "test-service-name"}`),
 		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelCluster + ` = "cluster"}`),
@@ -122,31 +123,31 @@ func TestBackendBlockSearchDeepql(t *testing.T) {
 		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelK8sPodName + ` = "k8spod"}`),
 		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelK8sContainerName + ` = "k8scontainer"}`),
 		// Span well-known attributes
-		//deepql.MustExtractFetchSnapshotRequest(`{.` + LabelHTTPStatusCode + ` = 500}`),
-		//deepql.MustExtractFetchSnapshotRequest(`{.` + LabelHTTPMethod + ` = "get"}`),
-		//deepql.MustExtractFetchSnapshotRequest(`{.` + LabelHTTPUrl + ` = "url/hello/world"}`),
-		//deepql.MustExtractFetchSnapshotRequest(`{span.` + LabelHTTPStatusCode + ` = 500}`),
-		//deepql.MustExtractFetchSnapshotRequest(`{span.` + LabelHTTPMethod + ` = "get"}`),
-		//deepql.MustExtractFetchSnapshotRequest(`{span.` + LabelHTTPUrl + ` = "url/hello/world"}`),
+		// deepql.MustExtractFetchSnapshotRequest(`{.` + LabelHTTPStatusCode + ` = 500}`),
+		// deepql.MustExtractFetchSnapshotRequest(`{.` + LabelHTTPMethod + ` = "get"}`),
+		// deepql.MustExtractFetchSnapshotRequest(`{.` + LabelHTTPUrl + ` = "url/hello/world"}`),
+		// deepql.MustExtractFetchSnapshotRequest(`{span.` + LabelHTTPStatusCode + ` = 500}`),
+		// deepql.MustExtractFetchSnapshotRequest(`{span.` + LabelHTTPMethod + ` = "get"}`),
+		// deepql.MustExtractFetchSnapshotRequest(`{span.` + LabelHTTPUrl + ` = "url/hello/world"}`),
 		// Basic data types and operations
-		//deepql.MustExtractFetchSnapshotRequest(`{.float = 456.78}`),      // Float ==
-		//deepql.MustExtractFetchSnapshotRequest(`{.float != 456.79}`),     // Float !=
-		//deepql.MustExtractFetchSnapshotRequest(`{.float > 456.7}`),       // Float >
-		//deepql.MustExtractFetchSnapshotRequest(`{.float >= 456.78}`),     // Float >=
-		//deepql.MustExtractFetchSnapshotRequest(`{.float < 456.781}`),     // Float <
-		//deepql.MustExtractFetchSnapshotRequest(`{.bool = false}`),        // Bool ==
-		//deepql.MustExtractFetchSnapshotRequest(`{.bool != true}`),        // Bool !=
-		//deepql.MustExtractFetchSnapshotRequest(`{.bar = 123}`),           // Int ==
-		//deepql.MustExtractFetchSnapshotRequest(`{.bar != 124}`),          // Int !=
-		//deepql.MustExtractFetchSnapshotRequest(`{.bar > 122}`),           // Int >
-		//deepql.MustExtractFetchSnapshotRequest(`{.bar >= 123}`),          // Int >=
-		//deepql.MustExtractFetchSnapshotRequest(`{.bar < 124}`),           // Int <
-		//deepql.MustExtractFetchSnapshotRequest(`{.bar <= 123}`),          // Int <=
+		// deepql.MustExtractFetchSnapshotRequest(`{.float = 456.78}`),      // Float ==
+		// deepql.MustExtractFetchSnapshotRequest(`{.float != 456.79}`),     // Float !=
+		// deepql.MustExtractFetchSnapshotRequest(`{.float > 456.7}`),       // Float >
+		// deepql.MustExtractFetchSnapshotRequest(`{.float >= 456.78}`),     // Float >=
+		// deepql.MustExtractFetchSnapshotRequest(`{.float < 456.781}`),     // Float <
+		// deepql.MustExtractFetchSnapshotRequest(`{.bool = false}`),        // Bool ==
+		// deepql.MustExtractFetchSnapshotRequest(`{.bool != true}`),        // Bool !=
+		// deepql.MustExtractFetchSnapshotRequest(`{.bar = 123}`),           // Int ==
+		// deepql.MustExtractFetchSnapshotRequest(`{.bar != 124}`),          // Int !=
+		// deepql.MustExtractFetchSnapshotRequest(`{.bar > 122}`),           // Int >
+		// deepql.MustExtractFetchSnapshotRequest(`{.bar >= 123}`),          // Int >=
+		// deepql.MustExtractFetchSnapshotRequest(`{.bar < 124}`),           // Int <
+		// deepql.MustExtractFetchSnapshotRequest(`{.bar <= 123}`),          // Int <=
 		deepql.MustExtractFetchSnapshotRequest(`{.foo = "def"}`),         // String ==
 		deepql.MustExtractFetchSnapshotRequest(`{.foo != "deg"}`),        // String !=
 		deepql.MustExtractFetchSnapshotRequest(`{.foo =~ "d.*"}`),        // String Regex
 		deepql.MustExtractFetchSnapshotRequest(`{resource.foo = "abc"}`), // Resource-level only
-		//deepql.MustExtractFetchSnapshotRequest(`{.foo}`),                 // Projection only
+		// deepql.MustExtractFetchSnapshotRequest(`{.foo}`),                 // Projection only
 
 		// Edge cases
 		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelServiceName + ` = "test-service-name"}`),
@@ -248,7 +249,6 @@ func makeReq(conditions ...deepql.Condition) deepql.FetchSnapshotRequest {
 }
 
 func parse(t *testing.T, q string) deepql.Condition {
-
 	req, err := deepql.ExtractFetchSnapshotRequest(q)
 	require.NoError(t, err, "query:", q)
 
@@ -324,7 +324,6 @@ func BenchmarkBackendBlockdeepql(b *testing.B) {
 	require.NoError(b, err)
 
 	for _, tc := range testCases {
-
 		b.Run(tc.name, func(b *testing.B) {
 			b.ResetTimer()
 			bytesRead := 0

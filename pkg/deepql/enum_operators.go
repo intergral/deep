@@ -121,7 +121,6 @@ func (op Operator) unaryTypesValid(t StaticType) bool {
 }
 
 func (op Operator) String() string {
-
 	switch op {
 	case OpAdd:
 		return "+"
