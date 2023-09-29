@@ -556,7 +556,7 @@ func (t *App) setupModuleManager() error {
 		Ingester:             {Store, Server, Overrides, MemberlistKV, UsageReport},
 		TracepointClient:     {TPRing},
 		Tracepoint:           {Store, Server, Overrides, MemberlistKV, UsageReport, TracepointClient},
-		TracepointAPI:        {Server, TracepointClient},
+		TracepointAPI:        {Server, TracepointClient, Tracepoint},
 		MetricsGenerator:     {Server, Overrides, MemberlistKV, UsageReport},
 		Querier:              {Store, Ring, Overrides, UsageReport},
 		Compactor:            {Store, Server, Overrides, MemberlistKV, UsageReport},
