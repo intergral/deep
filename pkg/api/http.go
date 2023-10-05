@@ -333,6 +333,23 @@ func ParseSearchBlockRequest(r *http.Request) (*deeppb.SearchBlockRequest, error
 	return req, nil
 }
 
+// BuildIngesterSearchRequest takes a deeppb.SearchRequest and creates a request for searching the ingesters
+func BuildIngesterSearchRequest(req *http.Request, searchReq *deeppb.SearchRequest, start, end uint32) (*http.Request, error) {
+	if searchReq == nil {
+		return req, nil
+	}
+
+	request, err := BuildSearchRequest(req, searchReq)
+	if err != nil {
+		return nil, err
+	}
+	q := request.URL.Query()
+	q.Set(urlParamStart, strconv.FormatUint(uint64(start), 10))
+	q.Set(urlParamEnd, strconv.FormatUint(uint64(end), 10))
+
+	return request, nil
+}
+
 // BuildSearchRequest takes a deeppb.SearchRequest and populates the passed http.Request
 // with the appropriate params. If no http.Request is provided a new one is created.
 func BuildSearchRequest(req *http.Request, searchReq *deeppb.SearchRequest) (*http.Request, error) {
