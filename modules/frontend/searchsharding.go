@@ -409,9 +409,7 @@ func (s *searchSharder) ingesterRequest(ctx context.Context, tenantID string, pa
 	subR := parent.Clone(ctx)
 	subR.Header.Set(user.OrgIDHeaderName, tenantID)
 
-	searchReq.Start = ingesterStart
-	searchReq.End = ingesterEnd
-	subR, err := api.BuildSearchRequest(subR, searchReq)
+	subR, err := api.BuildIngesterSearchRequest(subR, searchReq, ingesterStart, ingesterEnd)
 	if err != nil {
 		return nil, err
 	}
