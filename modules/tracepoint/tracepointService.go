@@ -20,6 +20,7 @@ package tracepoint
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	gkLog "github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -35,6 +36,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// ErrReadOnly is returned when we are shutting down
+var ErrReadOnly = errors.New("tracepoint is shutting down")
+
 const (
 	tracepointRingKey = "tpRing"
 )
@@ -43,10 +47,13 @@ type TPService struct {
 	services.Service
 	deeppb.UnimplementedTracepointConfigServiceServer
 
+	instancesMtx sync.RWMutex
+
 	cfg        Config
 	lifecycler *ring.Lifecycler
 	store      *tp_store.TPStore
 	log        gkLog.Logger
+	readonly   bool
 }
 
 func (ts *TPService) Flush() {
@@ -104,8 +111,19 @@ func (ts *TPService) running(ctx context.Context) error {
 }
 
 func (ts *TPService) stopping(_ error) error {
-	// todo - do we need to do anything here?
+	if err := services.StopAndAwaitTerminated(context.Background(), ts.lifecycler); err != nil {
+		level.Warn(log.Logger).Log("msg", "failed to stop tracepoint lifecycler", "err", err)
+	}
+
+	ts.setReadOnly()
 	return nil
+}
+
+func (ts *TPService) setReadOnly() {
+	ts.instancesMtx.Lock()
+	defer ts.instancesMtx.Unlock()
+
+	ts.readonly = true
 }
 
 func (ts *TPService) LoadTracepoints(ctx context.Context, req *deeppb.LoadTracepointRequest) (*deeppb.LoadTracepointResponse, error) {
@@ -128,6 +146,9 @@ func (ts *TPService) LoadTracepoints(ctx context.Context, req *deeppb.LoadTracep
 }
 
 func (ts *TPService) CreateTracepoint(ctx context.Context, req *deeppb.CreateTracepointRequest) (*deeppb.CreateTracepointResponse, error) {
+	if ts.readonly {
+		return nil, ErrReadOnly
+	}
 	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "error extracting tenant id in Tracepoint.LoadTracepoints")
@@ -146,6 +167,9 @@ func (ts *TPService) CreateTracepoint(ctx context.Context, req *deeppb.CreateTra
 }
 
 func (ts *TPService) DeleteTracepoint(ctx context.Context, req *deeppb.DeleteTracepointRequest) (*deeppb.DeleteTracepointResponse, error) {
+	if ts.readonly {
+		return nil, ErrReadOnly
+	}
 	tenantID, err := util.ExtractTenantID(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "error extracting tenant id in Tracepoint.LoadTracepoints")
