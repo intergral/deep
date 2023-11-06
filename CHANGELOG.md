@@ -1,7 +1,12 @@
-<!-- 1.0.2 START -->
-# 1.0.2 (xx/xx/2023)
-- **[CHANGE]**: add log message support in storage engine [#66](https://github.com/intergral/deep/pull/66) [@Umaaz](https://github.com/Umaaz)
+<!-- 1.0.3 START -->
+# 1.0.3 (xx/xx/2023)
 
+<!-- 1.0.3 END -->
+
+<!-- 1.0.2 START -->
+# 1.0.2 (06/11/2023)
+- **[CHANGE]**: add log message support in storage engine [#66](https://github.com/intergral/deep/pull/66) [@Umaaz](https://github.com/Umaaz)
+- **[BUGFIX]**: tracepoint not removing from ring [#64](https://github.com/intergral/deep/pull/64) [@Umaaz](https://github.com/Umaaz)
 <!-- 1.0.2 END -->
 
 <!-- 1.0.1 START -->
