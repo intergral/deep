@@ -213,9 +213,7 @@ func snapshotToParquet(id common.ID, snapshot *deepTP.Snapshot, sp *Snapshot) *S
 
 	sp.Attributes = convertAttributes(snapshot.Attributes)
 
-	if snapshot.LogMsg != nil {
-		sp.LogMsg = snapshot.LogMsg
-	}
+	sp.LogMsg = snapshot.LogMsg
 
 	sp.Resource.ServiceName = ""
 	sp.Resource.Cluster = nil
@@ -417,6 +415,7 @@ func parquetToDeepSnapshot(snap *Snapshot) *deepTP.Snapshot {
 		Attributes:    parquetConvertAttributes(snap.Attributes),
 		DurationNanos: snap.DurationNanos,
 		Resource:      parquetConvertResource(snap.Resource),
+		LogMsg:        snap.LogMsg,
 	}
 }
 

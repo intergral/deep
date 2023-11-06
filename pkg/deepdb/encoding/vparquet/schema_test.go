@@ -43,6 +43,9 @@ func TestProtoParquetRoundTrip(t *testing.T) {
 	parquetSnapshot := snapshotToParquet(snapshotIDA, expectedSnapshot, nil)
 	actualSnapshot := parquetToDeepSnapshot(parquetSnapshot)
 	assert.Equal(t, expectedSnapshot, actualSnapshot)
+
+	assert.NotNil(t, expectedSnapshot.LogMsg)
+	assert.Equal(t, expectedSnapshot.LogMsg, actualSnapshot.LogMsg)
 }
 
 func TestProtoToParquetEmptySnapshot(t *testing.T) {
