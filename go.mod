@@ -35,7 +35,7 @@ require (
 	github.com/minio/minio-go/v7 v7.0.23
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/opentracing-contrib/go-grpc v0.0.0-20210225150812-73cb765af46e // indirectGPRCServerMaxRecvMsgSize
+	github.com/opentracing-contrib/go-grpc v0.0.0-20210225150812-73cb765af46e // indirect; indirectGPRCServerMaxRecvMsgSize
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/pkg/errors v0.9.1
@@ -77,9 +77,10 @@ require (
 require (
 	github.com/Azure/go-autorest/autorest v0.11.28
 	github.com/alecthomas/kong v0.2.11
+	github.com/gogo/protobuf v1.3.2
 	github.com/googleapis/gax-go/v2 v2.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
-	github.com/intergral/go-deep-proto v1.0.0
+	github.com/intergral/go-deep-proto v1.0.2
 	golang.org/x/exp v0.0.0-20221002003631-540bb7301a08
 )
 
@@ -120,7 +121,6 @@ require (
 	github.com/go-openapi/swag v0.21.1 // indirect
 	github.com/go-openapi/validate v0.22.0 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/gogo/status v1.1.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.2.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
