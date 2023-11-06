@@ -1,8 +1,23 @@
-<!-- 0.1.6 START -->
-# 0.1.6 (xx/xx/2023)
+<!-- 1.0.2 START -->
+# 1.0.2 (xx/xx/2023)
+- **[CHANGE]**: add log message support in storage engine [#66](https://github.com/intergral/deep/pull/66) [@Umaaz](https://github.com/Umaaz)
+
+<!-- 1.0.2 END -->
+
+<!-- 1.0.1 START -->
+# 1.0.1 (09/10/2023)
+- **[BUGFIX]**: querier - queries would not select the correct metas [#63](https://github.com/intergral/deep/pull/63) [@Umaaz](https://github.com/Umaaz)
+
+<!-- 1.0.1 END -->
+
+<!-- 1.0.0 START -->
+# 1.0.0 (07/09/2023)
+- **[CHANGE]**: fix change log order  [#59](https://github.com/intergral/deep/pull/59) [@Umaaz](https://github.com/Umaaz)
+- **[CHANGE]**: add fmt check and update CONTRIBUTING.md  [#60](https://github.com/intergral/deep/pull/60) [@Umaaz](https://github.com/Umaaz)
+- **[CHANGE]**: fix formatting issues [#61](https://github.com/intergral/deep/pull/61) [@Umaaz](https://github.com/Umaaz)
 - **[CHANGE]**: change examples to use official grafana docker image [#58](https://github.com/intergral/deep/pull/58) [@Umaaz](https://github.com/Umaaz)
 - **[CHANGE]**: change examples to use docker hub hosted images [#58](https://github.com/intergral/deep/pull/58) [@Umaaz](https://github.com/Umaaz)
-<!-- 0.1.6 END -->
+<!-- 1.0.0 END -->
 
 <!-- 0.1.6 START -->
 # 0.1.6 (21/07/2023)

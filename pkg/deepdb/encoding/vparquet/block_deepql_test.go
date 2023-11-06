@@ -256,7 +256,7 @@ func parse(t *testing.T, q string) deepql.Condition {
 }
 
 func fullyPopulatedTestSnapshot(id common.ID) *Snapshot {
-	snapshot := test.GenerateSnapshot(0, &test.GenerateOptions{Id: id, ServiceName: "test-service-name", Resource: map[string]string{
+	snapshot := test.GenerateSnapshot(0, &test.GenerateOptions{Id: id, LogMsg: true, ServiceName: "test-service-name", Resource: map[string]string{
 		"cluster":            "cluster",
 		"namespace":          "namespace",
 		"pod":                "pod",

@@ -143,6 +143,7 @@ type StackFrame struct {
 	TranspiledColumnNumber *uint32      `parquet:",snappy,optional"`
 	Variables              []VariableID `parquet:""`
 	AppFrame               bool         `parquet:""`
+	ShortPath              *string      `parquet:",snappy,dict,optional"`
 }
 
 type WatchResult struct {
@@ -162,6 +163,7 @@ type Snapshot struct {
 	Attributes    []Attribute         `parquet:"attr"`
 	DurationNanos uint64              `parquet:",delta"`
 	Resource      Resource            `parquet:"rs"`
+	LogMsg        *string             `parquet:",snappy,optional"`
 }
 
 func attrToParquet(a *deepCommon.KeyValue, p *Attribute) {
@@ -210,6 +212,8 @@ func snapshotToParquet(id common.ID, snapshot *deepTP.Snapshot, sp *Snapshot) *S
 	sp.Watches = convertWatches(snapshot.Watches)
 
 	sp.Attributes = convertAttributes(snapshot.Attributes)
+
+	sp.LogMsg = snapshot.LogMsg
 
 	sp.Resource.ServiceName = ""
 	sp.Resource.Cluster = nil
@@ -327,6 +331,7 @@ func convertFrame(frame *deepTP.StackFrame) StackFrame {
 		TranspiledColumnNumber: frame.TranspiledColumnNumber,
 		Variables:              convertChildren(frame.Variables),
 		AppFrame:               appFrame,
+		ShortPath:              frame.ShortPath,
 	}
 }
 
@@ -410,6 +415,7 @@ func parquetToDeepSnapshot(snap *Snapshot) *deepTP.Snapshot {
 		Attributes:    parquetConvertAttributes(snap.Attributes),
 		DurationNanos: snap.DurationNanos,
 		Resource:      parquetConvertResource(snap.Resource),
+		LogMsg:        snap.LogMsg,
 	}
 }
 
