@@ -29,7 +29,11 @@ markdown_extensions:
       pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
+  - admonition
+  - pymdownx.details
   - pymdownx.superfences
+  - markdown_include.include:
+      base_path: docs
 
 plugins:
   - glightbox:
