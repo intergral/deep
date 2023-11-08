@@ -209,8 +209,8 @@ update-mod:
 
 .PHONY: docs
 docs:
-	mkdocs build -f ./docs/mkdocs.yml
+	cd docs && mkdocs build -f ./mkdocs.yml
 
 .PHONY: docs-serve
 docs-serve:
-	mkdocs serve -f ./docs/mkdocs.yml
+	cd docs && mkdocs serve -f ./mkdocs.yml
