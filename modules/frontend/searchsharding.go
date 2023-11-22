@@ -132,6 +132,7 @@ func (s searchSharder) RoundTrip(r *http.Request) (*http.Response, error) {
 	}
 	span, ctx := opentracing.StartSpanFromContext(ctx, "frontend.ShardSearch")
 	defer span.Finish()
+	span.SetTag("tenantID", tenantID)
 
 	reqStart := time.Now()
 	// sub context to cancel in-progress sub requests

@@ -182,6 +182,7 @@ func (p *Poller) Do() (PerTenant, PerTenantCompacted, error) {
 
 func (p *Poller) pollTenantAndCreateIndex(ctx context.Context, tenantID string) ([]*backend.BlockMeta, []*backend.CompactedBlockMeta, error) {
 	span, derivedCtx := opentracing.StartSpanFromContext(ctx, "poll tenant index")
+	span.SetTag("tenantID", tenantID)
 	defer span.Finish()
 
 	// are we a tenant index builder?

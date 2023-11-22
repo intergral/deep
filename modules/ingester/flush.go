@@ -330,9 +330,9 @@ func withSpan(logger gklog.Logger, sp ot.Span) gklog.Logger {
 }
 
 func (i *Ingester) handleFlush(ctx context.Context, tenantID string, blockID uuid.UUID) (retry bool, err error) {
-	sp, ctx := ot.StartSpanFromContext(ctx, "flush", ot.Tag{Key: "organization", Value: tenantID}, ot.Tag{Key: "blockID", Value: blockID.String()})
+	sp, ctx := ot.StartSpanFromContext(ctx, "flush", ot.Tag{Key: "tenantID", Value: tenantID}, ot.Tag{Key: "blockID", Value: blockID.String()})
 	defer sp.Finish()
-	withSpan(level.Info(log.Logger), sp).Log("msg", "flushing block", "tenantID", tenantID, "block", blockID.String())
+	withSpan(level.Info(log.Logger), sp).Log("msg", "flushing block", "tenantID", tenantID, "blockID", blockID.String())
 
 	instance, err := i.getOrCreateInstance(tenantID)
 	if err != nil {

@@ -384,6 +384,7 @@ func (i *tenantBlockManager) ClearFlushedBlocks(completeBlockTimeout time.Durati
 
 func (i *tenantBlockManager) FindSnapshotByID(ctx context.Context, id []byte) (*deep_tp.Snapshot, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "tenantBlockManager.FindSnapshotByID")
+	span.SetTag("tenantID", i.tenantID)
 	defer span.Finish()
 
 	var err error

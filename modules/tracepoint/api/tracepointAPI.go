@@ -155,7 +155,7 @@ func (ta *TracepointAPI) DeleteTracepointHandler(w http.ResponseWriter, r *http.
 	ctx, cancel := context.WithDeadline(r.Context(), time.Now().Add(ta.cfg.LoadTracepoint.Timeout))
 	defer cancel()
 
-	span, ctx := opentracing.StartSpanFromContext(ctx, "TracepointAPI.CreateTracepoint")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "TracepointAPI.DeleteTracepoint")
 	defer span.Finish()
 
 	req, err := ta.parseDeleteRequest(r)

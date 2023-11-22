@@ -72,7 +72,10 @@ func (c *Compactor) Compact(ctx context.Context, l log.Logger, r backend.Reader,
 
 		block := newBackendBlock(blockMeta, r)
 
-		span, derivedCtx := opentracing.StartSpanFromContext(ctx, "vparquet.compactor.iterator")
+		span, derivedCtx := opentracing.StartSpanFromContext(ctx, "vparquet.compactor.iterator", opentracing.Tags{
+			"blockID":  blockMeta.BlockID,
+			"tenantID": blockMeta.TenantID,
+		})
 		defer span.Finish()
 
 		iter, err := block.RawIterator(derivedCtx, pool)
@@ -173,7 +176,10 @@ func (c *Compactor) Compact(ctx context.Context, l log.Logger, r backend.Reader,
 }
 
 func (c *Compactor) appendBlock(ctx context.Context, block *streamingBlock, l log.Logger) error {
-	span, _ := opentracing.StartSpanFromContext(ctx, "vparquet.compactor.appendBlock")
+	span, _ := opentracing.StartSpanFromContext(ctx, "vparquet.compactor.appendBlock", opentracing.Tags{
+		"blockID":  block.meta.BlockID,
+		"tenantID": block.meta.TenantID,
+	})
 	defer span.Finish()
 
 	var (
@@ -201,7 +207,10 @@ func (c *Compactor) appendBlock(ctx context.Context, block *streamingBlock, l lo
 }
 
 func (c *Compactor) finishBlock(ctx context.Context, block *streamingBlock, l log.Logger) error {
-	span, _ := opentracing.StartSpanFromContext(ctx, "vparquet.compactor.finishBlock")
+	span, _ := opentracing.StartSpanFromContext(ctx, "vparquet.compactor.finishBlock", opentracing.Tags{
+		"blockID":  block.meta.BlockID,
+		"tenantID": block.meta.TenantID,
+	})
 	defer span.Finish()
 
 	bytesFlushed, err := block.Complete()

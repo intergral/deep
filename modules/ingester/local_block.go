@@ -70,6 +70,9 @@ func newLocalBlock(ctx context.Context, existingBlock common.BackendBlock, l *lo
 // FindSnapshotByID will scan the local block for the id
 func (c *localBlock) FindSnapshotByID(ctx context.Context, id common.ID, opts common.SearchOptions) (*deep_tp.Snapshot, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "localBlock.FindSnapshotByID")
+	if c.BlockMeta() != nil {
+		span.SetTag("tenantID", c.BlockMeta().TenantID)
+	}
 	defer span.Finish()
 	// local block is a local version of the backend lock so just pass to the backend block
 	return c.BackendBlock.FindSnapshotByID(ctx, id, opts)
