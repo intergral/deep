@@ -226,6 +226,7 @@ func (i *Ingester) FindSnapshotByID(ctx context.Context, req *deeppb.SnapshotByI
 	if err != nil {
 		return nil, err
 	}
+	span.SetTag("tenantID", tenantID)
 	inst, ok := i.getInstanceByID(tenantID)
 	if !ok || inst == nil {
 		return &deeppb.SnapshotByIDResponse{}, nil

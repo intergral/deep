@@ -212,6 +212,7 @@ func (q *Querier) FindSnapshotByID(ctx context.Context, req *deeppb.SnapshotByID
 	}
 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "Querier.FindSnapshotByID")
+	span.SetTag("tenantID", tenantID)
 	defer span.Finish()
 
 	span.SetTag("queryMode", req.QueryMode)

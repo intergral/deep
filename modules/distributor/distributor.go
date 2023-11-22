@@ -317,6 +317,7 @@ func (d *Distributor) PushPoll(ctx context.Context, pollRequest *pb.PollRequest)
 		// can't record as we have no tenant
 		return nil, err
 	}
+	span.SetTag("tenantID", tenantID)
 
 	// todo is this really needed?
 	// Convert to bytes and back. This is unfortunate for efficiency, but it works
@@ -368,6 +369,7 @@ func (d *Distributor) PushSnapshot(ctx context.Context, in *tp.Snapshot) (*tp.Sn
 		// can't record discarded spans here b/c there's no tenant
 		return nil, err
 	}
+	span.SetTag("tenantID", tenantID)
 
 	// todo is this really needed?
 	// Convert to bytes and back. This is unfortunate for efficiency, but it works

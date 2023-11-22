@@ -117,7 +117,8 @@ func (i *tenantBlockManager) searchWAL(ctx context.Context, req *deeppb.SearchRe
 	searchWalBlock := func(b common.WALBlock) {
 		blockID := b.BlockMeta().BlockID.String()
 		span, ctx := opentracing.StartSpanFromContext(ctx, "tenantBlockManager.searchWALBlock", opentracing.Tags{
-			"blockID": blockID,
+			"blockID":  blockID,
+			"tenantID": b.BlockMeta().TenantID,
 		})
 		defer span.Finish()
 		defer sr.FinishWorker()
@@ -182,6 +183,7 @@ func (i *tenantBlockManager) searchLocalBlocks(ctx context.Context, req *deeppb.
 
 			span.LogFields(ot_log.Event("local block entry mtx acquired"))
 			span.SetTag("blockID", blockID)
+			span.SetTag("tenantID", i.tenantID)
 
 			var resp *deeppb.SearchResponse
 			var err error

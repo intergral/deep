@@ -307,6 +307,7 @@ func (rw *readerWriter) FindSnapshot(ctx context.Context, tenantID string, id co
 	// tracing instrumentation
 	logger := log.WithContext(ctx, log.Logger)
 	span, ctx := opentracing.StartSpanFromContext(ctx, "store.FindSnapshot")
+	span.SetTag("tenantID", tenantID)
 	defer span.Finish()
 
 	blockStartUUID, err := uuid.Parse(blockStart)

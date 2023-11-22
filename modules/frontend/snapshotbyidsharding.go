@@ -81,6 +81,7 @@ func (s shardQuery) RoundTrip(r *http.Request) (*http.Response, error) {
 			Body:       io.NopCloser(strings.NewReader(err.Error())),
 		}, nil
 	}
+	span.SetTag("tenantID", tenantID)
 
 	reqStart := time.Now()
 

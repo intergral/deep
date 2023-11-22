@@ -168,6 +168,7 @@ func (rw *readerWriter) compact(ctx context.Context, blockMetas []*backend.Block
 
 	// todo - add timeout?
 	span, ctx := opentracing.StartSpanFromContext(ctx, "rw.compact")
+	span.SetTag("tenantID", tenantID)
 	defer span.Finish()
 
 	traceID, _ := util.ExtractTraceID(ctx)

@@ -78,6 +78,7 @@ func (b *backendBlock) openForSearch(ctx context.Context, opts common.SearchOpti
 	}
 
 	span, _ := opentracing.StartSpanFromContext(ctx, "parquet.OpenFile")
+	span.SetTag("tenantID", b.meta.TenantID)
 	defer span.Finish()
 	pf, err := parquet.OpenFile(readerAt, int64(b.meta.Size), o...)
 
