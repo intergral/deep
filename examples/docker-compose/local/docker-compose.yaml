@@ -10,7 +10,7 @@ services:
     environment:
       - DEBUG_BLOCK=0
     ports:
-      - "3100:3100"   # deep http
+      - "3300:3300"   # deep http
       - "43315:43315"   # deep grpc ingest
 
   prometheus:
