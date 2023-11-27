@@ -55,7 +55,8 @@ type tpClient struct {
 func New(clientCfg Config, tracepointRing ring.ReadRing, logger log.Logger) (*TPClient, error) {
 	metricIngesterClients := promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "deep",
-		Name:      "tracepoint_config_clients",
+		Subsystem: "tracepoint",
+		Name:      "config_clients",
 		Help:      "The current number of tracepoint config clients.",
 	})
 

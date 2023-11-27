@@ -65,19 +65,22 @@ import (
 var (
 	metricIngesterClients = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "deep",
-		Name:      "querier_ingester_clients",
+		Subsystem: "querier",
+		Name:      "ingester_clients",
 		Help:      "The current number of ingester clients.",
 	})
 	metricEndpointDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "deep",
-		Name:      "querier_external_endpoint_duration_seconds",
+		Subsystem: "querier",
+		Name:      "external_endpoint_duration_seconds",
 		Help:      "The duration of the external endpoints.",
 		Buckets:   prometheus.DefBuckets,
 	}, []string{"endpoint"})
 	metricExternalHedgedRequests = promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: "deep",
-			Name:      "querier_external_endpoint_hedged_roundtrips_total",
+			Subsystem: "querier",
+			Name:      "external_endpoint_hedged_roundtrips_total",
 			Help:      "Total number of hedged external requests. Registered as a gauge for code sanity. This is a counter.",
 		},
 	)

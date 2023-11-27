@@ -34,37 +34,44 @@ import (
 var (
 	metricActiveSeries = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "deep",
-		Name:      "metrics_generator_registry_active_series",
+		Subsystem: "metrics_generator",
+		Name:      "registry_active_series",
 		Help:      "The active series per tenant",
 	}, []string{"tenant"})
 	metricMaxActiveSeries = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "deep",
-		Name:      "metrics_generator_registry_max_active_series",
+		Subsystem: "metrics_generator",
+		Name:      "registry_max_active_series",
 		Help:      "The maximum active series per tenant",
 	}, []string{"tenant"})
 	metricTotalSeriesAdded = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "metrics_generator_registry_series_added_total",
+		Subsystem: "metrics_generator",
+		Name:      "registry_series_added_total",
 		Help:      "The total amount of series created per tenant",
 	}, []string{"tenant"})
 	metricTotalSeriesRemoved = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "metrics_generator_registry_series_removed_total",
+		Subsystem: "metrics_generator",
+		Name:      "registry_series_removed_total",
 		Help:      "The total amount of series removed after they have become stale per tenant",
 	}, []string{"tenant"})
 	metricTotalSeriesLimited = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "metrics_generator_registry_series_limited_total",
+		Subsystem: "metrics_generator",
+		Name:      "registry_series_limited_total",
 		Help:      "The total amount of series not created because of limits per tenant",
 	}, []string{"tenant"})
 	metricTotalCollections = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "metrics_generator_registry_collections_total",
+		Subsystem: "metrics_generator",
+		Name:      "registry_collections_total",
 		Help:      "The total amount of metrics collections per tenant",
 	}, []string{"tenant"})
 	metricFailedCollections = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "metrics_generator_registry_collections_failed_total",
+		Subsystem: "metrics_generator",
+		Name:      "registry_collections_failed_total",
 		Help:      "The total amount of failed metrics collections per tenant",
 	}, []string{"tenant"})
 )

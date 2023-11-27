@@ -32,7 +32,8 @@ import (
 func newRetryWare(maxRetries int, registerer prometheus.Registerer) Middleware {
 	retriesCount := promauto.With(registerer).NewHistogram(prometheus.HistogramOpts{
 		Namespace: "deep",
-		Name:      "query_frontend_retries",
+		Subsystem: "query_frontend",
+		Name:      "retries",
 		Help:      "Number of times a request is retried.",
 		Buckets:   []float64{0, 1, 2, 3, 4, 5},
 	})
