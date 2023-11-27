@@ -52,7 +52,8 @@ const (
 var (
 	queryThroughput = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "deep",
-		Name:      "query_frontend_bytes_processed_per_second",
+		Subsystem: "query_frontend",
+		Name:      "bytes_processed_per_second",
 		Help:      "Bytes processed per second in the query per tenant",
 		Buckets:   prometheus.ExponentialBuckets(1024*1024, 2, 10), // from 1MB up to 1GB
 	}, []string{"tenant", "op"})
@@ -61,7 +62,8 @@ var (
 
 	sloQueriesPerTenant = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "query_frontend_queries_within_slo_total",
+		Subsystem: "query_frontend",
+		Name:      "queries_within_slo_total",
 		Help:      "Total Queries within SLO per tenant",
 	}, []string{"tenant", "op"})
 

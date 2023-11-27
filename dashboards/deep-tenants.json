@@ -982,7 +982,7 @@
             "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "avg(deepdb_blocklist_length{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",tenant=\"$tenant\"})",
+          "expr": "avg(deep_db_blocklist_length{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",tenant=\"$tenant\"})",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,
@@ -1081,7 +1081,7 @@
             "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "sum(deepdb_compaction_outstanding_blocks{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",tenant=\"$tenant\"})\n/\ncount(deep_build_info{cluster=~\"$cluster\", job=~\"($namespace)/compactor\"})\n",
+          "expr": "sum(deep_db_compaction_outstanding_blocks{cluster=~\"$cluster\", job=~\"($namespace)/compactor\",tenant=\"$tenant\"})\n/\ncount(deep_build_info{cluster=~\"$cluster\", job=~\"($namespace)/compactor\"})\n",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,
@@ -1462,7 +1462,7 @@
           "type": "intergral-deep-datasource",
           "uid": "$datasource"
         },
-        "definition": "label_values(deepdb_blocklist_length{cluster=\"$cluster\", job=~\"($namespace)/compactor\"},tenant)",
+        "definition": "label_values(deep_db_blocklist_length{cluster=\"$cluster\", job=~\"($namespace)/compactor\"},tenant)",
         "hide": 0,
         "includeAll": false,
         "label": "tenant",
@@ -1471,7 +1471,7 @@
         "options": [],
         "query": {
           "labelFilters": [],
-          "query": "label_values(deepdb_blocklist_length{cluster=\"$cluster\", job=~\"($namespace)/compactor\"},tenant)",
+          "query": "label_values(deep_db_blocklist_length{cluster=\"$cluster\", job=~\"($namespace)/compactor\"},tenant)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,

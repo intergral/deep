@@ -74,7 +74,8 @@ func NewMemcached(cfg MemcachedConfig, client MemcachedClient, name string, reg 
 		logger:   logger,
 		requestDuration: instr.NewHistogramCollector(
 			promauto.With(reg).NewHistogramVec(prometheus.HistogramOpts{
-				Namespace: "cortex",
+				Namespace: "deep",
+				Subsystem: "cache",
 				Name:      "memcache_request_duration_seconds",
 				Help:      "Total time spent in seconds doing memcache requests.",
 				// Memcached requests are very quick: smallest bucket is 16us, biggest is 1s

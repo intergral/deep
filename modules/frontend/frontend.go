@@ -78,7 +78,8 @@ func New(cfg Config, next http.RoundTripper, tpNext http.RoundTripper, o *overri
 
 	queriesPerTenant := promauto.With(registerer).NewCounterVec(prometheus.CounterOpts{
 		Namespace: "deep",
-		Name:      "query_frontend_queries_total",
+		Subsystem: "query_frontend",
+		Name:      "queries_total",
 		Help:      "Total queries received per tenant.",
 	}, []string{"tenant", "op", "status"})
 

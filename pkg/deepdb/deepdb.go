@@ -63,23 +63,27 @@ const (
 
 var (
 	metricRetentionDuration = promauto.NewHistogram(prometheus.HistogramOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "retention_duration_seconds",
 		Help:      "Records the amount of time to perform retention tasks.",
 		Buckets:   prometheus.ExponentialBuckets(.25, 2, 6),
 	})
 	metricRetentionErrors = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "retention_errors_total",
 		Help:      "Total number of times an error occurred while performing retention tasks.",
 	})
 	metricMarkedForDeletion = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "retention_marked_for_deletion_total",
 		Help:      "Total number of blocks marked for deletion.",
 	})
 	metricDeleted = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "retention_deleted_total",
 		Help:      "Total number of blocks deleted.",
 	})

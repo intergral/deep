@@ -47,27 +47,32 @@ const (
 
 var (
 	metricCompactionBlocks = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "compaction_blocks_total",
 		Help:      "Total number of blocks compacted.",
 	}, []string{"level"})
 	metricCompactionObjectsWritten = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "compaction_objects_written_total",
 		Help:      "Total number of objects written to backend during compaction.",
 	}, []string{"level"})
 	metricCompactionBytesWritten = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "compaction_bytes_written_total",
 		Help:      "Total number of bytes written to backend during compaction.",
 	}, []string{"level"})
 	metricCompactionErrors = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "compaction_errors_total",
 		Help:      "Total number of errors occurring during compaction.",
 	})
 	metricCompactionOutstandingBlocks = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "deepdb",
+		Namespace: "deep",
+		Subsystem: "db",
 		Name:      "compaction_outstanding_blocks",
 		Help:      "Number of blocks remaining to be compacted before next maintenance cycle",
 	}, []string{"tenant"})

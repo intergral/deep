@@ -2041,7 +2041,7 @@
             "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "sum by (status) (\n  label_replace(label_replace(rate(deep_memcache_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/querier\",method=~\"Memcache.Get|Memcache.GetMulti\"}[$__rate_interval]),\n  \"status\", \"${1}xx\", \"status_code\", \"([0-9])..\"),\n  \"status\", \"${1}\", \"status_code\", \"([a-z]+)\"))\n",
+          "expr": "sum by (status) (\n  label_replace(label_replace(rate(deep_cache_memcache_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/querier\",method=~\"Memcache.Get|Memcache.GetMulti\"}[$__rate_interval]),\n  \"status\", \"${1}xx\", \"status_code\", \"([0-9])..\"),\n  \"status\", \"${1}\", \"status_code\", \"([a-z]+)\"))\n",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,
@@ -2140,7 +2140,7 @@
             "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(deep_memcache_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/querier\",method=~\"Memcache.Get|Memcache.GetMulti\"}[$__interval])) by (le,)) * 1e3",
+          "expr": "histogram_quantile(0.99, sum(rate(deep_cache_memcache_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/querier\",method=~\"Memcache.Get|Memcache.GetMulti\"}[$__interval])) by (le,)) * 1e3",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,
@@ -2154,7 +2154,7 @@
             "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(deep_memcache_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/querier\",method=~\"Memcache.Get|Memcache.GetMulti\"}[$__interval])) by (le,)) * 1e3",
+          "expr": "histogram_quantile(0.50, sum(rate(deep_cache_memcache_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/querier\",method=~\"Memcache.Get|Memcache.GetMulti\"}[$__interval])) by (le,)) * 1e3",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,
@@ -2168,7 +2168,7 @@
             "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "sum(rate(deep_memcache_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/querier\",method=~\"Memcache.Get|Memcache.GetMulti\"}[$__interval])) by () * 1e3 / sum(rate(deep_memcache_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/querier\",method=~\"Memcache.Get|Memcache.GetMulti\"}[$__interval])) by ()",
+          "expr": "sum(rate(deep_cache_memcache_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/querier\",method=~\"Memcache.Get|Memcache.GetMulti\"}[$__interval])) by () * 1e3 / sum(rate(deep_cache_memcache_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/querier\",method=~\"Memcache.Get|Memcache.GetMulti\"}[$__interval])) by ()",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,
@@ -2399,7 +2399,7 @@
             "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "sum by (status) (\n  label_replace(label_replace(rate(deepdb_backend_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/querier\",operation=\"GET\"}[$__rate_interval]),\n  \"status\", \"${1}xx\", \"status_code\", \"([0-9])..\"),\n  \"status\", \"${1}\", \"status_code\", \"([a-z]+)\"))\n",
+          "expr": "sum by (status) (\n  label_replace(label_replace(rate(deep_db_backend_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/querier\",operation=\"GET\"}[$__rate_interval]),\n  \"status\", \"${1}xx\", \"status_code\", \"([0-9])..\"),\n  \"status\", \"${1}\", \"status_code\", \"([a-z]+)\"))\n",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,
@@ -2498,7 +2498,7 @@
             "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(deepdb_backend_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/querier\",operation=\"GET\"}[$__interval])) by (le,)) * 1e3",
+          "expr": "histogram_quantile(0.99, sum(rate(deep_db_backend_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/querier\",operation=\"GET\"}[$__interval])) by (le,)) * 1e3",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,
@@ -2512,7 +2512,7 @@
             "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(deepdb_backend_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/querier\",operation=\"GET\"}[$__interval])) by (le,)) * 1e3",
+          "expr": "histogram_quantile(0.50, sum(rate(deep_db_backend_request_duration_seconds_bucket{cluster=~\"$cluster\", job=~\"($namespace)/querier\",operation=\"GET\"}[$__interval])) by (le,)) * 1e3",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,
@@ -2526,7 +2526,7 @@
             "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "sum(rate(deepdb_backend_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/querier\",operation=\"GET\"}[$__interval])) by () * 1e3 / sum(rate(deepdb_backend_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/querier\",operation=\"GET\"}[$__interval])) by ()",
+          "expr": "sum(rate(deep_db_backend_request_duration_seconds_sum{cluster=~\"$cluster\", job=~\"($namespace)/querier\",operation=\"GET\"}[$__interval])) by () * 1e3 / sum(rate(deep_db_backend_request_duration_seconds_count{cluster=~\"$cluster\", job=~\"($namespace)/querier\",operation=\"GET\"}[$__interval])) by ()",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,

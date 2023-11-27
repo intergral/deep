@@ -904,7 +904,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "deepdb_work_queue_length{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"} / deepdb_work_queue_max{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}",
+              "expr": "deep_db_work_queue_length{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"} / deep_db_work_queue_max{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}",
               "legendFormat": "{{instance}}",
               "range": true,
               "refId": "A"
@@ -997,7 +997,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "sum(increase(deepdb_compaction_errors_total{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (job)",
+              "expr": "sum(increase(deep_db_compaction_errors_total{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (job)",
               "legendFormat": "compaction_err",
               "range": true,
               "refId": "B"
@@ -1008,7 +1008,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "sum(increase(deepdb_retention_errors_total{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (job)",
+              "expr": "sum(increase(deep_db_retention_errors_total{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (job)",
               "legendFormat": "retention_err",
               "range": true,
               "refId": "C"
@@ -1019,7 +1019,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "sum(increase(deepdb_blocklist_poll_errors_total{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (job)",
+              "expr": "sum(increase(deep_db_blocklist_poll_errors_total{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (job)",
               "legendFormat": "blocklist_err",
               "range": true,
               "refId": "D"
@@ -1112,7 +1112,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(.99, sum(rate(deepdb_blocklist_poll_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(.99, sum(rate(deep_db_blocklist_poll_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (le))",
               "interval": "",
               "legendFormat": ".99",
               "range": true,
@@ -1124,7 +1124,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(.9, sum(rate(deepdb_blocklist_poll_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(.9, sum(rate(deep_db_blocklist_poll_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (le))",
               "legendFormat": ".9",
               "range": true,
               "refId": "B"
@@ -1135,7 +1135,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(.5, sum(rate(deepdb_blocklist_poll_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(.5, sum(rate(deep_db_blocklist_poll_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (le))",
               "interval": "",
               "legendFormat": ".5",
               "range": true,
@@ -1230,7 +1230,7 @@
               },
               "editorMode": "code",
               "exemplar": true,
-              "expr": "avg(deepdb_blocklist_length{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}) by (tenant)",
+              "expr": "avg(deep_db_blocklist_length{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}) by (tenant)",
               "instant": false,
               "interval": "",
               "legendFormat": "{{tenant}}",
@@ -1324,7 +1324,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(.99, sum(rate(deepdb_retention_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/compactor\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(.99, sum(rate(deep_db_retention_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/compactor\"}[$__rate_interval])) by (le))",
               "interval": "",
               "legendFormat": ".99",
               "range": true,
@@ -1336,7 +1336,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(.9, sum(rate(deepdb_retention_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/compactor\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(.9, sum(rate(deep_db_retention_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/compactor\"}[$__rate_interval])) by (le))",
               "interval": "",
               "legendFormat": ".9",
               "range": true,
@@ -1348,7 +1348,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(.5, sum(rate(deepdb_retention_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/compactor\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(.5, sum(rate(deep_db_retention_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/compactor\"}[$__rate_interval])) by (le))",
               "interval": "",
               "legendFormat": ".5",
               "range": true,
@@ -1442,7 +1442,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "sum(increase(deepdb_retention_deleted_total{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval]))",
+              "expr": "sum(increase(deep_db_retention_deleted_total{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "deleted",
               "range": true,
@@ -1454,7 +1454,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "sum(increase(deepdb_retention_marked_for_deletion_total{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval]))",
+              "expr": "sum(increase(deep_db_retention_marked_for_deletion_total{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "marked_for_deletion",
               "range": true,
@@ -5582,7 +5582,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "sum(rate(deep_memcache_request_duration_seconds_count{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (status_code, method)",
+              "expr": "sum(rate(deep_cache_memcache_request_duration_seconds_count{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (status_code, method)",
               "interval": "",
               "legendFormat": "{{status_code}}-{{method}}",
               "range": true,
@@ -5677,7 +5677,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(.99, sum(rate(deep_memcache_request_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (method, le))",
+              "expr": "histogram_quantile(.99, sum(rate(deep_cache_memcache_request_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (method, le))",
               "interval": "",
               "legendFormat": ".99-{{method}}",
               "range": true,
@@ -5689,7 +5689,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(.9, sum(rate(deep_memcache_request_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (method, le))",
+              "expr": "histogram_quantile(.9, sum(rate(deep_cache_memcache_request_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (method, le))",
               "interval": "",
               "legendFormat": ".9-{{method}}",
               "range": true,
@@ -5701,7 +5701,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(.5, sum(rate(deep_memcache_request_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (method, le))",
+              "expr": "histogram_quantile(.5, sum(rate(deep_cache_memcache_request_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (method, le))",
               "interval": "",
               "legendFormat": ".5-{{method}}",
               "range": true,
@@ -5814,7 +5814,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "sum(rate(deepdb_backend_request_duration_seconds_count{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (status_code, operation)",
+              "expr": "sum(rate(deep_db_backend_request_duration_seconds_count{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (status_code, operation)",
               "interval": "",
               "legendFormat": "{{status_code}}-{{operation}}",
               "range": true,
@@ -5909,7 +5909,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(.99, sum(rate(deepdb_backend_request_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (operation, le))",
+              "expr": "histogram_quantile(.99, sum(rate(deep_db_backend_request_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (operation, le))",
               "legendFormat": ".99-{{operation}}",
               "range": true,
               "refId": "A"
@@ -5920,7 +5920,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(.9, sum(rate(deepdb_backend_request_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (operation, le))",
+              "expr": "histogram_quantile(.9, sum(rate(deep_db_backend_request_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (operation, le))",
               "legendFormat": ".9-{{operation}}",
               "range": true,
               "refId": "B"
@@ -5931,7 +5931,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(.5, sum(rate(deepdb_backend_request_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (operation, le))",
+              "expr": "histogram_quantile(.5, sum(rate(deep_db_backend_request_duration_seconds_bucket{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/$component\"}[$__rate_interval])) by (operation, le))",
               "legendFormat": ".5-{{operation}}",
               "range": true,
               "refId": "C"
@@ -6641,7 +6641,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum(rate(deepdb_compaction_objects_combined_total{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/compactor\"}[$__rate_interval])) by (level)",
+          "expr": "sum(rate(deep_db_compaction_objects_combined_total{cluster=\"$cluster\", namespace=\"$namespace\", job=~\"$namespace/compactor\"}[$__rate_interval])) by (level)",
           "interval": "",
           "legendFormat": "",
           "range": true,
@@ -6736,7 +6736,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum(rate(deepdb_compaction_objects_written_total{cluster=\"$cluster\", namespace=\"$namespace\", job=\"$namespace/compactor\"}[$__rate_interval])) by (level)",
+          "expr": "sum(rate(deep_db_compaction_objects_written_total{cluster=\"$cluster\", namespace=\"$namespace\", job=\"$namespace/compactor\"}[$__rate_interval])) by (level)",
           "interval": "",
           "legendFormat": "",
           "range": true,
@@ -6826,7 +6826,7 @@
             "uid": "${ds}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(deepdb_compaction_bytes_written_total{cluster=\"$cluster\", namespace=\"$namespace\", job=\"$namespace/compactor\"}[$__rate_interval])) by (level)",
+          "expr": "sum(rate(deep_db_compaction_bytes_written_total{cluster=\"$cluster\", namespace=\"$namespace\", job=\"$namespace/compactor\"}[$__rate_interval])) by (level)",
           "interval": "",
           "legendFormat": "__auto",
           "queryType": "search",
@@ -6917,7 +6917,7 @@
             "uid": "${ds}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(deepdb_compaction_blocks_total{cluster=\"$cluster\", namespace=\"$namespace\", job=\"$namespace/compactor\"}[5m])) by (level)",
+          "expr": "sum(increase(deep_db_compaction_blocks_total{cluster=\"$cluster\", namespace=\"$namespace\", job=\"$namespace/compactor\"}[5m])) by (level)",
           "interval": "",
           "legendFormat": "__auto",
           "queryType": "search",
