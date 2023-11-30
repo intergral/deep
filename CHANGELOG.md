@@ -1,6 +1,9 @@
 <!-- 1.0.3 START -->
 # 1.0.3 (xx/xx/2023)
-
+- **[CHANGE]**: add docs for run books [#74](https://github.com/intergral/deep/pull/74) [@Umaaz](https://github.com/Umaaz)
+- **[CHANGE]**: unify metric namespaces and subsystems [#73](https://github.com/intergral/deep/pull/73) [@Umaaz](https://github.com/Umaaz)
+- **[CHANGE]**: unify span tags for tenant [#70](https://github.com/intergral/deep/pull/70) [@Umaaz](https://github.com/Umaaz)
+- **[BUGFIX]**: fix port in local docker example [#72](https://github.com/intergral/deep/pull/72) [@Umaaz](https://github.com/Umaaz)
 <!-- 1.0.3 END -->
 
 <!-- 1.0.2 START -->
