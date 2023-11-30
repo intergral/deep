@@ -19,8 +19,9 @@ package deepdb
 
 import (
 	"context"
-	"github.com/opentracing/opentracing-go"
 	"time"
+
+	"github.com/opentracing/opentracing-go"
 
 	"github.com/go-kit/log/level"
 
