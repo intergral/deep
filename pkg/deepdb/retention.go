@@ -19,6 +19,7 @@ package deepdb
 
 import (
 	"context"
+	"github.com/opentracing/opentracing-go"
 	"time"
 
 	"github.com/go-kit/log/level"
@@ -55,6 +56,10 @@ func (rw *readerWriter) doRetention(ctx context.Context) {
 }
 
 func (rw *readerWriter) retainTenant(ctx context.Context, tenantID string) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "rw.retainTenant")
+	span.SetTag("tenantID", tenantID)
+	defer span.Finish()
+
 	start := time.Now()
 	defer func() { metricRetentionDuration.Observe(time.Since(start).Seconds()) }()
 
@@ -101,7 +106,7 @@ func (rw *readerWriter) retainTenant(ctx context.Context, tenantID string) {
 		case <-ctx.Done():
 			return
 		default:
-			level.Info(rw.logger).Log("owns", rw.compactorSharder.Owns(b.BlockID.String()), "blockID", b.BlockID, "tenantID", tenantID)
+			level.Info(rw.logger).Log("owns", rw.compactorSharder.Owns(b.BlockID.String()), "blockID", b.BlockID, "tenantID", tenantID, "cutoff", cutoff, "compacted", b.CompactedTime, "iscut", b.CompactedTime.Before(cutoff))
 			if b.CompactedTime.Before(cutoff) && rw.compactorSharder.Owns(b.BlockID.String()) {
 				level.Info(rw.logger).Log("msg", "deleting block", "blockID", b.BlockID, "tenantID", tenantID)
 				err := rw.c.ClearBlock(b.BlockID, tenantID)
