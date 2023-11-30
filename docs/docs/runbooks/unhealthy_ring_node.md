@@ -30,3 +30,5 @@ There is no generic way to correct the failure, it would depend on the reason fo
 
 If the ring is otherwise healthy then you can simply 'Forget' the node by using the action on the appropriate state page
 listed above. This will remove the node from the ring and redistribute the tokens.
+
+{!_sections/bug_report.md!}
