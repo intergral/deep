@@ -150,6 +150,7 @@ type WatchResult struct {
 	Expression  string      `parquet:",snappy"`
 	GoodResult  *VariableID `parquet:""`
 	ErrorResult *string     `parquet:",snappy"`
+	Source      string      `parquet:",snappy"`
 }
 
 type Snapshot struct {
@@ -292,6 +293,7 @@ func convertWatch(watch *deepTP.WatchResult) WatchResult {
 		return WatchResult{
 			Expression: watch.Expression,
 			GoodResult: &variableId,
+			Source:     watch.Source.String(),
 		}
 	}
 
@@ -299,6 +301,7 @@ func convertWatch(watch *deepTP.WatchResult) WatchResult {
 	return WatchResult{
 		Expression:  watch.Expression,
 		ErrorResult: &result,
+		Source:      watch.Source.String(),
 	}
 }
 
@@ -497,17 +500,34 @@ func parquetConvertWatches(watches []WatchResult) []*deepTP.WatchResult {
 }
 
 func parquetConvertWatchResult(watch WatchResult) *deepTP.WatchResult {
+	source := parquetConvertWatchSource(watch)
 	if watch.GoodResult != nil {
 		return &deepTP.WatchResult{
 			Expression: watch.Expression,
 			Result:     &deepTP.WatchResult_GoodResult{GoodResult: parquetConvertVariableID(*watch.GoodResult)},
+			Source:     source,
 		}
 	} else {
 		return &deepTP.WatchResult{
 			Expression: watch.Expression,
 			Result:     &deepTP.WatchResult_ErrorResult{ErrorResult: *watch.ErrorResult},
+			Source:     source,
 		}
 	}
+}
+
+func parquetConvertWatchSource(watch WatchResult) deepTP.WatchSource {
+	switch watch.Source {
+	case "LOG":
+		return deepTP.WatchSource_LOG
+	case "METRIC":
+		return deepTP.WatchSource_METRIC
+	case "WATCH":
+	case "":
+	default:
+		return deepTP.WatchSource_WATCH
+	}
+	return deepTP.WatchSource_WATCH
 }
 
 func parquetConvertFrames(frames []StackFrame) []*deepTP.StackFrame {

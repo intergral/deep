@@ -87,6 +87,63 @@ func TestFieldsAreCleared(t *testing.T) {
 	require.Equal(t, simpleSnapshot, actualSnapshot)
 }
 
+func TestCovertDefaultWatch(t *testing.T) {
+	result := &deeptp.WatchResult{
+		Expression: "something.me",
+		Result:     &deeptp.WatchResult_GoodResult{GoodResult: &deeptp.VariableID{ID: "123", Name: "some.name"}},
+	}
+	watch := convertWatch(result)
+
+	assert.Equal(t, watch.Source, "WATCH")
+}
+
+func TestConvertWatch(t *testing.T) {
+	tests := []struct {
+		name          string
+		result        *deeptp.WatchResult
+		expectedWatch string
+	}{
+		{
+			name: "Log",
+			result: &deeptp.WatchResult{
+				Expression: "something.me",
+				Result:     &deeptp.WatchResult_GoodResult{GoodResult: &deeptp.VariableID{ID: "123", Name: "some.name"}},
+				Source:     deeptp.WatchSource_LOG,
+			},
+			expectedWatch: "LOG",
+		},
+		{
+			name: "Metric",
+			result: &deeptp.WatchResult{
+				Expression: "something.me",
+				Result:     &deeptp.WatchResult_GoodResult{GoodResult: &deeptp.VariableID{ID: "123", Name: "some.name"}},
+				Source:     deeptp.WatchSource_METRIC,
+			},
+			expectedWatch: "METRIC",
+		},
+		{
+			name: "Watch",
+			result: &deeptp.WatchResult{
+				Expression: "something.me",
+				Result:     &deeptp.WatchResult_GoodResult{GoodResult: &deeptp.VariableID{ID: "123", Name: "some.name"}},
+				Source:     deeptp.WatchSource_WATCH,
+			},
+			expectedWatch: "WATCH",
+		},
+	}
+	for _, tCase := range tests {
+		t.Run(tCase.name, func(t *testing.T) {
+			watch := convertWatch(tCase.result)
+
+			assert.Equal(t, watch.Source, tCase.expectedWatch)
+
+			result := parquetConvertWatchResult(watch)
+
+			assert.Equal(t, result.Source, tCase.result.Source)
+		})
+	}
+}
+
 func TestParquetRowSizeEstimate(t *testing.T) {
 	// use this test to parse actual Parquet files and compare the two methods of estimating row size
 	s := []string{}
