@@ -33,5 +33,4 @@ These plugins are planned for release, pending review from Grafana.
 To set up the client you will need to pick the appropriate language and follow the instructions for that client. The
 available clients are:
 
-- [github](intergral/deep-python-client)
-- [github](intergral/deep-java-client)
+{!_sections/client_docs.md!}
