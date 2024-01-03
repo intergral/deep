@@ -1,5 +1,15 @@
+<!-- main START -->
+# main (unreleased)
+- **[ENHANCEMENT]**: Update deep proto version to support new properties on tracepoints [#78](https://github.com/intergral/deep/pull/78) [@Umaaz](https://github.com/Umaaz) 
+<!-- main START -->
+
+<!-- 1.0.4 START -->
+# 1.0.4 (04/12/2024)
+- **[BUGFIX]**: compactor loop was not running [#76](https://github.com/intergral/deep/pull/76) [@Umaaz](https://github.com/Umaaz)
+<!-- 1.0.4 START -->
+
 <!-- 1.0.3 START -->
-# 1.0.3 (xx/xx/2023)
+# 1.0.3 (30/11/2023)
 - **[CHANGE]**: add/improve monitoring for retention [#75](https://github.com/intergral/deep/pull/75) [@Umaaz](https://github.com/Umaaz)
 - **[CHANGE]**: add docs for run books [#74](https://github.com/intergral/deep/pull/74) [@Umaaz](https://github.com/Umaaz)
 - **[CHANGE]**: unify metric namespaces and subsystems [#73](https://github.com/intergral/deep/pull/73) [@Umaaz](https://github.com/Umaaz)
