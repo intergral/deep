@@ -83,7 +83,7 @@ kos:
       - -X main.Branch={{ .Branch }}
       - -X main.Revision={{ .ShortCommit }}
       - -X main.Version={{ .Version }}
-    repository: bendonnelly
+    repository: intergral
     tags:
       - latest
       - '{{.Version}}'
@@ -105,7 +105,7 @@ kos:
       - -X main.Branch={{ .Branch }}
       - -X main.Revision={{ .ShortCommit }}
       - -X main.Version={{ .Version }}
-    repository: bendonnelly
+    repository: intergral
     tags:
       - latest
       - '{{.Version}}'
