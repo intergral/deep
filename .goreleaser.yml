@@ -1,9 +1,12 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+
 archives:
   - id: default
     builds:
       - deep
+
 builds:
-  - id: "deep"
+  - id: deep
     main: ./cmd/deep
     binary: deep
     env:
@@ -32,20 +35,87 @@ builds:
       - -X main.Branch={{ .Branch }}
       - -X main.Revision={{ .ShortCommit }}
       - -X main.Version={{ .Version }}
-    mod_timestamp: '{{ .CommitTimestamp }}'
-changelog:
-  skip: true
-  sort: asc
-  filters:
-    exclude:
-      - '^.github:'
-      - '^example:'
-      - '^integration:'
-      - '^vendor:'
+
+  - id: deep-cli
+    main: ./cmd/deep-cli
+    binary: deep-cli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    ignore:
+      - goarch: arm
+        goos: darwin
+      - goarch: arm
+        goos: windows
+      - goarch: arm64
+        goos: windows
+    flags:
+      - -v
+      - -trimpath
+    ldflags:
+      - -s
+      - -w
+      - -X main.Branch={{ .Branch }}
+      - -X main.Revision={{ .ShortCommit }}
+      - -X main.Version={{ .Version }}
+
+kos:
+  - id: deep
+    main: ./cmd/deep
+    env:
+      - CGO_ENABLED=0
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    flags:
+      - -v
+      - -trimpath
+    ldflags:
+      - -s
+      - -w
+      - -X main.Branch={{ .Branch }}
+      - -X main.Revision={{ .ShortCommit }}
+      - -X main.Version={{ .Version }}
+    repository: intergral
+    tags:
+      - latest
+      - '{{.Version}}'
+    base_import_paths: true
+
+  - id: deep-cli
+    main: ./cmd/deep-cli
+    env:
+      - CGO_ENABLED=0
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    flags:
+      - -v
+      - -trimpath
+    ldflags:
+      - -s
+      - -w
+      - -X main.Branch={{ .Branch }}
+      - -X main.Revision={{ .ShortCommit }}
+      - -X main.Version={{ .Version }}
+    repository: intergral
+    tags:
+      - latest
+      - '{{.Version}}'
+    base_import_paths: true
+
 checksum:
   name_template: SHA256SUMS
+
+changelog:
+  disable: true
+
 release:
-  draft: true
   prerelease: auto
-snapshot:
-  name_template: '{{ .Version }}-SNAPSHOT-{{ .ShortCommit }}'
