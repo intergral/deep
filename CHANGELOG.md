@@ -7,7 +7,7 @@
 <!-- 1.0.4 START -->
 # 1.0.4 (04/12/2023)
 - **[BUGFIX]**: compactor loop was not running [#76](https://github.com/intergral/deep/pull/76) [@Umaaz](https://github.com/Umaaz)
-<!-- 1.0.4 START -->
+<!-- 1.0.4 END -->
 
 <!-- 1.0.3 START -->
 # 1.0.3 (30/11/2023)
