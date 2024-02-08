@@ -61,11 +61,12 @@ jobs:
       - name: Vendor
         run: go mod vendor
 
-      - name: Build Deep
-        run: make deep
-
-      - name: Build deep-cli
-        run: make deep-cli
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          distribution: goreleaser
+          version: latest
+          args: build --clean
 
   vendor-check:
     name: Vendor check
