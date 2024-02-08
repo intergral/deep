@@ -1,11 +1,12 @@
-<!-- 1.0.5 START -->
-# 1.0.5 (xx/xx/2024)
-- **[BUGFIX]**: compactor/retention - missing loop in retention and compactor [#76](https://github.com/intergral/deep/pull/76) [@Umaaz](https://github.com/Umaaz)
-<!-- 1.0.5 END -->
+<!-- main START -->
+# main (unreleased)
+- **[ENHANCEMENT]**: Update deep proto version to support new properties on tracepoints [#78](https://github.com/intergral/deep/pull/78) [@Umaaz](https://github.com/Umaaz) 
+- **[ENHANCEMENT]**: change(builds): change builds to use goreleaser [#79](https://github.com/intergral/deep/pull/79) [@Umaaz](https://github.com/Umaaz)
+<!-- main START -->
 
 <!-- 1.0.4 START -->
 # 1.0.4 (04/12/2023)
-- **[BUGFIX]**: compactor/retention - missing loop in retention and compactor [#76](https://github.com/intergral/deep/pull/76) [@Umaaz](https://github.com/Umaaz)
+- **[BUGFIX]**: compactor loop was not running [#76](https://github.com/intergral/deep/pull/76) [@Umaaz](https://github.com/Umaaz)
 <!-- 1.0.4 END -->
 
 <!-- 1.0.3 START -->

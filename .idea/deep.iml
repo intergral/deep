@@ -2,7 +2,7 @@
 <module type="WEB_MODULE" version="4">
   <component name="FacetManager">
     <facet type="Python" name="Python facet">
-      <configuration sdkName="Python 3.10 (deep)" />
+      <configuration sdkName="Python 3.11 (deep)" />
     </facet>
   </component>
   <component name="Go" enabled="true" />

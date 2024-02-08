@@ -2,3 +2,4 @@ markdown-include
 mkdocs-material
 mkdocs-glightbox
 mkdocs-gitlinks
+mkdocs-awesome-pages-plugin

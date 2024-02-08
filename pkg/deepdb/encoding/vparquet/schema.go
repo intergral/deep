@@ -19,6 +19,8 @@ package vparquet
 
 import (
 	"bytes"
+	"fmt"
+	"strconv"
 
 	deepCommon "github.com/intergral/deep/pkg/deeppb/common/v1"
 	deepTP "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
@@ -108,12 +110,29 @@ type Resource struct {
 	Test string `parquet:",snappy,dict,optional" json:",omitempty"` // Always empty for testing
 }
 
+type LabelExpression struct {
+	Key        string `parquest:",snappy,dict"`
+	Expression string `parquest:",snappy,dict"`
+	Static     string `parquest:",snappy,dict"`
+}
+
+type MetricDefinition struct {
+	Name       string            `parquest:",snappy,dict"`
+	Labels     []LabelExpression `parquest:""`
+	MetricType string            `parquest:",snappy,dict"`
+	Expression *string           `parquest:",snappy,dict"`
+	Namespace  *string           `parquest:",snappy,dict"`
+	Help       *string           `parquest:",snappy,dict"`
+	Unit       *string           `parquest:",snappy,dict"`
+}
+
 type TracePointConfig struct {
-	ID         string            `parquet:",snappy,dict"`
-	Path       string            `parquet:",snappy,dict"`
-	LineNumber uint32            `parquet:",delta"`
-	Args       map[string]string `parquet:""`
-	Watches    []string          `parquet:""`
+	ID         string             `parquet:",snappy,dict"`
+	Path       string             `parquet:",snappy,dict"`
+	LineNumber uint32             `parquet:",delta"`
+	Args       map[string]string  `parquet:""`
+	Watches    []string           `parquet:""`
+	Metrics    []MetricDefinition `parquet:""`
 }
 
 type VariableID struct {
@@ -150,6 +169,7 @@ type WatchResult struct {
 	Expression  string      `parquet:",snappy"`
 	GoodResult  *VariableID `parquet:""`
 	ErrorResult *string     `parquet:",snappy"`
+	Source      string      `parquet:",snappy"`
 }
 
 type Snapshot struct {
@@ -292,6 +312,7 @@ func convertWatch(watch *deepTP.WatchResult) WatchResult {
 		return WatchResult{
 			Expression: watch.Expression,
 			GoodResult: &variableId,
+			Source:     watch.Source.String(),
 		}
 	}
 
@@ -299,6 +320,7 @@ func convertWatch(watch *deepTP.WatchResult) WatchResult {
 	return WatchResult{
 		Expression:  watch.Expression,
 		ErrorResult: &result,
+		Source:      watch.Source.String(),
 	}
 }
 
@@ -384,7 +406,70 @@ func convertTracepoint(tracepoint *deepTP.TracePointConfig) TracePointConfig {
 		LineNumber: tracepoint.LineNumber,
 		Args:       tracepoint.Args,
 		Watches:    tracepoint.Watches,
+		Metrics:    convertMetricDefinitions(tracepoint.Metrics),
 	}
+}
+
+func convertMetricDefinitions(metrics []*deepTP.Metric) []MetricDefinition {
+	if metrics == nil || len(metrics) == 0 {
+		return nil
+	}
+	definitions := make([]MetricDefinition, len(metrics))
+	for i, metric := range metrics {
+		definitions[i] = convertMetricDefinition(metric)
+	}
+	return definitions
+}
+
+func convertMetricDefinition(metric *deepTP.Metric) MetricDefinition {
+	return MetricDefinition{
+		Name:       metric.Name,
+		Labels:     convertMetricLabels(metric.LabelExpressions),
+		MetricType: metric.Type.String(),
+		Expression: metric.Expression,
+		Namespace:  metric.Namespace,
+		Help:       metric.Help,
+		Unit:       metric.Unit,
+	}
+}
+
+func convertMetricLabels(expressions []*deepTP.LabelExpression) []LabelExpression {
+	if expressions == nil || len(expressions) == 0 {
+		return nil
+	}
+	labelExpressions := make([]LabelExpression, len(expressions))
+	for i, label := range expressions {
+		labelExpressions[i] = convertMetricLabel(label)
+	}
+	return labelExpressions
+}
+
+func convertMetricLabel(label *deepTP.LabelExpression) LabelExpression {
+	return LabelExpression{
+		Key:        label.Key,
+		Expression: label.GetExpression(),
+		Static:     anyValueToString(label.GetStatic()),
+	}
+}
+
+func anyValueToString(static *deepCommon.AnyValue) string {
+	switch v := static.Value.(type) {
+	case *deepCommon.AnyValue_StringValue:
+		return v.StringValue
+	case *deepCommon.AnyValue_IntValue:
+		return strconv.FormatInt(v.IntValue, 10)
+	case *deepCommon.AnyValue_DoubleValue:
+		return fmt.Sprintf("%g", v.DoubleValue)
+	case *deepCommon.AnyValue_BoolValue:
+		return strconv.FormatBool(v.BoolValue)
+	case *deepCommon.AnyValue_ArrayValue:
+		// todo
+		return ""
+	case *deepCommon.AnyValue_KvlistValue:
+		// todo
+		return ""
+	}
+	return ""
 }
 
 func extendReuseSlice[T any](sz int, in []T) []T {
@@ -407,6 +492,7 @@ func parquetToDeepSnapshot(snap *Snapshot) *deepTP.Snapshot {
 			LineNumber: snap.Tracepoint.LineNumber,
 			Args:       snap.Tracepoint.Args,
 			Watches:    snap.Tracepoint.Watches,
+			Metrics:    parquetConvertMetrics(snap.Tracepoint.Metrics),
 		},
 		VarLookup:     parquetConvertVariables(snap.VarLookup),
 		TsNanos:       snap.TsNanos,
@@ -417,6 +503,63 @@ func parquetToDeepSnapshot(snap *Snapshot) *deepTP.Snapshot {
 		Resource:      parquetConvertResource(snap.Resource),
 		LogMsg:        snap.LogMsg,
 	}
+}
+
+func parquetConvertMetrics(metrics []MetricDefinition) []*deepTP.Metric {
+	if metrics == nil || len(metrics) == 0 {
+		return nil
+	}
+	deepMetrics := make([]*deepTP.Metric, len(metrics))
+	for i, metric := range metrics {
+		deepMetrics[i] = &deepTP.Metric{
+			Name:             metric.Name,
+			LabelExpressions: parquetConvertLabelExpression(metric.Labels),
+			Type:             parquetConvertMetricType(metric.MetricType),
+			Expression:       metric.Expression,
+			Namespace:        metric.Namespace,
+			Help:             metric.Help,
+			Unit:             metric.Unit,
+		}
+	}
+	return deepMetrics
+}
+
+func parquetConvertLabelExpression(labels []LabelExpression) []*deepTP.LabelExpression {
+	if labels == nil || len(labels) == 0 {
+		return nil
+	}
+	labelExpressions := make([]*deepTP.LabelExpression, len(labels))
+	for i, label := range labels {
+		if label.Expression == "" {
+			labelExpressions[i] = &deepTP.LabelExpression{
+				Key:   label.Key,
+				Value: &deepTP.LabelExpression_Static{Static: &deepCommon.AnyValue{Value: &deepCommon.AnyValue_StringValue{StringValue: label.Static}}}, // todo: how to support other types
+			}
+		} else {
+			labelExpressions[i] = &deepTP.LabelExpression{
+				Key:   label.Key,
+				Value: &deepTP.LabelExpression_Expression{Expression: label.Expression},
+			}
+		}
+	}
+	return labelExpressions
+}
+
+func parquetConvertMetricType(metricType string) deepTP.MetricType {
+	switch metricType {
+	case "":
+	case "COUNTER":
+		return deepTP.MetricType_COUNTER
+	case "GAUGE":
+		return deepTP.MetricType_GAUGE
+	case "HISTOGRAM":
+		return deepTP.MetricType_HISTOGRAM
+	case "SUMMARY":
+		return deepTP.MetricType_SUMMARY
+	default:
+		return deepTP.MetricType_COUNTER
+	}
+	return deepTP.MetricType_COUNTER
 }
 
 func parquetConvertResource(resource Resource) []*deepCommon.KeyValue {
@@ -497,17 +640,34 @@ func parquetConvertWatches(watches []WatchResult) []*deepTP.WatchResult {
 }
 
 func parquetConvertWatchResult(watch WatchResult) *deepTP.WatchResult {
+	source := parquetConvertWatchSource(watch)
 	if watch.GoodResult != nil {
 		return &deepTP.WatchResult{
 			Expression: watch.Expression,
 			Result:     &deepTP.WatchResult_GoodResult{GoodResult: parquetConvertVariableID(*watch.GoodResult)},
+			Source:     source,
 		}
 	} else {
 		return &deepTP.WatchResult{
 			Expression: watch.Expression,
 			Result:     &deepTP.WatchResult_ErrorResult{ErrorResult: *watch.ErrorResult},
+			Source:     source,
 		}
 	}
+}
+
+func parquetConvertWatchSource(watch WatchResult) deepTP.WatchSource {
+	switch watch.Source {
+	case "LOG":
+		return deepTP.WatchSource_LOG
+	case "METRIC":
+		return deepTP.WatchSource_METRIC
+	case "WATCH":
+	case "":
+	default:
+		return deepTP.WatchSource_WATCH
+	}
+	return deepTP.WatchSource_WATCH
 }
 
 func parquetConvertFrames(frames []StackFrame) []*deepTP.StackFrame {
