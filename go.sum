@@ -502,6 +502,8 @@ github.com/intergral/go-deep-proto v1.0.2 h1:ezpNLMusTjpQ2yvXUYT9aLmAL3s+/CRYdsM
 github.com/intergral/go-deep-proto v1.0.2/go.mod h1:kYiHIYAykVITDekpSAu1y9Z8Hr6OKpoYJGorm9uaeak=
 github.com/intergral/go-deep-proto v1.0.3 h1:p0fmzX7Qn9ZlDkM1FEGzmy3vXkbzqEN9gUIVghPlknw=
 github.com/intergral/go-deep-proto v1.0.3/go.mod h1:kYiHIYAykVITDekpSAu1y9Z8Hr6OKpoYJGorm9uaeak=
+github.com/intergral/go-deep-proto v1.0.5 h1:j5s2ovw7l+zrNrhjZteP8pE5kZe/fJXhgtwfn2JATeg=
+github.com/intergral/go-deep-proto v1.0.5/go.mod h1:kYiHIYAykVITDekpSAu1y9Z8Hr6OKpoYJGorm9uaeak=
 github.com/ionos-cloud/sdk-go/v6 v6.1.3 h1:vb6yqdpiqaytvreM0bsn2pXw+1YDvEk2RKSmBAQvgDQ=
 github.com/jedib0t/go-pretty/v6 v6.2.4 h1:wdaj2KHD2W+mz8JgJ/Q6L/T5dB7kyqEFI16eLq7GEmk=
 github.com/jedib0t/go-pretty/v6 v6.2.4/go.mod h1:+nE9fyyHGil+PuISTCrp7avEdo6bqoMwqZnuiK2r2a0=
