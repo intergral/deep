@@ -116,6 +116,8 @@ PROTO_INTERMEDIATE_DIR = pkg/.patched-proto
 PROTOC_ARGS=--go_out=${PROTO_INTERMEDIATE_DIR}/out
 GRPC_PROTOC_ARGS=--go-grpc_out=${PROTO_INTERMEDIATE_DIR}/out
 
+PROTO_VERSION=$(shell grep -P deep-proto go.mod | cut -d ' ' -f2 | cut -c2-)
+
 .PHONY: gen-proto
 gen-proto:
 	@echo --
@@ -128,10 +130,11 @@ gen-proto:
 	find pkg/deeppb -name *.proto | grep -v deep.proto | grep -v frontend.proto | xargs -L 1 -I rm
 
 	@echo --
+	@echo -- Using proto version $(PROTO_VERSION)
 	@echo -- Copying to $(PROTO_INTERMEDIATE_DIR)
 	@echo --
 	git submodule update --init
-	cd deep-proto && git pull origin master
+	cd deep-proto && git checkout tags/$(PROTO_VERSION)
 	mkdir -p $(PROTO_INTERMEDIATE_DIR)
 	mkdir -p $(PROTO_INTERMEDIATE_DIR)/out
 	mkdir -p $(PROTO_INTERMEDIATE_DIR)/stats
