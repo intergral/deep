@@ -16,12 +16,12 @@ jobs:
 
     steps:
       - name: Set up Go 1.20
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           go-version: 1.20.x
 
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup go-junit-report
         run: go install github.com/jstemmer/go-junit-report/v2@latest
@@ -51,12 +51,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go 1.20
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           go-version: 1.20.x
 
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Vendor
         run: go mod vendor
@@ -72,12 +72,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go 1.20
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           go-version: 1.20.x
 
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
@@ -93,12 +93,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go 1.20
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           go-version: 1.20.x
 
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
       - run: go install mvdan.cc/gofumpt@latest
       - run: go install golang.org/x/tools/cmd/goimports@latest
 

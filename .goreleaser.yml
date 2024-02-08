@@ -52,4 +52,4 @@ checksum:
   name_template: SHA256SUMS
 
 changelog:
-  skip: true
+  disable: true
