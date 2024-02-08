@@ -30,6 +30,38 @@ builds:
       - -v
       - -trimpath
     ldflags:
+      - -s
+      - -w
+      - -X main.Branch={{ .Branch }}
+      - -X main.Revision={{ .ShortCommit }}
+      - -X main.Version={{ .Version }}
+
+  - id: deep-cli
+    main: ./cmd/deep-cli
+    binary: deep-cli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    ignore:
+      - goarch: arm
+        goos: darwin
+      - goarch: arm
+        goos: windows
+      - goarch: arm64
+        goos: windows
+    flags:
+      - -v
+      - -trimpath
+    ldflags:
+      - -s
+      - -w
       - -X main.Branch={{ .Branch }}
       - -X main.Revision={{ .ShortCommit }}
       - -X main.Version={{ .Version }}
@@ -46,6 +78,30 @@ kos:
       - -v
       - -trimpath
     ldflags:
+      - -s
+      - -w
+      - -X main.Branch={{ .Branch }}
+      - -X main.Revision={{ .ShortCommit }}
+      - -X main.Version={{ .Version }}
+    repository: bendonnelly
+    tags:
+      - latest
+      - '{{.Version}}'
+    base_import_paths: true
+
+  - id: deep-cli
+    main: ./cmd/deep-cli
+    env:
+      - CGO_ENABLED=0
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    flags:
+      - -v
+      - -trimpath
+    ldflags:
+      - -s
+      - -w
       - -X main.Branch={{ .Branch }}
       - -X main.Revision={{ .ShortCommit }}
       - -X main.Version={{ .Version }}
