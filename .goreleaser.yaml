@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+
+builds:
+  - id: deep
+    main: ./cmd/deep
+    flags:
+      - -mod vendor
+    ldflags:
+      - -X=main.Version={{ .Env.VERSION }}
+      - -X=main.Branch={{ .Env.GIT_BRANCH }}
+      - -X=main.Revision={{ .Env.GIT_REVISION }}
+
+kos:
+  - flags:
+      - -mod vendor
+    ldflags:
+      - -X=main.Version={{ .Env.VERSION }}
+      - -X=main.Branch={{ .Env.GIT_BRANCH }}
+      - -X=main.Revision={{ .Env.GIT_REVISION }}
+    repository: bendonnelly
+    tags:
+      - latest
+      - '{{.Env.VERSION}}'
+    base_import_paths: true
