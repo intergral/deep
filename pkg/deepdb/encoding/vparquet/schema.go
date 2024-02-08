@@ -453,7 +453,6 @@ func convertMetricLabel(label *deepTP.LabelExpression) LabelExpression {
 }
 
 func anyValueToString(static *deepCommon.AnyValue) string {
-
 	switch v := static.Value.(type) {
 	case *deepCommon.AnyValue_StringValue:
 		return v.StringValue
@@ -537,7 +536,6 @@ func parquetConvertLabelExpression(labels []LabelExpression) []*deepTP.LabelExpr
 				Value: &deepTP.LabelExpression_Static{Static: &deepCommon.AnyValue{Value: &deepCommon.AnyValue_StringValue{StringValue: label.Static}}}, // todo: how to support other types
 			}
 		} else {
-
 			labelExpressions[i] = &deepTP.LabelExpression{
 				Key:   label.Key,
 				Value: &deepTP.LabelExpression_Expression{Expression: label.Expression},
