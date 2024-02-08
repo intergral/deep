@@ -1,6 +1,7 @@
 <!-- main START -->
 # main (unreleased)
 - **[ENHANCEMENT]**: Update deep proto version to support new properties on tracepoints [#78](https://github.com/intergral/deep/pull/78) [@Umaaz](https://github.com/Umaaz) 
+- **[ENHANCEMENT]**: change(builds): change builds to use goreleaser [#79](https://github.com/intergral/deep/pull/79) [@Umaaz](https://github.com/Umaaz)
 <!-- main START -->
 
 <!-- 1.0.4 START -->

@@ -145,7 +145,7 @@ func generateFrames(options GenerateOptions, vars []*tp.Variable) []*tp.StackFra
 					Children: []*tp.VariableID{
 						makeSimpleVariable(vars, "max_executions", 31),
 						makeSimpleVariable(vars, "cnt", 25),
-						makeSimpleVariable(vars, "started_at", 1682513610601),
+						makeSimpleVariable(vars, "started_at", int64(1682513610601)),
 						makeSimpleVariable(vars, "test_name", "This is a test"),
 						makeVariable(vars, &tp.VariableID{Name: "char_counter"}, &tp.Variable{Type: "dict", Value: "Size: 3", Hash: "140425155619776", Children: []*tp.VariableID{
 							makeSimpleVariable(vars, "1", 23),
