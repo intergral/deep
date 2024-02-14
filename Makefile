@@ -25,12 +25,16 @@ ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
 
 ## Tests
 GOTEST_OPT?= -race -timeout 20m -count=1 -v
+# Test opts for repeat test
+# GOTEST_OPT?= -race -timeout 20m -count=1000 -v -failfast
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -cover
 GOTEST=go test
 GO_JUNIT_REPORT=2>&1 | go-junit-report -parser gojson -iocopy -out report.xml
 
 .PHONY: test
 test:
+# run a single test/file
+# $(GOTEST) $(GOTEST_OPT) -run TestShardingWareDoRequest github.com/intergral/deep/modules/frontend
 	$(GOTEST) $(GOTEST_OPT) $(ALL_PKGS)
 
 .PHONY: test-report
