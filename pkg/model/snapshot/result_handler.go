@@ -19,12 +19,14 @@ package snapshot
 
 import (
 	"errors"
+	"sync"
 
 	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 )
 
 type ResultHandler struct {
-	result *deep_tp.Snapshot
+	result    *deep_tp.Snapshot
+	serviceMu sync.Mutex
 }
 
 func NewResultHandler() *ResultHandler {
@@ -32,6 +34,8 @@ func NewResultHandler() *ResultHandler {
 }
 
 func (rh *ResultHandler) Complete(result *deep_tp.Snapshot) error {
+	rh.serviceMu.Lock()
+	defer rh.serviceMu.Unlock()
 	if rh.result == nil {
 		rh.result = result
 		return nil
@@ -44,6 +48,8 @@ func (rh *ResultHandler) Result() *deep_tp.Snapshot {
 }
 
 func (rh *ResultHandler) IsComplete() bool {
+	rh.serviceMu.Lock()
+	defer rh.serviceMu.Unlock()
 	if rh.result != nil {
 		return true
 	}

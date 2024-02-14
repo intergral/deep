@@ -184,9 +184,11 @@ func TestInstanceDoesNotRace(t *testing.T) {
 			}
 		}
 	}
+	count := 0
 	go concurrent(func() {
 		request := makeRequest([]byte{})
-		if len(i.liveSnapshots) < 9000 {
+		if count < 9000 {
+			count += 1
 			err := i.PushBytesRequest(context.Background(), request)
 			require.NoError(t, err, "error pushing snapshots")
 		}

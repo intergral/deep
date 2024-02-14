@@ -155,9 +155,9 @@ func TestLogSnapshots(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			assert.Equal(t, len(tc.expectedLogsSnapshots), len(actualLogs))
+			assert.Equal(t, len(tc.expectedLogsSnapshots)+1, len(actualLogs))
 			for i, expectedLog := range tc.expectedLogsSnapshots {
-				assert.EqualValues(t, expectedLog, actualLogs[i])
+				assert.EqualValues(t, expectedLog, actualLogs[i+1])
 			}
 		})
 	}

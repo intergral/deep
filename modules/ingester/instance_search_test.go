@@ -344,6 +344,7 @@ func TestInstanceSearchDoesNotRace(t *testing.T) {
 			}
 		}
 	}
+	count := 0
 
 	go concurrent(func() {
 		// more than 10k exceeeds live snapshots
@@ -355,7 +356,8 @@ func TestInstanceSearchDoesNotRace(t *testing.T) {
 		snapshotBytes, err := dec.PrepareForWrite(snapshot, 0)
 		require.NoError(t, err)
 
-		if len(i.liveSnapshots) < 9000 {
+		if count < 9000 {
+			count += 1
 			// searchData will be nil if not
 			err = i.PushBytes(context.Background(), id, snapshotBytes)
 			assert.NoError(t, err)

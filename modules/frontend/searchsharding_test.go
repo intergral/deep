@@ -217,12 +217,14 @@ func TestBackendRequests(t *testing.T) {
 }
 
 func TestIngesterRequest(t *testing.T) {
-	now := int(time.Now().Unix())
-	tenMinutesAgo := int(time.Now().Add(-10 * time.Minute).Unix())
-	fifteenMinutesAgo := int(time.Now().Add(-15 * time.Minute).Unix())
-	twentyMinutesAgo := int(time.Now().Add(-20 * time.Minute).Unix())
+	timeNow := time.Now()
+	now := int(timeNow.Unix())
+	tenMinutesAgo := int(timeNow.Add(-10 * time.Minute).Unix())
+	fifteenMinutesAgo := int(timeNow.Add(-15 * time.Minute).Unix())
+	twentyMinutesAgo := int(timeNow.Add(-20 * time.Minute).Unix())
 
 	tests := []struct {
+		name                string
 		request             string
 		queryIngestersUntil time.Duration
 		expectedURI         string
@@ -230,18 +232,21 @@ func TestIngesterRequest(t *testing.T) {
 	}{
 		// start/end is outside queryIngestersUntil
 		{
+			name:                "start/end is outside queryIngestersUntil",
 			request:             "/?tags=foo%3Dbar&minDuration=10ms&maxDuration=30ms&limit=50&start=10&end=20",
 			queryIngestersUntil: 10 * time.Minute,
 			expectedURI:         "",
 		},
 		// start/end is inside queryBackendAfter
 		{
+			name:                "start/end is inside queryBackendAfter",
 			request:             "/?tags=foo%3Dbar&minDuration=10ms&maxDuration=30ms&limit=50&start=" + strconv.Itoa(tenMinutesAgo) + "&end=" + strconv.Itoa(now),
 			queryIngestersUntil: 30 * time.Minute,
 			expectedURI:         "/querier?end=" + strconv.Itoa(now) + "&limit=50&maxDuration=30ms&minDuration=10ms&start=" + strconv.Itoa(tenMinutesAgo) + "&tags=foo%3Dbar",
 		},
 		// backendAfter/ingsetersUntil = 0 results in no ingester query
 		{
+			name:                "backendAfter/ingsetersUntil = 0 results in no ingester query",
 			request:             "/?tags=foo%3Dbar&minDuration=10ms&maxDuration=30ms&limit=50&start=" + strconv.Itoa(tenMinutesAgo) + "&end=" + strconv.Itoa(now),
 			queryIngestersUntil: 0,
 			expectedURI:         "",
@@ -249,6 +254,7 @@ func TestIngesterRequest(t *testing.T) {
 		// start/end = 20 - 10 mins ago - break across query ingesters until
 		//  ingester start/End = 15 - 10 mins ago
 		{
+			name:                "ingester start/End = 15 - 10 mins ago",
 			request:             "/?tags=foo%3Dbar&minDuration=10ms&maxDuration=30ms&limit=50&start=" + strconv.Itoa(twentyMinutesAgo) + "&end=" + strconv.Itoa(tenMinutesAgo),
 			queryIngestersUntil: 15 * time.Minute,
 			expectedURI:         "/querier?end=" + strconv.Itoa(tenMinutesAgo) + "&limit=50&maxDuration=30ms&minDuration=10ms&start=" + strconv.Itoa(fifteenMinutesAgo) + "&tags=foo%3Dbar",
@@ -257,6 +263,7 @@ func TestIngesterRequest(t *testing.T) {
 		//  ingester start/End = 10 - now mins ago
 		//  backend start/End = 15 - 10 mins ago
 		{
+			name:                "backend start/End = 15 - 10 mins ago",
 			request:             "/?tags=foo%3Dbar&minDuration=10ms&maxDuration=30ms&limit=50&start=" + strconv.Itoa(tenMinutesAgo) + "&end=" + strconv.Itoa(now),
 			queryIngestersUntil: 15 * time.Minute,
 			expectedURI:         "/querier?end=" + strconv.Itoa(now) + "&limit=50&maxDuration=30ms&minDuration=10ms&start=" + strconv.Itoa(tenMinutesAgo) + "&tags=foo%3Dbar",
@@ -265,6 +272,7 @@ func TestIngesterRequest(t *testing.T) {
 		//  ingester start/End = 15 - now mins ago
 		//  backend start/End = 20 - 5 mins ago
 		{
+			name:                "backend start/End = 20 - 5 mins ago",
 			request:             "/?tags=foo%3Dbar&minDuration=10ms&maxDuration=30ms&limit=50&start=" + strconv.Itoa(twentyMinutesAgo) + "&end=" + strconv.Itoa(now),
 			queryIngestersUntil: 15 * time.Minute,
 			expectedURI:         "/querier?end=" + strconv.Itoa(now) + "&limit=50&maxDuration=30ms&minDuration=10ms&start=" + strconv.Itoa(fifteenMinutesAgo) + "&tags=foo%3Dbar",
@@ -272,27 +280,29 @@ func TestIngesterRequest(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		s := &searchSharder{
-			cfg: SearchSharderConfig{
-				QueryIngestersUntil: tc.queryIngestersUntil,
-			},
-		}
-		req := httptest.NewRequest("GET", tc.request, nil)
+		t.Run(tc.name, func(t *testing.T) {
+			s := &searchSharder{
+				cfg: SearchSharderConfig{
+					QueryIngestersUntil: tc.queryIngestersUntil,
+				},
+			}
+			req := httptest.NewRequest("GET", tc.request, nil)
 
-		searchReq, err := api.ParseSearchRequest(req)
-		require.NoError(t, err)
+			searchReq, err := api.ParseSearchRequest(req)
+			require.NoError(t, err)
 
-		actualReq, err := s.ingesterRequest(context.Background(), "test", req, searchReq)
-		if tc.expectedError != nil {
-			assert.Equal(t, tc.expectedError, err)
-			continue
-		}
-		assert.NoError(t, err)
-		if tc.expectedURI == "" {
-			assert.Nil(t, actualReq)
-		} else {
-			assert.Equal(t, tc.expectedURI, actualReq.RequestURI)
-		}
+			actualReq, err := s.ingesterRequest(context.Background(), "test", req, searchReq)
+			if tc.expectedError != nil {
+				assert.Equal(t, tc.expectedError, err)
+				return
+			}
+			assert.NoError(t, err)
+			if tc.expectedURI == "" {
+				assert.Nil(t, actualReq)
+			} else {
+				assert.Equal(t, tc.expectedURI, actualReq.RequestURI)
+			}
+		})
 	}
 }
 

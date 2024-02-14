@@ -27,6 +27,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/intergral/deep/pkg/deeppb"
 	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
@@ -293,7 +294,12 @@ func TestShardingWareDoRequest(t *testing.T) {
 					statusCode = tc.status1
 					err = tc.err1
 					failedBlockQueries = tc.failedBlockQueries1
-					defer wg1.Done()
+					defer func() {
+						// we want this wg to send done after this function is complete and
+						// the result is processed by the handler 1 second should be enough time
+						time.Sleep(1 * time.Second)
+						wg1.Done()
+					}()
 				} else {
 					testSnapshot = tc.snapshot2
 					err = tc.err2

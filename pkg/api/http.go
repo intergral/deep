@@ -347,6 +347,7 @@ func BuildIngesterSearchRequest(req *http.Request, searchReq *deeppb.SearchReque
 	q.Set(urlParamStart, strconv.FormatUint(uint64(start), 10))
 	q.Set(urlParamEnd, strconv.FormatUint(uint64(end), 10))
 
+	req.URL.RawQuery = q.Encode()
 	return request, nil
 }
 
