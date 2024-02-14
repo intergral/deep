@@ -27,7 +27,7 @@ allows for '[method entry tracepoints](./method_entry.md)'
 The specific supported providers is dependent on the client that is being used. In all cases custom providers can be set
 using the plugin architecture of the client. As a generalisation the following providers will be detected and used automatically:
 
-- Otel
+- OpenTelemarty (OTel)
 
 For more info on what providers are supported by which clients see the client docs.
 
