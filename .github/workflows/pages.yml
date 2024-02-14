@@ -33,7 +33,7 @@ jobs:
           restore-keys: |
             mkdocs-material-
       - run: pip install -r ./docs/requirements.txt
-      - run: mkdocs build -f ./docs/mkdocs.yml
+      - run: make docs
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
