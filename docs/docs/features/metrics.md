@@ -38,7 +38,7 @@ The specific supported providers is dependent on the client that is being used. 
 using the plugin architecture of the client. As a generalisation the following providers will be detected and used automatically:
 
  - Prometheus
-- OpenTelemarty (OTel)
+- OpenTelemetry (OTel)
 
 For more info on what providers are supported by which clients see the client docs.
 
@@ -49,7 +49,7 @@ For more info on what providers are supported by which clients see the client do
 Let us imagine a scenario where we want to track when a user session is destroyed. Let us imagine the follow code is
 called when a user session is destroyed.
 
-```py title="users/session.py" linenums="22"
+```python title="users/session.py" linenums="22"
 def delete_session(self, user, session):
     self.process_session_end(session)
     session = self.db.delete_session(user.id)

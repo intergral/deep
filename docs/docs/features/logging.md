@@ -1,7 +1,7 @@
 # Logging 
 Deep offers the ability to inject log messages into your running application to augment existing logging to add additional context when it is needed.
 
-To add a log message simply attach the argument 'log_msg' to the tracepoint.
+To add a log message simply attach the argument `log_msg` to the tracepoint.
 
 ```json
 {
