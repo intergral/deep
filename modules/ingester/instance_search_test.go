@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -333,8 +334,11 @@ func TestInstanceSearchDoesNotRace(t *testing.T) {
 	}
 
 	end := make(chan struct{})
+	group := sync.WaitGroup{}
 
 	concurrent := func(f func()) {
+		group.Add(1)
+		defer group.Done()
 		for {
 			select {
 			case <-end:
@@ -418,6 +422,7 @@ func TestInstanceSearchDoesNotRace(t *testing.T) {
 	close(end)
 	// Wait for go funcs to quit before
 	// exiting and cleaning up
+	group.Wait()
 	time.Sleep(2 * time.Second)
 }
 

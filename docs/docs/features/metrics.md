@@ -38,7 +38,7 @@ The specific supported providers is dependent on the client that is being used. 
 using the plugin architecture of the client. As a generalisation the following providers will be detected and used automatically:
 
  - Prometheus
- - Otel
+- OpenTelemarty (OTel)
 
 For more info on what providers are supported by which clients see the client docs.
 

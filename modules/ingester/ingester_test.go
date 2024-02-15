@@ -336,6 +336,8 @@ func TestFlush(t *testing.T) {
 		require.NoError(t, err, "unexpected error querying")
 		assert.True(t, proto.Equal(snapshots[i], foundSnapshot.Snapshot), "Snapshots not equal")
 	}
+	// Stop the ingester to stop it writing to disk between now and temp dir delete
+	require.NoError(t, ingester.stopping(nil))
 }
 
 func defaultIngesterModule(t testing.TB, tmpDir string) *Ingester {
