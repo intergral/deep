@@ -21,6 +21,7 @@ import (
 	"context"
 	crand "crypto/rand"
 	"encoding/binary"
+	"sync"
 	"testing"
 	"time"
 
@@ -173,8 +174,11 @@ func queryAll(t *testing.T, i *tenantBlockManager, ids [][]byte, snapshots []*de
 func TestInstanceDoesNotRace(t *testing.T) {
 	i, ingester := defaultInstance(t)
 	end := make(chan struct{})
+	group := sync.WaitGroup{}
 
 	concurrent := func(f func()) {
+		group.Add(1)
+		defer group.Done()
 		for {
 			select {
 			case <-end:
@@ -225,6 +229,7 @@ func TestInstanceDoesNotRace(t *testing.T) {
 	close(end)
 	// Wait for go funcs to quit before
 	// exiting and cleaning up
+	group.Wait()
 	time.Sleep(2 * time.Second)
 }
 
