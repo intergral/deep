@@ -3,3 +3,4 @@ mkdocs-material
 mkdocs-glightbox
 mkdocs-gitlinks
 mkdocs-awesome-pages-plugin
+mkdocs-spellcheck[all]

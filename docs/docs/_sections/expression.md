@@ -13,7 +13,7 @@ Python will evaluate the expressions using `eval` this allows you to execute any
 expressions. This allows for a lot of power to collect data, however it also allows for some potential bad scenarios.
 Where potentially harmful code can be executed. As a result we have tried to defend the user from some scenarios.
 
-- Global values are not exposed to eval
+- Global values are not exposed to `eval`
 
 ## Java
 

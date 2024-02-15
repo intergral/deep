@@ -1,7 +1,7 @@
 # Traces / Spans
 
 Deep offers the ability to dynamically create Spans at arbitrary points in the code. This allows you to augment your
-exising monitoring with specific Spans when you need additional data while diagnosing an issue.
+existing monitoring with specific Spans when you need additional data while diagnosing an issue.
 
 To create a Span the `span` argument should be attached to the tracepoint. This argument can have the values of:
 

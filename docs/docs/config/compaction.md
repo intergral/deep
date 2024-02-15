@@ -10,14 +10,14 @@ blocks that have to be scanned when performing a query.
 
 The compaction can be configured using the settings:
 
-| Name                      | Default | Description                                                                |
-|---------------------------|---------|----------------------------------------------------------------------------|
-| compaction_window         | 1h      | This is the maximum time range a block should contain.                     |
-| max_compaction_objects    | 6000000 | This is the maximum number of Snapshots that will be stored in each block. |
-| max_block_bytes           | 100 GiB | This is the maximum size in bytes that each block can be.                  |
-| block_retention           | 14d     | This is the total time a block will be stored for.                         |
-| compacted_block_retention | 1h      | This is the duration a compacted block will be stored for.                 |
-| compaction_cycle          | 1h      | The time between each compaction cycle.                                    |
+| Name                        | Default | Description                                                                |
+|-----------------------------|---------|----------------------------------------------------------------------------|
+| `compaction_window`         | 1h      | This is the maximum time range a block should contain.                     |
+| `max_compaction_objects`    | 6000000 | This is the maximum number of Snapshots that will be stored in each block. |
+| `max_block_bytes`           | 100 GiB | This is the maximum size in bytes that each block can be.                  |
+| `block_retention`           | 14d     | This is the total time a block will be stored for.                         |
+| `compacted_block_retention` | 1h      | This is the duration a compacted block will be stored for.                 |
+| `compaction_cycle`          | 1h      | The time between each compaction cycle.                                    |
 
 By modifying these settings you can control how often blocks are compacted, how big they should be and how much time
 they should span. There is no one size fits all config for compaction.
