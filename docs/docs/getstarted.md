@@ -14,7 +14,7 @@ To follow this guide you will need to install:
 
 To start deep using the local docker stack follow these steps:
 
-1. Checkout the repo
+1. Checkout the repository
    ```bash
    git checkout https://github.com/intergral/deep.git
    ```
@@ -46,8 +46,8 @@ Now that we have deep running and a test app connected we want to see what we ca
 ![Tracepoint Create](./images/Explore_TracepointCreate.png)
 
 4. Here we can enter the file and line number to collect data. In this example we want to use:
-    - File Path: simple_test.py
-    - Line Number: 31
+    - File Path: `simple_test.py`
+    - Line Number: `31`
 
    Once set click 'Create Tracepoint' to create the tracepoint.
 7. If created successfully you will see the result in the query result below:
