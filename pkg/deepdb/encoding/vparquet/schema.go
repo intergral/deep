@@ -162,6 +162,7 @@ type StackFrame struct {
 	TranspiledColumnNumber *uint32      `parquet:",snappy,optional"`
 	Variables              []VariableID `parquet:""`
 	AppFrame               bool         `parquet:""`
+	NativeFrame            bool         `parquet:""`
 	ShortPath              *string      `parquet:",snappy,dict,optional"`
 }
 
@@ -341,6 +342,10 @@ func convertFrame(frame *deepTP.StackFrame) StackFrame {
 	if frame.AppFrame != nil {
 		appFrame = *frame.AppFrame
 	}
+	nativeFrame := false
+	if frame.AppFrame != nil {
+		nativeFrame = *frame.NativeFrame
+	}
 	return StackFrame{
 		FileName:               frame.FileName,
 		MethodName:             frame.MethodName,
@@ -353,6 +358,7 @@ func convertFrame(frame *deepTP.StackFrame) StackFrame {
 		TranspiledColumnNumber: frame.TranspiledColumnNumber,
 		Variables:              convertChildren(frame.Variables),
 		AppFrame:               appFrame,
+		NativeFrame:            nativeFrame,
 		ShortPath:              frame.ShortPath,
 	}
 }
@@ -688,6 +694,10 @@ func parquetConvertFrame(frame StackFrame) *deepTP.StackFrame {
 	if frame.AppFrame {
 		appFrame = &trueBool
 	}
+	var nativeframe *bool = nil
+	if frame.NativeFrame {
+		nativeframe = &trueBool
+	}
 	return &deepTP.StackFrame{
 		FileName:               frame.FileName,
 		MethodName:             frame.MethodName,
@@ -700,6 +710,8 @@ func parquetConvertFrame(frame StackFrame) *deepTP.StackFrame {
 		TranspiledColumnNumber: frame.TranspiledColumnNumber,
 		Variables:              parquetConvertChildren(frame.Variables),
 		AppFrame:               appFrame,
+		NativeFrame:            nativeframe,
+		ShortPath:              frame.ShortPath,
 	}
 }
 
