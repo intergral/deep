@@ -1,7 +1,8 @@
 <!-- main START -->
 # main (unreleased)
 - **[ENHANCEMENT]**: Update deep proto version to support new properties on tracepoints [#78](https://github.com/intergral/deep/pull/78) [@Umaaz](https://github.com/Umaaz) 
-- **[ENHANCEMENT]**: change(builds): change builds to use goreleaser [#79](https://github.com/intergral/deep/pull/79) [@Umaaz](https://github.com/Umaaz)
+- **[ENHANCEMENT]**: change builds to use goreleaser [#79](https://github.com/intergral/deep/pull/79) [@Umaaz](https://github.com/Umaaz)
+- **[BUGFIX]**: fix missing data in frame response [#89](https://github.com/intergral/deep/pull/89) [@Umaaz](https://github.com/Umaaz)
 <!-- main START -->
 
 <!-- 1.0.4 START -->
