@@ -19,6 +19,7 @@ package otlpgrpc
 
 import (
 	"context"
+	"errors"
 	"net"
 	"testing"
 
@@ -80,7 +81,9 @@ func newListener(t *testing.T, srv ptraceotlp.Server) *bufconn.Listener {
 	ptraceotlp.RegisterServer(s, srv)
 	go func() {
 		err := s.Serve(l)
-		require.NoError(t, err)
+		if !errors.Is(err, grpc.ErrServerStopped) {
+			require.NoError(t, err)
+		}
 	}()
 
 	return l
