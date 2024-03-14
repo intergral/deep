@@ -343,7 +343,7 @@ func convertFrame(frame *deepTP.StackFrame) StackFrame {
 		appFrame = *frame.AppFrame
 	}
 	nativeFrame := false
-	if frame.AppFrame != nil {
+	if frame.NativeFrame != nil {
 		nativeFrame = *frame.NativeFrame
 	}
 	return StackFrame{
