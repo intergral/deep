@@ -214,6 +214,13 @@ func searchTagValues(ctx context.Context, tag deepql.Attribute, cb common.TagCal
 		return nil
 	}
 
+	if column, ok := wellKnownColumnLookups[tag.Name]; ok {
+		err := searchSpecialTagValues(ctx, column.columnPath, pf, cb)
+		if err != nil {
+			return fmt.Errorf("unexpected error searching special tags: %w", err)
+		}
+	}
+
 	// Finally also search generic key/values
 	err := searchStandardTagValues(ctx, tag, pf, cb)
 	if err != nil {

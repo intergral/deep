@@ -1,6 +1,7 @@
 <!-- main START -->
 # main (unreleased)
 - **[BUGFIX]**: fix missing data in frame response [#89](https://github.com/intergral/deep/pull/89) [@Umaaz](https://github.com/Umaaz)
+- **[BUGFIX]**: fix missing support for well known labels [#92](https://github.com/intergral/deep/pull/92) [@Umaaz](https://github.com/Umaaz)
 <!-- main START -->
 
 <!-- main START -->
