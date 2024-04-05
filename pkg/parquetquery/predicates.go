@@ -101,6 +101,81 @@ func (p *StringInPredicate) KeepPage(page pq.Page) bool {
 
 // RegexInPredicate checks for match against any of the given regexs.
 // Memoized and resets on each row group.
+type RegexNotInPredicate struct {
+	regs    []*regexp.Regexp
+	matches map[string]bool
+
+	helper DictionaryPredicateHelper
+}
+
+var _ Predicate = (*RegexNotInPredicate)(nil)
+
+func NewRegexNotInPredicate(regs []string) (*RegexNotInPredicate, error) {
+	p := &RegexNotInPredicate{
+		regs:    make([]*regexp.Regexp, 0, len(regs)),
+		matches: make(map[string]bool),
+	}
+	for _, reg := range regs {
+		r, err := regexp.Compile(reg)
+		if err != nil {
+			return nil, err
+		}
+		p.regs = append(p.regs, r)
+	}
+	return p, nil
+}
+
+func (p *RegexNotInPredicate) String() string {
+	var str string
+	for _, s := range p.regs {
+		str += fmt.Sprintf("%s, ", s.String())
+	}
+	return fmt.Sprintf("RegexNotInPredicate{%s}", str)
+}
+
+func (p *RegexNotInPredicate) keep(v *pq.Value) bool {
+	if v.IsNull() {
+		// Null
+		return false
+	}
+
+	s := v.String()
+	if matched, ok := p.matches[s]; ok {
+		return matched
+	}
+
+	matched := false
+	for _, r := range p.regs {
+		if !r.MatchString(s) {
+			matched = true
+			break
+		}
+	}
+
+	p.matches[s] = matched
+	return matched
+}
+
+func (p *RegexNotInPredicate) KeepColumnChunk(pq.ColumnChunk) bool {
+	p.helper.setNewRowGroup()
+
+	// Reset match cache on each row group change
+	p.matches = make(map[string]bool, len(p.matches))
+
+	// Can we do any filtering here?
+	return true
+}
+
+func (p *RegexNotInPredicate) KeepValue(v pq.Value) bool {
+	return p.keep(&v)
+}
+
+func (p *RegexNotInPredicate) KeepPage(page pq.Page) bool {
+	return p.helper.keepPage(page, p.KeepValue)
+}
+
+// RegexInPredicate checks for match against any of the given regexs.
+// Memoized and resets on each row group.
 type RegexInPredicate struct {
 	regs    []*regexp.Regexp
 	matches map[string]bool

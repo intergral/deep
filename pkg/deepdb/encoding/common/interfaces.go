@@ -42,7 +42,7 @@ type Searcher interface {
 	Search(ctx context.Context, req *deeppb.SearchRequest, opts SearchOptions) (*deeppb.SearchResponse, error)
 	SearchTags(ctx context.Context, cb TagCallback, opts SearchOptions) error
 	SearchTagValues(ctx context.Context, tag string, cb TagCallback, opts SearchOptions) error
-	SearchTagValuesV2(ctx context.Context, tag deepql.Attribute, cb TagCallbackV2, opts SearchOptions) error
+	SearchTagValuesV2(ctx context.Context, tag string, cb TagCallbackV2, opts SearchOptions) error
 
 	Fetch(context.Context, deepql.FetchSnapshotRequest, SearchOptions) (deepql.FetchSnapshotResponse, error)
 }

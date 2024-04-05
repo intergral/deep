@@ -20,16 +20,12 @@ package deepdb
 import (
 	"context"
 	"fmt"
+	"github.com/intergral/deep/pkg/deepql"
 	"math/rand"
 	"path"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/intergral/deep/pkg/deeppb"
-	v1_common "github.com/intergral/deep/pkg/deeppb/common/v1"
-	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
-	"github.com/intergral/deep/pkg/deepql"
 
 	"github.com/go-kit/log"
 	"github.com/google/uuid"
@@ -38,6 +34,9 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/encoding"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	"github.com/intergral/deep/pkg/deepdb/wal"
+	"github.com/intergral/deep/pkg/deeppb"
+	v1_common "github.com/intergral/deep/pkg/deeppb/common/v1"
+	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/intergral/deep/pkg/util/test"
@@ -97,7 +96,7 @@ func testDeepQLCompleteBlock(t *testing.T, blockVersion string) {
 				return r.Fetch(ctx, meta, req, common.DefaultSearchOptions())
 			})
 
-			res, err := e.Execute(ctx, req, fetcher)
+			res, err := e.ExecuteSearch(ctx, req, fetcher)
 			require.NoError(t, err, "search request: %+v", req)
 			actual := actualForExpectedMeta(wantMeta, res)
 			require.NotNil(t, actual, "search request: %v", req)
@@ -109,7 +108,7 @@ func testDeepQLCompleteBlock(t *testing.T, blockVersion string) {
 				return r.Fetch(ctx, meta, req, common.DefaultSearchOptions())
 			})
 
-			res, err := e.Execute(ctx, req, fetcher)
+			res, err := e.ExecuteSearch(ctx, req, fetcher)
 			require.NoError(t, err, "search request: %+v", req)
 			require.Nil(t, actualForExpectedMeta(wantMeta, res), "search request: %v", req)
 		}
@@ -232,7 +231,7 @@ func testAdvancedDeepQLCompleteBlock(t *testing.T, blockVersion string) {
 				return r.Fetch(ctx, meta, req, common.DefaultSearchOptions())
 			})
 
-			res, err := e.Execute(ctx, req, fetcher)
+			res, err := e.ExecuteSearch(ctx, req, fetcher)
 			require.NoError(t, err, "search request: %+v", req)
 			actual := actualForExpectedMeta(wantMeta, res)
 			require.NotNil(t, actual, "search request: %v", req)
@@ -244,7 +243,7 @@ func testAdvancedDeepQLCompleteBlock(t *testing.T, blockVersion string) {
 				return r.Fetch(ctx, meta, req, common.DefaultSearchOptions())
 			})
 
-			res, err := e.Execute(ctx, req, fetcher)
+			res, err := e.ExecuteSearch(ctx, req, fetcher)
 			require.NoError(t, err, "search request: %+v", req)
 			require.Nil(t, actualForExpectedMeta(wantMeta, res), "search request: %v", req)
 		}

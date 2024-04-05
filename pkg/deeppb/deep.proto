@@ -66,6 +66,7 @@ message SearchResponse {
   repeated SnapshotSearchMetadata snapshots = 1;
   SearchMetrics metrics = 2;
 }
+
 message SnapshotSearchMetadata {
   string snapshotID = 1;
   string serviceName = 2;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023  Intergral GmbH
+ * Copyright (C) 2024  Intergral GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,6 +18,8 @@
 package deepql
 
 import (
+	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"text/scanner"
@@ -27,94 +29,37 @@ import (
 	"github.com/prometheus/common/model"
 )
 
-var tokens = map[string]int{
-	".":         DOT,
-	"{":         OPEN_BRACE,
-	"}":         CLOSE_BRACE,
-	"(":         OPEN_PARENS,
-	")":         CLOSE_PARENS,
-	"=":         EQ,
-	"!=":        NEQ,
-	"=~":        RE,
-	"!~":        NRE,
-	">":         GT,
-	">=":        GTE,
-	"<":         LT,
-	"<=":        LTE,
-	"+":         ADD,
-	"-":         SUB,
-	"/":         DIV,
-	"%":         MOD,
-	"*":         MUL,
-	"^":         POW,
-	"true":      TRUE,
-	"false":     FALSE,
-	"nil":       NIL,
-	"&&":        AND,
-	"||":        OR,
-	"!":         NOT,
-	"|":         PIPE,
-	">>":        DESC,
-	"~":         TILDE,
-	"duration":  IDURATION,
-	"name":      NAME,
-	"resource.": RESOURCE_DOT,
-	"count":     COUNT,
-	"avg":       AVG,
-	"max":       MAX,
-	"min":       MIN,
-	"sum":       SUM,
-	"by":        BY,
-	"coalesce":  COALESCE,
-}
-
 type lexer struct {
 	scanner.Scanner
 	expr   *RootExpr
 	parser *yyParserImpl
-	errs   []ParseError
+	errs   []error
+}
 
-	parsingAttribute bool
+var tokens = map[string]int{
+	"{":  OPEN_BRACE,
+	"}":  CLOSE_BRACE,
+	"=":  EQ,
+	".":  DOT,
+	"!=": NEQ,
+	">":  GT,
+	">=": GTE,
+	"<":  LT,
+	"<=": LTE,
+	"=~": REG,
+	"!~": NREG,
+	"(":  OPEN_PARAN,
+	")":  CLOSE_PARAN,
+	"[":  OPEN_BRACK,
+	"]":  CLOSE_BRACK,
 }
 
 func (l *lexer) Lex(lval *yySymType) int {
-	// if we are currently parsing an attribute and the next rune suggests that
-	//  this attribute will end, then return a special token indicating that the attribute is
-	//  done parsing
-	if l.parsingAttribute && !isAttributeRune(l.Peek()) {
-		l.parsingAttribute = false
-		return END_ATTRIBUTE
-	}
-
 	r := l.Scan()
 
-	// if we are currently parsing an attribute then just grab everything until we find a character that ends the attribute.
-	// we will handle parsing this out in ast.go
-	if l.parsingAttribute {
-		str := l.TokenText()
-		// parse out any scopes here
-		tok := tokens[str+string(l.Peek())]
-		if tok == RESOURCE_DOT {
-			l.Next()
-			return tok
-		}
-
-		// go forward until we find the end of the attribute
-		r := l.Peek()
-		for isAttributeRune(r) {
-			str += string(l.Next())
-			r = l.Peek()
-		}
-
-		lval.staticStr = str
-		return IDENTIFIER
-	}
-
-	// now that we know we're not parsing an attribute, let's look for everything else
 	switch r {
 	case scanner.EOF:
 		return 0
-
 	case scanner.String, scanner.RawString:
 		var err error
 		lval.staticStr, err = strconv.Unquote(l.TokenText())
@@ -156,21 +101,54 @@ func (l *lexer) Lex(lval *yySymType) int {
 	tokStrNext := l.TokenText() + string(l.Peek())
 	if tok, ok := tokens[tokStrNext]; ok {
 		l.Next()
-		l.parsingAttribute = startsAttribute(tok)
 		return tok
 	}
 
 	if tok, ok := tokens[l.TokenText()]; ok {
-		l.parsingAttribute = startsAttribute(tok)
 		return tok
 	}
 
 	lval.staticStr = l.TokenText()
+
+	if string(l.Peek()) == "{" {
+		if tok, ok := triggerTypes[lval.staticStr]; ok {
+			return tok
+		}
+		if tok, ok := commandTypes[lval.staticStr]; ok {
+			return tok
+		}
+	}
+
 	return IDENTIFIER
 }
 
 func (l *lexer) Error(msg string) {
-	l.errs = append(l.errs, newParseError(msg, l.Line, l.Column))
+	l.errs = append(l.errs, errors.New(fmt.Sprintf("parse error at line %d, col %d near token '%s': %s", l.Line, l.Column, l.TokenText(), msg)))
+}
+
+func ParseString(str string) (*RootExpr, error) {
+	l := lexer{
+		parser: yyNewParser().(*yyParserImpl),
+	}
+	l.Init(strings.NewReader(str))
+	l.Scanner.Error = func(_ *scanner.Scanner, msg string) {
+		l.Error(msg)
+	}
+	e := l.parser.Parse(&l)
+	if len(l.errs) > 0 {
+		return nil, l.errs[0]
+	}
+
+	if e != 0 {
+		return nil, fmt.Errorf("unknown parse error: %d", e)
+	}
+
+	err := l.expr.validate()
+	if err != nil {
+		return nil, err
+	}
+
+	return l.expr, nil
 }
 
 func tryScanDuration(number string, l *scanner.Scanner) (time.Duration, bool) {
@@ -203,6 +181,46 @@ func tryScanDuration(number string, l *scanner.Scanner) (time.Duration, bool) {
 	return d, true
 }
 
+func parseTimeWindow(d string) (time.Time, error) {
+	if d == "" || d == "now" {
+		return time.Now(), nil
+	}
+
+	isTime := strings.Contains(d, ":")
+	isDate := strings.Contains(d, "-")
+
+	if isTime && isDate {
+		parse, err := time.Parse(time.DateTime, d)
+		if err != nil {
+			return time.Time{}, err
+		}
+		return parse, nil
+	}
+
+	if isTime {
+		parse, err := time.Parse(time.RFC3339, d)
+		if err != nil {
+			return time.Time{}, err
+		}
+		return parse, nil
+	}
+
+	if isDate {
+		parse, err := time.Parse(time.DateOnly, d)
+		if err != nil {
+			return time.Time{}, err
+		}
+		return parse, nil
+	}
+
+	duration, err := parseDuration(d)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return time.Now().Add(duration), nil
+}
+
 func parseDuration(d string) (time.Duration, error) {
 	var duration time.Duration
 	// Try to parse promql style durations first, to ensure that we support the same duration
@@ -230,22 +248,4 @@ func isDurationRune(r rune) bool {
 	default:
 		return false
 	}
-}
-
-func isAttributeRune(r rune) bool {
-	if unicode.IsSpace(r) {
-		return false
-	}
-
-	switch r {
-	case scanner.EOF, '{', '}', '(', ')', '=', '~', '!', '<', '>', '&', '|', '^':
-		return false
-	default:
-		return true
-	}
-}
-
-func startsAttribute(tok int) bool {
-	return tok == DOT ||
-		tok == RESOURCE_DOT
 }

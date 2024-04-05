@@ -23,12 +23,12 @@ if __name__ == '__main__':
     
     To use pass the path to the file to open as the first argument:
     
-    python print-parquet.py /path/to/parquest/file
+    python print-parquet.py /path/to/parquest/file [column]
     
     NOTE: Must install pandas and pyarrow
     pip install pandas pyarrow
     """
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         print("Must pass file to read")
         exit(1)
 
@@ -46,4 +46,8 @@ if __name__ == '__main__':
 
     print("Number of Rows: ", parquet.shape[0])
 
-    print(parquet.sample(n=5))
+    if len(sys.argv) == 3:
+        sample = parquet.sample(n=5)
+        print(sample[sys.argv[2]].values)
+    else:
+        print(parquet.sample(n=5))

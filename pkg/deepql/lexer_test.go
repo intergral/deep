@@ -15,11 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ql
+package deepql
 
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestParseString(t *testing.T) {
@@ -27,6 +28,7 @@ func TestParseString(t *testing.T) {
 		deepQl  string
 		trigger *trigger
 		command *command
+		search  *search
 		wantErr string
 	}{
 		{
@@ -51,11 +53,11 @@ func TestParseString(t *testing.T) {
 		},
 		{
 			deepQl:  "log {log=\"this is a log message\"}",
-			wantErr: "parse error at line 1, col 1 near token 'log': syntax error",
+			wantErr: "parse error at line 1, col 5 near token '{': syntax error",
 		},
 		{
-			deepQl:  "log{log=\"this is a log message\" line=12 file=\"SimpleTest.java\"}",
-			trigger: &trigger{primary: "log", fireCount: -1, rateLimit: 1000, windowStart: "now", windowEnd: "48h", log: "this is a log message", targeting: map[string]string{}, line: 12, file: "SimpleTest.java"},
+			deepQl:  "log{log=\"this is a log message\" line=12 file=\"SimpleTest.java\" fire_count=12}",
+			trigger: &trigger{primary: "log", fireCount: 12, rateLimit: 1000, windowStart: "now", windowEnd: "48h", log: "this is a log message", targeting: map[string]string{}, line: 12, file: "SimpleTest.java"},
 		},
 		{
 			deepQl:  "log{log=\"this is a log message\" label_my_label=\"atest\" line=12 file=\"SimpleTest.java\"}",
@@ -93,6 +95,70 @@ func TestParseString(t *testing.T) {
 			deepQl:  "delete{line=88}",
 			wantErr: "parse error unrecognized option: line",
 		},
+		{
+			deepQl: "{}",
+			search: &search{},
+		},
+		{
+			deepQl: "{line=88}",
+			search: &search{rules: []configOption{newConfigOption(OpEqual, "line", Static{Type: TypeInt, N: 88})}},
+		},
+		{
+			deepQl: "{line!=88}",
+			search: &search{rules: []configOption{newConfigOption(OpNotEqual, "line", Static{Type: TypeInt, N: 88})}},
+		},
+		{
+			deepQl: "{line!=88 file=\"SimpleTest.java\"}",
+			search: &search{rules: []configOption{newConfigOption(OpEqual, "file", Static{Type: TypeString, S: "SimpleTest.java"}), newConfigOption(OpNotEqual, "line", Static{Type: TypeInt, N: 88})}},
+		},
+		{
+			deepQl: "{line!=88 file=~\"SimpleTest.java\"}",
+			search: &search{rules: []configOption{newConfigOption(OpRegex, "file", Static{Type: TypeString, S: "SimpleTest.java"}), newConfigOption(OpNotEqual, "line", Static{Type: TypeInt, N: 88})}},
+		},
+		{
+			deepQl: "{line!=88 file!~\"SimpleTest.java\"}",
+			search: &search{rules: []configOption{newConfigOption(OpNotRegex, "file", Static{Type: TypeString, S: "SimpleTest.java"}), newConfigOption(OpNotEqual, "line", Static{Type: TypeInt, N: 88})}},
+		},
+		{
+			deepQl: "sum({line=88})",
+			search: &search{aggregate: "sum", rules: []configOption{newConfigOption(OpEqual, "line", Static{Type: TypeInt, N: 88})}},
+		},
+		{
+			deepQl: "count({line!=88})",
+			search: &search{aggregate: "count", rules: []configOption{newConfigOption(OpNotEqual, "line", Static{Type: TypeInt, N: 88})}},
+		},
+		{
+			deepQl: "max({line!=88 file=\"SimpleTest.java\"})",
+			search: &search{aggregate: "max", rules: []configOption{newConfigOption(OpEqual, "file", Static{Type: TypeString, S: "SimpleTest.java"}), newConfigOption(OpNotEqual, "line", Static{Type: TypeInt, N: 88})}},
+		},
+		{
+			deepQl: "min({line!=88 file=~\"SimpleTest.java\"})",
+			search: &search{aggregate: "min", rules: []configOption{newConfigOption(OpRegex, "file", Static{Type: TypeString, S: "SimpleTest.java"}), newConfigOption(OpNotEqual, "line", Static{Type: TypeInt, N: 88})}},
+		},
+		{
+			deepQl: "mean({line!=88 file!~\"SimpleTest.java\"})",
+			search: &search{aggregate: "mean", rules: []configOption{newConfigOption(OpNotRegex, "file", Static{Type: TypeString, S: "SimpleTest.java"}), newConfigOption(OpNotEqual, "line", Static{Type: TypeInt, N: 88})}},
+		},
+		{
+			deepQl: "sum({line=88})[5m]",
+			search: &search{window: asRef(time.Minute * 5), aggregate: "sum", rules: []configOption{newConfigOption(OpEqual, "line", Static{Type: TypeInt, N: 88})}},
+		},
+		{
+			deepQl: "count({line!=88})[1m]",
+			search: &search{window: asRef(time.Minute * 1), aggregate: "count", rules: []configOption{newConfigOption(OpNotEqual, "line", Static{Type: TypeInt, N: 88})}},
+		},
+		{
+			deepQl: "max({line!=88 file=\"SimpleTest.java\"})[1d]",
+			search: &search{window: asRef(time.Hour * 24), aggregate: "max", rules: []configOption{newConfigOption(OpEqual, "file", Static{Type: TypeString, S: "SimpleTest.java"}), newConfigOption(OpNotEqual, "line", Static{Type: TypeInt, N: 88})}},
+		},
+		{
+			deepQl: "min({line!=88 file=~\"SimpleTest.java\"})[7d]",
+			search: &search{window: asRef(time.Hour * 24 * 7), aggregate: "min", rules: []configOption{newConfigOption(OpRegex, "file", Static{Type: TypeString, S: "SimpleTest.java"}), newConfigOption(OpNotEqual, "line", Static{Type: TypeInt, N: 88})}},
+		},
+		{
+			deepQl: "mean({line!=88 file!~\"SimpleTest.java\"})[14d]",
+			search: &search{window: asRef(time.Hour * 24 * 14), aggregate: "mean", rules: []configOption{newConfigOption(OpNotRegex, "file", Static{Type: TypeString, S: "SimpleTest.java"}), newConfigOption(OpNotEqual, "line", Static{Type: TypeInt, N: 88})}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.deepQl, func(t *testing.T) {
@@ -117,6 +183,15 @@ func TestParseString(t *testing.T) {
 					t.Errorf("ParseString() got = %+v, command %+v", got.command, tt.command)
 				}
 			}
+			if tt.search != nil {
+				if !reflect.DeepEqual(got.search, tt.search) {
+					t.Errorf("ParseString() got = %+v, search %+v", got.search, tt.search)
+				}
+			}
 		})
 	}
+}
+
+func asRef(dur time.Duration) *time.Duration {
+	return &dur
 }

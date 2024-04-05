@@ -121,6 +121,9 @@ func createStringPredicate(op deepql.Operator, operands deepql.Operands) (parque
 	case deepql.OpRegex:
 		return parquetquery.NewRegexInPredicate([]string{s})
 
+	case deepql.OpNotRegex:
+		return parquetquery.NewRegexNotInPredicate([]string{s})
+
 	default:
 		return nil, fmt.Errorf("operand not supported for strings: %+v", op)
 	}

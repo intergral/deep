@@ -15,9 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ql
+package deepql
 
 import (
+	"strconv"
 	"time"
 )
 
@@ -36,9 +37,6 @@ func (t StaticType) isNumeric() bool {
 	return t == TypeInt || t == TypeFloat || t == TypeDuration
 }
 
-// **********************
-// Statics
-// **********************
 type Static struct {
 	Type StaticType
 	N    int
@@ -46,6 +44,24 @@ type Static struct {
 	S    string
 	B    bool
 	D    time.Duration
+}
+
+func (s Static) String() string {
+	switch s.Type {
+	case TypeInt:
+		return strconv.Itoa(s.N)
+	case TypeDuration:
+		return s.D.String()
+	case TypeFloat:
+		return strconv.FormatFloat(s.F, 'f', -1, 64)
+	case TypeString:
+		return s.S
+	case TypeBoolean:
+		return strconv.FormatBool(s.B)
+	case TypeNil:
+		return ""
+	}
+	return ""
 }
 
 func NewStaticInt(n int) Static {

@@ -20,6 +20,9 @@ package api
 import (
 	"errors"
 	"fmt"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+	"github.com/opentracing/opentracing-go"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -82,6 +85,7 @@ const (
 	PathPrefixTracepoints = "/tracepoints"
 
 	PathTracepoints      = "/api/tracepoints"
+	PathTracepointsQuery = "/api/tracepoints/query"
 	PathDeleteTracepoint = "/api/tracepoints/{tpID}"
 
 	PathSearchTagValuesV2 = "/api/v2/search/tag/{tagName}/values"
@@ -136,12 +140,9 @@ func ParseSearchRequest(r *http.Request) (*deeppb.SearchRequest, error) {
 
 	query, queryFound := extractQueryParam(r, urlParamQuery)
 	if queryFound {
-		// TODO hacky fix: we don't validate {} since this isn't handled correctly yet
-		if query != "{}" {
-			_, err := deepql.Parse(query)
-			if err != nil {
-				return nil, fmt.Errorf("invalid DeepQL query: %w", err)
-			}
+		_, err := deepql.ParseString(query)
+		if err != nil {
+			return nil, fmt.Errorf("invalid DeepQL query: %w", err)
 		}
 		req.Query = query
 	}
@@ -537,4 +538,31 @@ func ValidateAndSanitizeRequest(r *http.Request) (string, string, string, int64,
 		return "", "", "", 0, 0, fmt.Errorf("http parameter start must be before end. received start=%d end=%d", startTime, endTime)
 	}
 	return blockStart, blockEnd, queryMode, startTime, endTime, nil
+}
+
+func ParseMessageToHttp(w http.ResponseWriter, r *http.Request, span opentracing.Span, data proto.Message) {
+	if r.Header.Get(HeaderAccept) == HeaderAcceptProtobuf {
+		span.SetTag("contentType", HeaderAcceptProtobuf)
+		b, err := proto.Marshal(data)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set(HeaderContentType, HeaderAcceptProtobuf)
+		_, err = w.Write(b)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		return
+	}
+
+	span.SetTag("contentType", HeaderAcceptJSON)
+	marshaller := &jsonpb.Marshaler{}
+	err := marshaller.Marshal(w, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set(HeaderContentType, HeaderAcceptJSON)
 }

@@ -555,7 +555,7 @@ func (q *Querier) internalSearchBlock(ctx context.Context, req *deeppb.SearchBlo
 			return q.store.Fetch(ctx, meta, req, opts)
 		})
 
-		return q.engine.Execute(ctx, req.SearchReq, fetcher)
+		return q.engine.ExecuteSearch(ctx, req.SearchReq, fetcher)
 	}
 
 	return q.store.Search(ctx, meta, req.SearchReq, opts)

@@ -371,7 +371,6 @@ func (d *Distributor) PushSnapshot(ctx context.Context, in *tp.Snapshot) (*tp.Sn
 	}
 	span.SetTag("tenantID", tenantID)
 
-	// todo is this really needed?
 	// Convert to bytes and back. This is unfortunate for efficiency, but it works
 	// around to allow deep agent to be installed in deep service
 	convert, err := proto.Marshal(in)

@@ -15,9 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package deepql
+package deepql_old
 
-// MustExtractFetchSnapshotRequest parses the given deepql query and returns
+// MustExtractFetchSnapshotRequest parses the given deepql_old query and returns
 // the storage layer conditions. Panics if the query fails to parse.
 func MustExtractFetchSnapshotRequest(query string) FetchSnapshotRequest {
 	c, err := ExtractFetchSnapshotRequest(query)
@@ -27,7 +27,7 @@ func MustExtractFetchSnapshotRequest(query string) FetchSnapshotRequest {
 	return c
 }
 
-// ExtractFetchSnapshotRequest parses the given deepql query and returns
+// ExtractFetchSnapshotRequest parses the given deepql_old query and returns
 // the storage layer conditions. Returns an error if the query fails to parse.
 func ExtractFetchSnapshotRequest(query string) (FetchSnapshotRequest, error) {
 	ast, err := Parse(query)

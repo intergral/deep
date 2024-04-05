@@ -15,28 +15,43 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package deepql
+package deepql_old
 
-import (
-	"context"
-	"github.com/intergral/deep/pkg/deeppb"
-)
+import "context"
 
 type Operands []Static
 
 type Condition struct {
-	Attribute string
+	Attribute Attribute
 	Op        Operator
 	Operands  Operands
 }
+
+// FilterSnapshots is a hint that allows the calling code to filter down snapshot to only
+// those that metadata needs to be retrieved for. If the returned snapshots have no
+// snapshots it is discarded and will not appear in FetchSnapshotResponse. The bool
+// return value is used to indicate if the Fetcher should continue iterating or if
+// it can bail out.
+type FilterSnapshots func(result *SnapshotResult) ([]*SnapshotResult, error)
 
 type FetchSnapshotRequest struct {
 	StartTimeUnixNanos uint64
 	EndTimeUnixNanos   uint64
 	Conditions         []Condition
+
+	// AllConditions, by default the storage layer fetches snapshots meeting any of the criteria.
+	// This hint is for common cases like { x && y && z } where the storage layer
+	// can make extra optimizations by returning only snapshots that meet
+	// all criteria.
+	AllConditions bool
+	Filter        FilterSnapshots
 }
 
 type SnapshotResult struct {
+	// these fields are actually used by the engine to evaluate queries
+	Scalar   Static
+	Snapshot Snapshot
+
 	SnapshotID         []byte
 	ServiceName        string
 	FilePath           string
@@ -48,22 +63,28 @@ type SnapshotResult struct {
 func (s *SnapshotResult) clone() *SnapshotResult {
 	return &SnapshotResult{
 		SnapshotID:         s.SnapshotID,
+		Scalar:             s.Scalar,
 		ServiceName:        s.ServiceName,
 		FilePath:           s.FilePath,
 		LineNo:             s.LineNo,
 		StartTimeUnixNanos: s.StartTimeUnixNanos,
 		DurationNanos:      s.DurationNanos,
+		Snapshot:           s.Snapshot, // we're not deep cloning into the snapshots themselves
 	}
 }
 
 type Snapshot interface {
 	// Attributes are the actual fields used by the engine to evaluate queries
 	// if a Filter parameter is passed the snapshots returned will only have this field populated
-	Attributes() map[string]Static
+	Attributes() map[Attribute]Static
 
 	ID() []byte
 	StartTimeUnixNanos() uint64
 	EndTimeUnixNanos() uint64
+}
+
+func (f *FetchSnapshotRequest) appendCondition(c ...Condition) {
+	f.Conditions = append(f.Conditions, c...)
 }
 
 type SnapshotResultIterator interface {
@@ -93,12 +114,3 @@ func NewSnapshotResultFetcherWrapper(f func(ctx context.Context, req FetchSnapsh
 func (s SnapshotResultFetcherWrapper) Fetch(ctx context.Context, request FetchSnapshotRequest) (FetchSnapshotResponse, error) {
 	return s.f(ctx, request)
 }
-
-type TriggerHandler func(context.Context, *deeppb.CreateTracepointRequest) (*deeppb.LoadTracepointResponse, error)
-
-type CommandRequest struct {
-	DeleteRequest *deeppb.DeleteTracepointRequest
-	LoadRequest   *deeppb.LoadTracepointRequest
-}
-
-type CommandHandler func(context.Context, *CommandRequest) (*deeppb.LoadTracepointResponse, error)

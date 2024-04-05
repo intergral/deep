@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ql
+package deepql
 
 import (
 	"errors"
@@ -27,12 +27,10 @@ const (
 	deleteType = "delete"
 )
 
-var (
-	commandTypes = map[string]int{
-		list:       COMMAND,
-		deleteType: COMMAND,
-	}
-)
+var commandTypes = map[string]int{
+	list:       COMMAND,
+	deleteType: COMMAND,
+}
 
 type command struct {
 	command string

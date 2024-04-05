@@ -15,11 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package deepql
+package deepql_old
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
-// unsupportedError is returned for deepql features that are not yet supported.
+// unsupportedError is returned for deepql_old features that are not yet supported.
 type unsupportedError struct {
 	feature string
 }
@@ -33,7 +36,32 @@ func (e unsupportedError) Error() string {
 }
 
 func (r RootExpr) validate() error {
-	return r.Pipeline.validate()
+
+	var errs []error
+	if r.trigger != nil && r.command != nil {
+		return errors.New("fatal error: cannot define a trigger and a command")
+	}
+	if r.trigger != nil {
+		err := r.trigger.validate()
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if r.command != nil {
+		err := r.command.validate()
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	err := r.Pipeline.validate()
+	if err != nil {
+		errs = append(errs, err)
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
+	return nil
 }
 
 func (p Pipeline) validate() error {

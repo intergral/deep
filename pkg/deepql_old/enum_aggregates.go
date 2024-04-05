@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024  Intergral GmbH
+ * Copyright (C) 2023  Intergral GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,16 +15,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ql
+package deepql_old
 
-type Operator int
+import "fmt"
+
+type AggregateOp int
 
 const (
-	OpNone Operator = iota
-	OpEqual
-	OpNotEqual
-	OpGreater
-	OpGreaterEqual
-	OpLess
-	OpLessEqual
+	aggregateCount AggregateOp = iota
+	aggregateMax
+	aggregateMin
+	aggregateSum
+	aggregateAvg
 )
+
+func (a AggregateOp) String() string {
+	switch a {
+	case aggregateCount:
+		return "count"
+	case aggregateMax:
+		return "max"
+	case aggregateMin:
+		return "min"
+	case aggregateSum:
+		return "sum"
+	case aggregateAvg:
+		return "avg"
+	}
+
+	return fmt.Sprintf("aggregate(%d)", a)
+}

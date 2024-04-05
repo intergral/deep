@@ -37,6 +37,12 @@ func IsSearchBlock(r *http.Request) bool {
 	return q.Get(urlParamBlockID) != ""
 }
 
+// IsDeepQLReq returns true if the request contains a deepQL query.
+func IsDeepQLReq(r *http.Request) (bool, string) {
+	value := r.URL.Query().Get(urlParamQuery)
+	return len(value) > 0, value
+}
+
 // IsDeepQLQuery returns true if the request contains a deepQL query.
 func IsDeepQLQuery(r *deeppb.SearchRequest) bool {
 	return len(r.Query) > 0

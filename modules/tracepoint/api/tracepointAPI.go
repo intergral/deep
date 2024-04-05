@@ -19,7 +19,9 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/intergral/deep/pkg/deepql"
 	"io"
 	"net/http"
 	"strconv"
@@ -28,7 +30,6 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/grafana/dskit/services"
@@ -99,6 +100,73 @@ func NewTracepointAPI(cfg Config, tpClient *client.TPClient, log log.Logger) (*T
 	return service, nil
 }
 
+func (ta *TracepointAPI) QueryTracepointHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithDeadline(r.Context(), time.Now().Add(ta.cfg.LoadTracepoint.Timeout))
+	defer cancel()
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "TracepointAPI.QueryTracepointHandler")
+	defer span.Finish()
+
+	isQuery, query := api.IsDeepQLReq(r)
+	if !isQuery {
+		http.Error(w, "request doesn't contain deepql query", http.StatusBadRequest)
+		return
+	}
+
+	span.SetTag("deepql", query)
+	expr, err := deepql.ParseString(query)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if expr.IsTrigger() {
+		query, err := deepql.NewEngine().ExecuteTriggerQuery(ctx, expr, func(ctx context.Context, request *deeppb.CreateTracepointRequest) (*deeppb.LoadTracepointResponse, error) {
+			_, err := ta.client.CreateTracepoint(ctx, request)
+			if err != nil {
+				return nil, err
+			}
+			return ta.client.LoadTracepoints(ctx, &deeppb.LoadTracepointRequest{
+				Request: &pb.PollRequest{},
+			})
+		})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("x-deepql-type", "tracepoint")
+		api.ParseMessageToHttp(w, r, span, query.Response)
+		return
+	}
+
+	if expr.IsCommand() {
+		query, err := deepql.NewEngine().ExecuteCommandQuery(ctx, expr, func(ctx context.Context, request *deepql.CommandRequest) (*deeppb.LoadTracepointResponse, error) {
+			if request.LoadRequest != nil {
+				return ta.client.LoadTracepoints(ctx, request.LoadRequest)
+			}
+			if request.DeleteRequest != nil {
+				_, err := ta.client.DeleteTracepoint(ctx, request.DeleteRequest)
+				if err != nil {
+					return nil, err
+				}
+				return ta.client.LoadTracepoints(ctx, &deeppb.LoadTracepointRequest{
+					Request: &pb.PollRequest{},
+				})
+			}
+			return nil, errors.New("unknown command request")
+		})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("x-deepql-type", "tracepoint")
+		api.ParseMessageToHttp(w, r, span, query.Response)
+		return
+	}
+
+	http.Error(w, "unsupported query operation", http.StatusBadRequest)
+}
+
 func (ta *TracepointAPI) LoadTracepointHandler(w http.ResponseWriter, r *http.Request) {
 	// trying to split GET and POST in the server handler with .Methods() doesn't work
 	// so if we are a POST then pass to CreateTracepointHandler
@@ -124,31 +192,7 @@ func (ta *TracepointAPI) LoadTracepointHandler(w http.ResponseWriter, r *http.Re
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	if r.Header.Get(api.HeaderAccept) == api.HeaderAcceptProtobuf {
-		span.SetTag("contentType", api.HeaderAcceptProtobuf)
-		b, err := proto.Marshal(tracepoints.Response)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set(api.HeaderContentType, api.HeaderAcceptProtobuf)
-		_, err = w.Write(b)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		return
-	}
-
-	span.SetTag("contentType", api.HeaderAcceptJSON)
-	marshaller := &jsonpb.Marshaler{}
-	err = marshaller.Marshal(w, tracepoints.Response)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
+	api.ParseMessageToHttp(w, r, span, tracepoints.Response)
 }
 
 func (ta *TracepointAPI) DeleteTracepointHandler(w http.ResponseWriter, r *http.Request) {
@@ -165,31 +209,11 @@ func (ta *TracepointAPI) DeleteTracepointHandler(w http.ResponseWriter, r *http.
 	}
 
 	tracepoints, err := ta.client.DeleteTracepoint(ctx, req)
-
-	if r.Header.Get(api.HeaderAccept) == api.HeaderAcceptProtobuf {
-		span.SetTag("contentType", api.HeaderAcceptProtobuf)
-		b, err := proto.Marshal(tracepoints)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set(api.HeaderContentType, api.HeaderAcceptProtobuf)
-		_, err = w.Write(b)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		return
-	}
-
-	span.SetTag("contentType", api.HeaderAcceptJSON)
-	marshaller := &jsonpb.Marshaler{}
-	err = marshaller.Marshal(w, tracepoints)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
+	api.ParseMessageToHttp(w, r, span, tracepoints)
 }
 
 func (ta *TracepointAPI) CreateTracepointHandler(w http.ResponseWriter, r *http.Request) {
@@ -206,31 +230,11 @@ func (ta *TracepointAPI) CreateTracepointHandler(w http.ResponseWriter, r *http.
 	}
 
 	tracepoints, err := ta.client.CreateTracepoint(ctx, req)
-
-	if r.Header.Get(api.HeaderAccept) == api.HeaderAcceptProtobuf {
-		span.SetTag("contentType", api.HeaderAcceptProtobuf)
-		b, err := proto.Marshal(tracepoints)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set(api.HeaderContentType, api.HeaderAcceptProtobuf)
-		_, err = w.Write(b)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		return
-	}
-
-	span.SetTag("contentType", api.HeaderAcceptJSON)
-	marshaller := &jsonpb.Marshaler{}
-	err = marshaller.Marshal(w, tracepoints)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
+	api.ParseMessageToHttp(w, r, span, tracepoints)
 }
 
 func (ta *TracepointAPI) parseLoadRequest(r *http.Request) (*deeppb.LoadTracepointRequest, error) {

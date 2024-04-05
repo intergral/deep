@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package deepql
+package deepql_old
 
 import (
 	"errors"
@@ -55,13 +55,14 @@ func Parse(s string) (expr *RootExpr, err error) {
 	}
 	e := l.parser.Parse(&l)
 	if len(l.errs) > 0 {
-		return nil, l.errs[0]
+		return nil, errors.Join(l.errs...)
 	}
 	if e != 0 {
 		return nil, fmt.Errorf("unknown parse error: %d", e)
 	}
 
-	return l.expr, nil
+	err = l.expr.validate()
+	return l.expr, err
 }
 
 func ParseIdentifier(s string) (Attribute, error) {

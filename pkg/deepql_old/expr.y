@@ -1,8 +1,9 @@
 %{
-package deepql
+package deepql_old
 
 import (
   "time"
+  "fmt"
 )
 %}
 
@@ -12,6 +13,10 @@ import (
     root RootExpr
     groupOperation GroupOperation
     coalesceOperation CoalesceOperation
+
+    trigger trigger
+    command command
+    options []configOption
 
     snapshotExpression SnapshotExpression
     snapshotPipelineExpression SnapshotExpression
@@ -38,9 +43,23 @@ import (
     staticStr   string
     staticFloat float64
     staticDuration time.Duration
+
+    operator Operator
+    option configOption
+    fieldName string
 }
 
 %type <RootExpr> root
+
+
+%type <trigger> trigger
+%type <command> command
+
+%type <fieldName> fieldName
+%type <options> options
+%type <option> option
+%type <operator> operator
+
 %type <groupOperation> groupOperation
 %type <coalesceOperation> coalesceOperation
 
@@ -64,7 +83,7 @@ import (
 %type <intrinsicField> intrinsicField
 %type <attributeField> attributeField
 
-%token <staticStr>      IDENTIFIER STRING
+%token <staticStr>      IDENTIFIER STRING TRIGGER COMMAND
 %token <staticInt>      INTEGER
 %token <staticFloat>    FLOAT
 %token <staticDuration> DURATION
@@ -75,6 +94,7 @@ import (
                         COUNT AVG MAX MIN SUM
                         BY COALESCE
                         END_ATTRIBUTE
+             		OPEN_BRACK CLOSE_BRACK
 
 // Operators are listed with increasing precedence.
 %left <binOp> PIPE
@@ -90,10 +110,43 @@ import (
 // Pipeline
 // **********************
 root:
-    snapshotPipeline                             { yylex.(*lexer).expr = newRootExpr($1) }
-  | snapshotPipelineExpression                   { yylex.(*lexer).expr = newRootExpr($1) }
-  | scalarPipelineExpressionFilter               { yylex.(*lexer).expr = newRootExpr($1) }
-  ;
+	trigger   { yylex.(*lexer).expr = &RootExpr{trigger: &$1} }
+	| command { yylex.(*lexer).expr = &RootExpr{command: &$1} }
+	| snapshotPipeline                             { yylex.(*lexer).expr = newRootExpr($1) }
+	| snapshotPipelineExpression                   { yylex.(*lexer).expr = newRootExpr($1) }
+	| scalarPipelineExpressionFilter               { yylex.(*lexer).expr = newRootExpr($1) }
+;
+
+
+// allow creation of triggers
+// log{ ... }
+// metric{ ... }
+// snapshot{ ... }
+trigger:
+	TRIGGER OPEN_BRACE CLOSE_BRACE { $$ = newTrigger($1, nil) }
+	| TRIGGER OPEN_BRACE options CLOSE_BRACE { $$ = newTrigger($1, $3) }
+	;
+
+// deals with commands
+// list { ... }
+// delete { ... }
+command:
+	COMMAND OPEN_BRACE CLOSE_BRACE { $$ = newCommand($1, nil) }
+	| COMMAND OPEN_BRACE options CLOSE_BRACE { $$ = newCommand($1, $3) }
+        ;
+
+options:
+	option options { $$ = append($2, $1) }
+	| option             { $$ = append($$, $1) }
+	;
+
+option:
+	fieldName operator static { $$ = newConfigOption($2, $1, $3) }
+	;
+
+fieldName:
+	IDENTIFIER { $$ = $1 }
+	| IDENTIFIER DOT fieldName { $$ = fmt.Sprintf("%s.%s", $1, $3) }
 
 // **********************
 // snapshot Expressions
@@ -253,3 +306,14 @@ attributeField:
     DOT IDENTIFIER END_ATTRIBUTE                      { $$ = NewAttribute($2)                                      }
   | RESOURCE_DOT IDENTIFIER END_ATTRIBUTE             { $$ = NewScopedAttribute(AttributeScopeResource, false, $2) }
   ;
+
+operator:
+	EQ       { $$ = OpEqual        }
+	| NEQ    { $$ = OpNotEqual     }
+	| LT     { $$ = OpLess         }
+	| LTE    { $$ = OpLessEqual    }
+	| GT     { $$ = OpGreater      }
+	| GTE    { $$ = OpGreaterEqual }
+	| RE     { $$ = OpRegex        }
+	| NRE    { $$ = OpNotRegex     }
+	;

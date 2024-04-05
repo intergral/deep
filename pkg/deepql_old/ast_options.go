@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ql
+package deepql_old
 
 import "strings"
 
@@ -23,11 +23,18 @@ type configOption struct {
 	op  Operator
 	lhs string
 	rhs Static
-	fnc func(c *configOption, target interface{}) error
 }
 
 func (c *configOption) apply(cfg interface{}) error {
-	return c.fnc(c, cfg)
+	if v, ok := cfg.(*trigger); ok {
+		return applyFuncForTrigger(c.lhs)(c, v)
+	}
+
+	if v, ok := cfg.(*command); ok {
+		return applyFuncForCommand(c.lhs)(c, v)
+	}
+
+	return nil
 }
 
 func newConfigOption(op Operator, lhs string, rhs Static) configOption {
@@ -35,21 +42,6 @@ func newConfigOption(op Operator, lhs string, rhs Static) configOption {
 		op:  op,
 		lhs: lhs,
 		rhs: rhs,
-		fnc: applyFuncFor(lhs),
-	}
-}
-
-func applyFuncFor(lhs string) func(c *configOption, tri interface{}) error {
-	return func(c *configOption, tri interface{}) error {
-		if v, ok := tri.(*trigger); ok {
-			return applyFuncForTrigger(lhs)(c, v)
-		}
-
-		if v, ok := tri.(*command); ok {
-			return applyFuncForCommand(lhs)(c, v)
-		}
-
-		return nil
 	}
 }
 

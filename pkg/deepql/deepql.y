@@ -13,6 +13,7 @@ import (
 
 	trigger trigger
 	command command
+	search search
 	options []configOption
 
 	staticInt   int
@@ -37,12 +38,15 @@ import (
 
 %token <val> OPEN_BRACE CLOSE_BRACE
              NIL TRUE FALSE DOT
+             OPEN_PARAN CLOSE_PARAN
+             OPEN_BRACK CLOSE_BRACK
 
 // map go types to yacc types
 %type <RootExpr> root
 
 %type <trigger> trigger
 %type <command> command
+%type <search> search
 
 %type <fieldName> fieldName
 %type <options> options
@@ -50,11 +54,12 @@ import (
 %type <operator> operator
 %type <static> static
 
-%left <binOp> EQ NEQ LT LTE GT GTE
+%left <binOp> EQ NEQ LT LTE GT GTE REG NREG
 %%
 root:
-	trigger { yylex.(*lexer).expr = &RootExpr{trigger: &$1} }
+	trigger   { yylex.(*lexer).expr = &RootExpr{trigger: &$1} }
 	| command { yylex.(*lexer).expr = &RootExpr{command: &$1} }
+	| search  { yylex.(*lexer).expr = &RootExpr{search: &$1} }
 	;
 
 // allow creation of triggers
@@ -66,10 +71,20 @@ trigger:
 	| TRIGGER OPEN_BRACE options CLOSE_BRACE { $$ = newTrigger($1, $3) }
 	;
 
+// list { ... }
+// delete { ... }
 command:
 	COMMAND OPEN_BRACE CLOSE_BRACE { $$ = newCommand($1, nil) }
 	| COMMAND OPEN_BRACE options CLOSE_BRACE { $$ = newCommand($1, $3) }
         ;
+
+// { line=22 }
+search:
+	OPEN_BRACE CLOSE_BRACE { $$ = newSearch(nil) }
+	| OPEN_BRACE options CLOSE_BRACE { $$ = newSearch($2) }
+	| IDENTIFIER OPEN_PARAN search CLOSE_PARAN { $$ = newAggregationSearch($1, $3, nil) }
+	| IDENTIFIER OPEN_PARAN search CLOSE_PARAN OPEN_BRACK DURATION CLOSE_BRACK { $$ = newAggregationSearch($1, $3, &$6) }
+	;
 
 options:
 	option options { $$ = append($2, $1) }
@@ -104,5 +119,7 @@ operator:
 	| LTE    { $$ = OpLessEqual    }
 	| GT     { $$ = OpGreater      }
 	| GTE    { $$ = OpGreaterEqual }
+	| REG    { $$ = OpRegex        }
+	| NREG   { $$ = OpNotRegex     }
 	;
 %%

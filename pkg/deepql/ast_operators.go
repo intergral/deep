@@ -15,32 +15,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package main
+package deepql
 
-import (
-	"fmt"
-	"github.com/intergral/deep/pkg/ql"
+type Operator int
+
+const (
+	OpNone Operator = iota
+	OpEqual
+	OpNotEqual
+	OpGreater
+	OpGreaterEqual
+	OpLess
+	OpLessEqual
+	OpRegex
+	OpNotRegex
 )
-
-func main() {
-	{
-		parseString, err := ql.ParseString("trigger{log=\"i am a test log mesg\" file=\"some.py\"}")
-
-		fmt.Printf("%+v\n\n%s\n\n", parseString, err)
-	}
-	{
-		parseString, err := ql.ParseString("log{log=\"i am a test log mesg\" }")
-
-		fmt.Printf("%+v\n\n%s\n\n", parseString, err)
-	}
-	{
-		parseString, err := ql.ParseString("span{}")
-
-		fmt.Printf("%+v\n\n%s\n\n", parseString, err)
-	}
-	{
-		parseString, err := ql.ParseString("metric{log=\"i am a test log mesg\" file=\"some.py\" label=\"a label\"}")
-
-		fmt.Printf("%+v\n\n%s\n\n", parseString, err)
-	}
-}

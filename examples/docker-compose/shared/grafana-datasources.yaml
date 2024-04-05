@@ -24,3 +24,6 @@ datasources:
   editable: false
   apiVersion: 1
   uid: deep
+  jsonData:
+    experimental:
+      deepql: true

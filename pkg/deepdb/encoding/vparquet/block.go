@@ -96,7 +96,7 @@ func checkConditions(conditions []deepql.Condition) error {
 		case deepql.OpEqual, deepql.OpNotEqual,
 			deepql.OpGreater, deepql.OpGreaterEqual,
 			deepql.OpLess, deepql.OpLessEqual,
-			deepql.OpRegex:
+			deepql.OpRegex, deepql.OpNotRegex:
 			if opCount != 1 {
 				return fmt.Errorf("operation %v must have exactly 1 argument. condition: %+v", cond.Op, cond)
 			}

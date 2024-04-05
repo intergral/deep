@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/segmentio/parquet-go"
 
@@ -30,20 +31,6 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 )
-
-var translateTagToAttribute = map[string]deepql.Attribute{
-	// Preserve behavior of v1 tag lookups which directed some attributes
-	// to dedicated columns.
-	LabelServiceName:      deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelServiceName),
-	LabelCluster:          deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelCluster),
-	LabelNamespace:        deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelNamespace),
-	LabelPod:              deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelPod),
-	LabelContainer:        deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelContainer),
-	LabelK8sNamespaceName: deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelK8sNamespaceName),
-	LabelK8sClusterName:   deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelK8sClusterName),
-	LabelK8sPodName:       deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelK8sPodName),
-	LabelK8sContainerName: deepql.NewScopedAttribute(deepql.AttributeScopeResource, false, LabelK8sContainerName),
-}
 
 func (b *backendBlock) SearchTags(ctx context.Context, cb common.TagCallback, opts common.SearchOptions) error {
 	span, derivedCtx := opentracing.StartSpanFromContext(ctx, "parquet.backendBlock.SearchTags",
@@ -176,21 +163,16 @@ func searchTags(_ context.Context, cb common.TagCallback, pf *parquet.File) erro
 }
 
 func (b *backendBlock) SearchTagValues(ctx context.Context, tag string, cb common.TagCallback, opts common.SearchOptions) error {
-	att, ok := translateTagToAttribute[tag]
-	if !ok {
-		att = deepql.NewAttribute(tag)
-	}
-
 	// Wrap to v2-style
 	cb2 := func(v deepql.Static) bool {
-		cb(v.EncodeToString(false))
+		cb(v.String())
 		return false
 	}
 
-	return b.SearchTagValuesV2(ctx, att, cb2, opts)
+	return b.SearchTagValuesV2(ctx, tag, cb2, opts)
 }
 
-func (b *backendBlock) SearchTagValuesV2(ctx context.Context, tag deepql.Attribute, cb common.TagCallbackV2, opts common.SearchOptions) error {
+func (b *backendBlock) SearchTagValuesV2(ctx context.Context, tag string, cb common.TagCallbackV2, opts common.SearchOptions) error {
 	span, derivedCtx := opentracing.StartSpanFromContext(ctx, "parquet.backendBlock.SearchTagValuesV2",
 		opentracing.Tags{
 			"blockID":   b.meta.BlockID,
@@ -208,13 +190,8 @@ func (b *backendBlock) SearchTagValuesV2(ctx context.Context, tag deepql.Attribu
 	return searchTagValues(derivedCtx, tag, cb, pf)
 }
 
-func searchTagValues(ctx context.Context, tag deepql.Attribute, cb common.TagCallbackV2, pf *parquet.File) error {
-	// Special handling for intrinsics - currently we only have a duration intrinsic which is not a tag so skip it
-	if tag.Intrinsic != deepql.IntrinsicNone {
-		return nil
-	}
-
-	if column, ok := wellKnownColumnLookups[tag.Name]; ok {
+func searchTagValues(ctx context.Context, tag string, cb common.TagCallbackV2, pf *parquet.File) error {
+	if column, ok := wellKnownColumnLookups[tag]; ok {
 		err := searchSpecialTagValues(ctx, column.columnPath, pf, cb)
 		if err != nil {
 			return fmt.Errorf("unexpected error searching special tags: %w", err)
@@ -232,26 +209,24 @@ func searchTagValues(ctx context.Context, tag deepql.Attribute, cb common.TagCal
 
 // searchStandardTagValues searches a parquet file for "standard" tags. i.e. tags that don't have unique
 // columns and are contained in labelMappings
-func searchStandardTagValues(ctx context.Context, tag deepql.Attribute, pf *parquet.File, cb common.TagCallbackV2) error {
+func searchStandardTagValues(ctx context.Context, tag string, pf *parquet.File, cb common.TagCallbackV2) error {
 	rgs := pf.RowGroups()
 	makeIter := makeIterFunc(ctx, rgs, pf)
 
-	keyPred := pq.NewStringInPredicate([]string{tag.Name})
+	keyPred := pq.NewStringInPredicate([]string{tag})
 
-	if tag.Scope == deepql.AttributeScopeNone || tag.Scope == deepql.AttributeScopeResource {
-		err := searchKeyValues(DefinitionLevelSnapshotAttrs,
-			FieldResourceAttrKey,
-			FieldResourceAttrVal,
-			FieldResourceAttrValInt,
-			FieldResourceAttrValDouble,
-			FieldResourceAttrValBool,
-			makeIter, keyPred, cb)
-		if err != nil {
-			return errors.Wrap(err, "search resource key values")
-		}
+	err := searchKeyValues(DefinitionLevelResourceAttrs,
+		FieldResourceAttrKey,
+		FieldResourceAttrVal,
+		FieldResourceAttrValInt,
+		FieldResourceAttrValDouble,
+		FieldResourceAttrValBool,
+		makeIter, keyPred, cb)
+	if err != nil {
+		return errors.Wrap(err, "search resource key values")
 	}
 
-	if tag.Scope == deepql.AttributeScopeNone || tag.Scope == deepql.AttributeScopeSnapshot {
+	if !strings.HasPrefix(tag, "resource.") {
 		err := searchKeyValues(DefinitionLevelSnapshotAttrs,
 			FieldAttrKey,
 			FieldAttrVal,
@@ -259,6 +234,7 @@ func searchStandardTagValues(ctx context.Context, tag deepql.Attribute, pf *parq
 			FieldAttrValDouble,
 			FieldAttrValBool,
 			makeIter, keyPred, cb)
+
 		if err != nil {
 			return errors.Wrap(err, "search snapshot key values")
 		}

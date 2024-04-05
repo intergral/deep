@@ -20,6 +20,7 @@ package frontend
 import (
 	"bytes"
 	"fmt"
+	"github.com/intergral/deep/pkg/deepql"
 	"io"
 	"net/http"
 	"net/url"
@@ -58,7 +59,7 @@ type QueryFrontend struct {
 
 // New returns a new QueryFrontend
 func New(cfg Config, next http.RoundTripper, tpNext http.RoundTripper, o *overrides.Overrides, store storage.Store, logger log.Logger, registerer prometheus.Registerer) (*QueryFrontend, error) {
-	level.Info(logger).Log("msg", "creating middleware in query frontend")
+	_ = level.Info(logger).Log("msg", "creating middleware in query frontend")
 
 	if cfg.SnapshotByID.QueryShards < minQueryShards || cfg.SnapshotByID.QueryShards > maxQueryShards {
 		return nil, fmt.Errorf("frontend query shards should be between %d and %d (both inclusive)", minQueryShards, maxQueryShards)
@@ -113,7 +114,7 @@ func newTracepointForwardMiddleware() Middleware {
 	return MiddlewareFunc(func(next http.RoundTripper) http.RoundTripper {
 		return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
 			// We just need to modify the uri to match the api expectation
-			r.RequestURI = path.Join(api.PathPrefixTracepoints, r.RequestURI)
+			r.RequestURI = buildUpstreamRequestURI(api.PathPrefixTracepoints, r.RequestURI, r.URL.Query())
 			resp, err := next.RoundTrip(r)
 			return resp, err
 		})
@@ -214,6 +215,23 @@ func newSearchMiddleware(cfg Config, o *overrides.Overrides, reader deepdb.Reade
 		backendSearchRT := NewRoundTripper(next, newSearchSharder(reader, o, cfg.Search.Sharder, cfg.Search.SLO, logger))
 
 		return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
+
+			if is, q := api.IsDeepQLReq(r); is {
+				expr, err := deepql.ParseString(q)
+				if err != nil {
+					return nil, err
+				}
+
+				if !expr.IsSearch() {
+					// forward to tracepoint handler as we are a command/trigger ql
+					r.RequestURI = buildUpstreamRequestURI(api.PathPrefixTracepoints, api.PathTracepointsQuery, r.URL.Query())
+					resp, err := next.RoundTrip(r)
+					return resp, err
+				}
+
+				// we might be ql but we are search so continue
+			}
+
 			// backend search queries require sharding so we pass through a special roundtripper
 			if api.IsBackendSearch(r) {
 				return backendSearchRT.RoundTrip(r)
@@ -223,7 +241,7 @@ func newSearchMiddleware(cfg Config, o *overrides.Overrides, reader deepdb.Reade
 			tenantID, _ := util.ExtractTenantID(r.Context())
 
 			r.Header.Set(util.TenantIDHeaderName, tenantID)
-			r.RequestURI = buildUpstreamRequestURI(r.RequestURI, nil)
+			r.RequestURI = buildUpstreamRequestURI(api.PathPrefixQuerier, r.RequestURI, nil)
 
 			return ingesterSearchRT.RoundTrip(r)
 		})
@@ -233,10 +251,10 @@ func newSearchMiddleware(cfg Config, o *overrides.Overrides, reader deepdb.Reade
 // buildUpstreamRequestURI returns a uri based on the passed parameters
 // we do this because weaveworks/common uses the RequestURI field to translate from http.Request to httpgrpc.Request
 // https://github.com/weaveworks/common/blob/47e357f4e1badb7da17ad74bae63e228bdd76e8f/httpgrpc/server/server.go#L48
-func buildUpstreamRequestURI(originalURI string, params url.Values) string {
+func buildUpstreamRequestURI(prefix, originalURI string, params url.Values) string {
 	const queryDelimiter = "?"
 
-	uri := path.Join(api.PathPrefixQuerier, originalURI)
+	uri := path.Join(prefix, originalURI)
 	if len(params) > 0 {
 		uri += queryDelimiter + params.Encode()
 	}

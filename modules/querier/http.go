@@ -23,14 +23,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gorilla/mux"
-	"github.com/intergral/deep/pkg/deeppb"
-	"github.com/intergral/deep/pkg/deepql"
-	"github.com/pkg/errors"
-
 	"github.com/golang/protobuf/jsonpb" //nolint:all //deprecated
 	"github.com/golang/protobuf/proto"  //nolint:all //ProtoReflect
+	"github.com/gorilla/mux"
 	"github.com/intergral/deep/pkg/api"
+	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/opentracing/opentracing-go"
 	ot_log "github.com/opentracing/opentracing-go/log"
 )
@@ -239,12 +236,6 @@ func (q *Querier) SearchTagValuesV2Handler(w http.ResponseWriter, r *http.Reques
 	tagName, ok := vars["tagName"]
 	if !ok {
 		http.Error(w, "please provide a tagName", http.StatusBadRequest)
-		return
-	}
-
-	_, err := deepql.ParseIdentifier(tagName)
-	if err != nil {
-		http.Error(w, errors.Wrap(err, "please provide a valid tagName").Error(), http.StatusBadRequest)
 		return
 	}
 

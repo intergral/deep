@@ -15,11 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ql
+package deepql
 
 import (
 	"errors"
 	"fmt"
+	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"strings"
 )
 
@@ -38,15 +39,13 @@ const (
 	capture = "capture"
 )
 
-var (
-	triggerTypes = map[string]int{
-		log:         TRIGGER,
-		metric:      TRIGGER,
-		triggerType: TRIGGER,
-		span:        TRIGGER,
-		snapshot:    TRIGGER,
-	}
-)
+var triggerTypes = map[string]int{
+	log:         TRIGGER,
+	metric:      TRIGGER,
+	triggerType: TRIGGER,
+	span:        TRIGGER,
+	snapshot:    TRIGGER,
+}
 
 type label struct {
 	key   string
@@ -77,9 +76,14 @@ type trigger struct {
 	snapshotLabels []label
 
 	// metric options
-	metric       bool
-	metricName   string
-	metricLabels []label
+	metric           bool
+	metricName       string
+	metricLabels     []label
+	metricType       deeptp.MetricType
+	metricExpression string
+	metricNamespace  string
+	metricHelp       string
+	metricUnit       string
 
 	// span options
 	span       string
@@ -199,7 +203,9 @@ func newTrigger(typ string, opts []configOption) trigger {
 
 			snapshot: false,
 
-			metric: true,
+			metric:           true,
+			metricType:       deeptp.MetricType_COUNTER,
+			metricExpression: "1",
 
 			span: "",
 
@@ -237,7 +243,6 @@ func newTrigger(typ string, opts []configOption) trigger {
 }
 
 func applyFuncForTrigger(lhs string) func(c *configOption, tri *trigger) error {
-
 	switch lhs {
 	case "file":
 		return func(c *configOption, tri *trigger) error {
@@ -297,6 +302,43 @@ func applyFuncForTrigger(lhs string) func(c *configOption, tri *trigger) error {
 			tri.metric = c.rhs.B
 			return nil
 		}
+	case "metricType", "metric_type":
+		return func(c *configOption, tri *trigger) error {
+			switch c.rhs.S {
+			case "counter", "COUNTER":
+				tri.metricType = deeptp.MetricType_COUNTER
+			case "gauge", "GAUGE":
+				tri.metricType = deeptp.MetricType_GAUGE
+			case "histogram", "HISTOGRAM":
+				tri.metricType = deeptp.MetricType_HISTOGRAM
+			case "summary", "SUMMARY":
+				tri.metricType = deeptp.MetricType_SUMMARY
+			default:
+				return errors.New(fmt.Sprintf("unsupported metric type: %s", c.rhs.S))
+			}
+			return nil
+		}
+	case "metricExpression", "metric_expression":
+		return func(c *configOption, tri *trigger) error {
+			// todo expression validation
+			tri.metricExpression = c.rhs.S
+			return nil
+		}
+	case "metricNamespace", "metric_namespace":
+		return func(c *configOption, tri *trigger) error {
+			tri.metricNamespace = c.rhs.S
+			return nil
+		}
+	case "metricHelp", "metric_help":
+		return func(c *configOption, tri *trigger) error {
+			tri.metricHelp = c.rhs.S
+			return nil
+		}
+	case "metricUnit", "metric_unit":
+		return func(c *configOption, tri *trigger) error {
+			tri.metricUnit = c.rhs.S
+			return nil
+		}
 	case "metricName", "metric_name":
 		return func(c *configOption, tri *trigger) error {
 			tri.metricName = c.rhs.S
@@ -332,11 +374,11 @@ func applyFuncForTrigger(lhs string) func(c *configOption, tri *trigger) error {
 			case snapshot, triggerType:
 				tri.snapshotLabels = append(tri.snapshotLabels, label{key: key, value: c.rhs.S})
 			case log:
-				tri.logLabels = append(tri.snapshotLabels, label{key: key, value: c.rhs.S})
+				tri.logLabels = append(tri.logLabels, label{key: key, value: c.rhs.S})
 			case metric:
-				tri.metricLabels = append(tri.snapshotLabels, label{key: key, value: c.rhs.S})
+				tri.metricLabels = append(tri.metricLabels, label{key: key, value: c.rhs.S})
 			case span:
-				tri.spanLabels = append(tri.snapshotLabels, label{key: key, value: c.rhs.S})
+				tri.spanLabels = append(tri.spanLabels, label{key: key, value: c.rhs.S})
 			}
 			return nil
 		}

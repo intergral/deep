@@ -27,14 +27,6 @@ import (
 	"github.com/segmentio/parquet-go"
 )
 
-var intrinsicColumnLookups = map[deepql.Intrinsic]struct {
-	scope      deepql.AttributeScope
-	typ        deepql.StaticType
-	columnPath string
-}{
-	deepql.IntrinsicDuration: {deepql.AttributeScopeSnapshot, deepql.TypeDuration, ""},
-}
-
 // Lookup table of all well-known attributes with dedicated columns
 var wellKnownColumnLookups = map[string]struct {
 	columnPath string            // path.to.column
@@ -120,7 +112,7 @@ func fetch(ctx context.Context, req deepql.FetchSnapshotRequest, pf *parquet.Fil
 	}
 
 	for _, condition := range req.Conditions {
-		if condition.Attribute.Intrinsic == deepql.IntrinsicDuration {
+		if condition.Attribute == "duration" {
 
 			predicate, err := createIntPredicate(condition.Op, condition.Operands)
 			if err != nil {
@@ -128,10 +120,10 @@ func fetch(ctx context.Context, req deepql.FetchSnapshotRequest, pf *parquet.Fil
 			}
 			conditionIterators = append(conditionIterators, makeIter(columnPathDurationNanos, predicate, columnPathDurationNanos))
 		} else {
-			if entry, ok := wellKnownColumnLookups[condition.Attribute.Name]; ok {
+			if entry, ok := wellKnownColumnLookups[condition.Attribute]; ok {
 				if condition.Op == deepql.OpNone {
 					addPredicate(entry.columnPath, nil) // No filtering
-					columnSelectAs[entry.columnPath] = condition.Attribute.Name
+					columnSelectAs[entry.columnPath] = condition.Attribute
 					continue
 				}
 
@@ -142,7 +134,7 @@ func fetch(ctx context.Context, req deepql.FetchSnapshotRequest, pf *parquet.Fil
 						return nil, errors.Wrap(err, "creating predicate")
 					}
 					addPredicate(entry.columnPath, pred)
-					columnSelectAs[entry.columnPath] = condition.Attribute.Name
+					columnSelectAs[entry.columnPath] = condition.Attribute
 					continue
 				}
 			} else {
@@ -156,19 +148,15 @@ func fetch(ctx context.Context, req deepql.FetchSnapshotRequest, pf *parquet.Fil
 	}
 
 	if len(attributeConditions) > 0 {
-		resIter, err := createAttributeIterator(makeIter, attributeConditions, DefinitionLevelSnapshot, columnPathResourceAttrKey, columnPathResourceAttrValueString, columnPathResourceAttrValueInt, columnPathResourceAttrValueDouble, columnPathResourceAttrValueBool, req.AllConditions)
+		resIter, err := createAttributeIterator(makeIter, attributeConditions, DefinitionLevelSnapshot, columnPathResourceAttrKey, columnPathResourceAttrValueString, columnPathResourceAttrValueInt, columnPathResourceAttrValueDouble, columnPathResourceAttrValueBool, false)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot make resource iterator")
 		}
-		attrIter, err := createAttributeIterator(makeIter, attributeConditions, DefinitionLevelSnapshot, columnPathAttrKey, columnPathAttrValueString, columnPathAttrValueInt, columnPathAttrValueDouble, columnPathAttrValueBool, req.AllConditions)
+		attrIter, err := createAttributeIterator(makeIter, attributeConditions, DefinitionLevelSnapshot, columnPathAttrKey, columnPathAttrValueString, columnPathAttrValueInt, columnPathAttrValueDouble, columnPathAttrValueBool, false)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot make attribute iterator")
 		}
 		conditionIterators = append(conditionIterators, parquetquery.NewUnionIterator(DefinitionLevelSnapshot, []parquetquery.Iterator{attrIter, resIter}, nil))
-	}
-
-	if !req.AllConditions {
-		conditionIterators = []parquetquery.Iterator{parquetquery.NewUnionIterator(DefinitionLevelSnapshot, conditionIterators, nil)}
 	}
 
 	iterator := parquetquery.NewJoinIterator(DefinitionLevelSnapshot, conditionIterators, nil)
@@ -205,7 +193,7 @@ func createAttributeIterator(makeIter makeIterFn, conditions []deepql.Condition,
 ) (parquetquery.Iterator, error) {
 	var ittrs []parquetquery.Iterator
 	for _, condition := range conditions {
-		attrName := condition.Attribute.Name
+		attrName := condition.Attribute
 		keyIter := makeIter(keyPath, parquetquery.NewStringInPredicate([]string{attrName}), "key")
 		var valueIter parquetquery.Iterator
 		switch condition.Operands[0].Type {
