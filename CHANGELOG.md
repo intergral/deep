@@ -1,14 +1,19 @@
 <!-- main START -->
 # main (unreleased)
-- **[BUGFIX]**: fix missing data in frame response [#89](https://github.com/intergral/deep/pull/89) [@Umaaz](https://github.com/Umaaz)
-- **[BUGFIX]**: fix missing support for well known labels [#92](https://github.com/intergral/deep/pull/92) [@Umaaz](https://github.com/Umaaz)
+- **[FEATURE]**: add support for deepql [#93](https://github.com/intergral/deep/pull/93) [@Umaaz](https://github.com/Umaaz)
 <!-- main START -->
 
-<!-- main START -->
+<!-- 1.0.6 START -->
+# 1.0.6 (14/03/2024)
+- **[BUGFIX]**: fix missing data in frame response [#89](https://github.com/intergral/deep/pull/89) [@Umaaz](https://github.com/Umaaz)
+- **[BUGFIX]**: fix missing support for well known labels [#92](https://github.com/intergral/deep/pull/92) [@Umaaz](https://github.com/Umaaz)
+<!-- 1.0.6 START -->
+
+<!-- 1.0.5 START -->
 # 1.0.5 (08/02/2024)
 - **[ENHANCEMENT]**: Update deep proto version to support new properties on tracepoints [#78](https://github.com/intergral/deep/pull/78) [@Umaaz](https://github.com/Umaaz) 
 - **[ENHANCEMENT]**: change builds to use goreleaser [#79](https://github.com/intergral/deep/pull/79) [@Umaaz](https://github.com/Umaaz)
-<!-- main START -->
+<!-- 1.0.5 START -->
 
 <!-- 1.0.4 START -->
 # 1.0.4 (04/12/2023)
