@@ -99,9 +99,9 @@ func TestInstanceSearch(t *testing.T) {
 // TestInstanceSearchDeepQL is duplicate of TestInstanceSearch for now
 func TestInstanceSearchDeepQL(t *testing.T) {
 	queries := []string{
-		`{ .service.name = "test-service" }`,
+		`{ service.name = "test-service" }`,
 		`{ duration >= 1s }`,
-		`{ duration >= 1s && .service.name = "test-service" }`,
+		`{ duration >= 1s service.name = "test-service" }`,
 	}
 
 	for _, query := range queries {
@@ -337,7 +337,6 @@ func TestInstanceSearchDoesNotRace(t *testing.T) {
 	group := sync.WaitGroup{}
 
 	concurrent := func(f func()) {
-		group.Add(1)
 		defer group.Done()
 		for {
 			select {
@@ -350,6 +349,7 @@ func TestInstanceSearchDoesNotRace(t *testing.T) {
 	}
 	count := 0
 
+	group.Add(1)
 	go concurrent(func() {
 		// more than 10k exceeeds live snapshots
 		id := make([]byte, 16)
@@ -368,16 +368,19 @@ func TestInstanceSearchDoesNotRace(t *testing.T) {
 		}
 	})
 
+	group.Add(1)
 	go concurrent(func() {
 		err := i.CutSnapshots(0, true)
 		require.NoError(t, err, "error cutting complete snapshots")
 	})
 
+	group.Add(1)
 	go concurrent(func() {
 		_, err := i.FindSnapshotByID(context.Background(), []byte{0x01})
 		assert.NoError(t, err, "error finding snapshot by id")
 	})
 
+	group.Add(1)
 	go concurrent(func() {
 		// Cut wal, complete, delete wal, then flush
 		blockID, _ := i.CutBlockIfReady(0, 0, true)
@@ -394,16 +397,19 @@ func TestInstanceSearchDoesNotRace(t *testing.T) {
 		}
 	})
 
+	group.Add(1)
 	go concurrent(func() {
 		err = i.ClearFlushedBlocks(0)
 		require.NoError(t, err)
 	})
 
+	group.Add(1)
 	go concurrent(func() {
 		_, err := i.Search(context.Background(), req)
 		require.NoError(t, err, "error finding snapshot by id")
 	})
 
+	group.Add(1)
 	go concurrent(func() {
 		// SearchTags queries now require userID in ctx
 		ctx := util.InjectTenantID(context.Background(), "test")
@@ -411,6 +417,7 @@ func TestInstanceSearchDoesNotRace(t *testing.T) {
 		require.NoError(t, err, "error getting search tags")
 	})
 
+	group.Add(1)
 	go concurrent(func() {
 		// SearchTagValues queries now require userID in ctx
 		ctx := util.InjectTenantID(context.Background(), "test")

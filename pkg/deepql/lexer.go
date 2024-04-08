@@ -37,21 +37,23 @@ type lexer struct {
 }
 
 var tokens = map[string]int{
-	"{":  OPEN_BRACE,
-	"}":  CLOSE_BRACE,
-	"=":  EQ,
-	".":  DOT,
-	"!=": NEQ,
-	">":  GT,
-	">=": GTE,
-	"<":  LT,
-	"<=": LTE,
-	"=~": REG,
-	"!~": NREG,
-	"(":  OPEN_PARAN,
-	")":  CLOSE_PARAN,
-	"[":  OPEN_BRACK,
-	"]":  CLOSE_BRACK,
+	"{":     OPEN_BRACE,
+	"}":     CLOSE_BRACE,
+	"=":     EQ,
+	".":     DOT,
+	"!=":    NEQ,
+	">":     GT,
+	">=":    GTE,
+	"<":     LT,
+	"<=":    LTE,
+	"=~":    REG,
+	"!~":    NREG,
+	"(":     OPEN_PARAN,
+	")":     CLOSE_PARAN,
+	"[":     OPEN_BRACK,
+	"]":     CLOSE_BRACK,
+	"true":  TRUE,
+	"false": FALSE,
 }
 
 func (l *lexer) Lex(lval *yySymType) int {

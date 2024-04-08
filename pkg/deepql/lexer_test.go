@@ -104,6 +104,10 @@ func TestParseString(t *testing.T) {
 			search: &search{rules: []configOption{newConfigOption(OpEqual, "line", Static{Type: TypeInt, N: 88})}},
 		},
 		{
+			deepQl: "{somevalue = false}",
+			search: &search{rules: []configOption{newConfigOption(OpEqual, "somevalue", Static{Type: TypeBoolean, B: false})}},
+		},
+		{
 			deepQl: "{line!=88}",
 			search: &search{rules: []configOption{newConfigOption(OpNotEqual, "line", Static{Type: TypeInt, N: 88})}},
 		},

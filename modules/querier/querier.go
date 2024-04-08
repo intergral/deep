@@ -551,11 +551,9 @@ func (q *Querier) internalSearchBlock(ctx context.Context, req *deeppb.SearchBlo
 	opts.MaxBytes = q.limits.MaxBytesPerSnapshot(tenantID)
 
 	if api.IsDeepQLQuery(req.SearchReq) {
-		fetcher := deepql.NewSnapshotResultFetcherWrapper(func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
+		return q.engine.ExecuteSearch(ctx, req.SearchReq, func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
 			return q.store.Fetch(ctx, meta, req, opts)
 		})
-
-		return q.engine.ExecuteSearch(ctx, req.SearchReq, fetcher)
 	}
 
 	return q.store.Search(ctx, meta, req.SearchReq, opts)

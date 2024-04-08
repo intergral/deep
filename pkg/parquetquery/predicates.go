@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 
 	pq "github.com/segmentio/parquet-go"
 )
@@ -585,13 +586,21 @@ func (p *InstrumentedPredicate) KeepValue(v pq.Value) bool {
 type DictionaryPredicateHelper struct {
 	newRowGroup         bool
 	keepPagesInRowGroup bool
+
+	// this helper can be accessed from multiple go routines at a time. Which causes race failures.
+	// temporarily add this lock until the whole parquet usage can be overhauled.
+	mu sync.Mutex
 }
 
 func (d *DictionaryPredicateHelper) setNewRowGroup() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	d.newRowGroup = true
 }
 
 func (d *DictionaryPredicateHelper) keepPage(page pq.Page, keepValue func(pq.Value) bool) bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	if !d.newRowGroup {
 		return d.keepPagesInRowGroup
 	}

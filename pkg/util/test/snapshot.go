@@ -18,8 +18,8 @@ import (
 
 type GenerateOptions struct {
 	Id              []byte
-	Attrs           map[string]string
-	Resource        map[string]string
+	Attrs           map[string]interface{}
+	Resource        map[string]interface{}
 	AllResource     bool
 	AllAttrs        bool
 	AllVarTypes     bool
@@ -351,10 +351,30 @@ func generateResource(options GenerateOptions) []*cp.KeyValue {
 
 	if options.Resource != nil {
 		for k, v := range options.Resource {
-			values = append(values, &cp.KeyValue{
-				Key:   k,
-				Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: v}},
-			})
+			if val, ok := v.(string); ok {
+				values = append(values, &cp.KeyValue{
+					Key:   k,
+					Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: val}},
+				})
+			}
+			if val, ok := v.(int); ok {
+				values = append(values, &cp.KeyValue{
+					Key:   k,
+					Value: &cp.AnyValue{Value: &cp.AnyValue_IntValue{IntValue: int64(val)}},
+				})
+			}
+			if val, ok := v.(bool); ok {
+				values = append(values, &cp.KeyValue{
+					Key:   k,
+					Value: &cp.AnyValue{Value: &cp.AnyValue_BoolValue{BoolValue: val}},
+				})
+			}
+			if val, ok := v.(float64); ok {
+				values = append(values, &cp.KeyValue{
+					Key:   k,
+					Value: &cp.AnyValue{Value: &cp.AnyValue_DoubleValue{DoubleValue: val}},
+				})
+			}
 		}
 	}
 	return values
@@ -443,10 +463,30 @@ func generateAttributes(tp *tp.TracePointConfig, options GenerateOptions) []*cp.
 
 	if options.Attrs != nil {
 		for k, v := range options.Attrs {
-			keyValues = append(keyValues, &cp.KeyValue{
-				Key:   k,
-				Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: v}},
-			})
+			if val, ok := v.(string); ok {
+				keyValues = append(keyValues, &cp.KeyValue{
+					Key:   k,
+					Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: val}},
+				})
+			}
+			if val, ok := v.(int); ok {
+				keyValues = append(keyValues, &cp.KeyValue{
+					Key:   k,
+					Value: &cp.AnyValue{Value: &cp.AnyValue_IntValue{IntValue: int64(val)}},
+				})
+			}
+			if val, ok := v.(bool); ok {
+				keyValues = append(keyValues, &cp.KeyValue{
+					Key:   k,
+					Value: &cp.AnyValue{Value: &cp.AnyValue_BoolValue{BoolValue: val}},
+				})
+			}
+			if val, ok := v.(float64); ok {
+				keyValues = append(keyValues, &cp.KeyValue{
+					Key:   k,
+					Value: &cp.AnyValue{Value: &cp.AnyValue_DoubleValue{DoubleValue: val}},
+				})
+			}
 		}
 	}
 

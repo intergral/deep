@@ -233,7 +233,7 @@ func doSearchSnapshotRequest(ctx context.Context, req *deeppb.SearchRequest, s *
 		return nil, err
 	}
 
-	fetch, err := fetcher.Fetch(ctx, snapReq)
+	fetch, err := fetcher(ctx, snapReq)
 	if err != nil {
 		return nil, err
 	}

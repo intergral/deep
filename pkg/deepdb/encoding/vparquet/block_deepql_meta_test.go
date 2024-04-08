@@ -51,7 +51,19 @@ func TestBackendBlockSearchFetchMetaData(t *testing.T) {
 		},
 		{
 			// doesn't match anything
-			makeReq(parse(t, `{.xyz = "xyz"}`)),
+			deepql.FetchSnapshotRequest{
+				StartTimeUnixNanos: 0,
+				EndTimeUnixNanos:   0,
+				Conditions: []deepql.Condition{
+					{
+						Attribute: "xyz",
+						Op:        deepql.OpEqual,
+						Operands: []deepql.Static{
+							deepql.NewStaticString("xyz"),
+						},
+					},
+				},
+			},
 			nil,
 		},
 	}

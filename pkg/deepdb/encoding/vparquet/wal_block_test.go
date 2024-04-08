@@ -24,6 +24,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/intergral/deep/pkg/deeppb"
+
 	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/deepql"
 
@@ -349,20 +351,14 @@ func BenchmarkWalDeepQL(b *testing.B) {
 	require.NoError(b, err)
 	require.NoError(b, warn)
 
+	engine := deepql.NewEngine()
 	for _, q := range reqs {
-		req := deepql.MustExtractFetchSnapshotRequest(q)
 		b.Run(q, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				resp, err := w.Fetch(context.TODO(), req, common.DefaultSearchOptions())
+				_, err := engine.ExecuteSearch(context.TODO(), &deeppb.SearchRequest{Query: q}, func(ctx context.Context, request deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
+					return w.Fetch(context.TODO(), request, common.DefaultSearchOptions())
+				})
 				require.NoError(b, err)
-
-				for {
-					ss, err := resp.Results.Next(context.TODO())
-					require.NoError(b, err)
-					if ss == nil {
-						break
-					}
-				}
 			}
 		})
 	}

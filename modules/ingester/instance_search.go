@@ -130,9 +130,9 @@ func (i *tenantBlockManager) searchWAL(ctx context.Context, req *deeppb.SearchRe
 		if api.IsDeepQLQuery(req) {
 			// note: we are creating new engine for each wal block,
 			// and engine.ExecuteSearch is parsing the query for each block
-			resp, err = deepql.NewEngine().ExecuteSearch(ctx, req, deepql.NewSnapshotResultFetcherWrapper(func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
+			resp, err = deepql.NewEngine().ExecuteSearch(ctx, req, func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
 				return b.Fetch(ctx, req, opts)
-			}))
+			})
 		} else {
 			resp, err = b.Search(ctx, req, opts)
 		}
@@ -192,9 +192,9 @@ func (i *tenantBlockManager) searchLocalBlocks(ctx context.Context, req *deeppb.
 			if api.IsDeepQLQuery(req) {
 				// note: we are creating new engine for each wal block,
 				// and engine.ExecuteSearch is parsing the query for each block
-				resp, err = deepql.NewEngine().ExecuteSearch(ctx, req, deepql.NewSnapshotResultFetcherWrapper(func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
+				resp, err = deepql.NewEngine().ExecuteSearch(ctx, req, func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
 					return e.Fetch(ctx, req, opts)
-				}))
+				})
 			} else {
 				resp, err = e.Search(ctx, req, opts)
 			}

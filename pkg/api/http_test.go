@@ -101,21 +101,21 @@ func TestQuerierParseSearchRequest(t *testing.T) {
 		},
 		{
 			name:     "deepql query",
-			urlQuery: "q=" + url.QueryEscape(`{ .foo="bar" }`),
+			urlQuery: "q=" + url.QueryEscape(`{ foo="bar" }`),
 			expected: &deeppb.SearchRequest{
-				Query: `{ .foo="bar" }`,
+				Query: `{ foo="bar" }`,
 				Tags:  map[string]string{},
 				Limit: defaultLimit,
 			},
 		},
 		{
 			name:     "invalid deepql query",
-			urlQuery: "q=" + url.QueryEscape(`{ .foo="bar" `),
-			err:      "invalid DeepQL query: parse error at line 1, col 14: syntax error: unexpected $end",
+			urlQuery: "q=" + url.QueryEscape(`{ foo="bar" `),
+			err:      "invalid DeepQL query: parse error at line 1, col 13 near token '': syntax error",
 		},
 		{
 			name:     "deepql query and tags",
-			urlQuery: "q=" + url.QueryEscape(`{ .foo="bar" }`) + "&tags=" + url.QueryEscape("service.name=foo"),
+			urlQuery: "q=" + url.QueryEscape(`{ foo="bar" }`) + "&tags=" + url.QueryEscape("service.name=foo"),
 			err:      "invalid request: can't specify tags and q in the same query",
 		},
 		{

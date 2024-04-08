@@ -78,7 +78,7 @@ func (cmd *generateSnapshotCmd) Run(*globalOptions) error {
 
 		for i := 0; i < cmd.Count; i++ {
 			snap := cmd.generateSnapshot(i, &test.GenerateOptions{
-				Attrs:           map[string]string{"test_id": "good_snap"},
+				Attrs:           map[string]interface{}{"test_id": "good_snap"},
 				AllResource:     cmd.AllResource,
 				AllAttrs:        cmd.AllAttrs,
 				AllVarTypes:     cmd.AllVarTypes,
@@ -123,22 +123,22 @@ func (cmd *generateSnapshotCmd) generateTestSnapshots(client deep.SnapshotServic
 
 func GenerateTestSnapshots() []*tp.Snapshot {
 	// Create snapshot with no var lookup
-	snapshotNoVars := test.GenerateSnapshot(0, &test.GenerateOptions{Attrs: map[string]string{"test_id": "no_vars"}, NoVars: true, RandomDuration: true})
+	snapshotNoVars := test.GenerateSnapshot(0, &test.GenerateOptions{Attrs: map[string]interface{}{"test_id": "no_vars"}, NoVars: true, RandomDuration: true})
 
 	// create good snapshot
-	snapshot := test.GenerateSnapshot(0, &test.GenerateOptions{Attrs: map[string]string{"test_id": "good_snap"}, RandomDuration: true})
+	snapshot := test.GenerateSnapshot(0, &test.GenerateOptions{Attrs: map[string]interface{}{"test_id": "good_snap"}, RandomDuration: true})
 
 	// create resource snapshot
-	resourceSnap := test.GenerateSnapshot(0, &test.GenerateOptions{Attrs: map[string]string{"test_id": "resource_snap"}, AllResource: true, RandomDuration: true})
+	resourceSnap := test.GenerateSnapshot(0, &test.GenerateOptions{Attrs: map[string]interface{}{"test_id": "resource_snap"}, AllResource: true, RandomDuration: true})
 
 	// create var test snap
-	varTest := test.GenerateSnapshot(0, &test.GenerateOptions{Attrs: map[string]string{"test_id": "var_test"}, AllVarTypes: true, RandomDuration: true})
+	varTest := test.GenerateSnapshot(0, &test.GenerateOptions{Attrs: map[string]interface{}{"test_id": "var_test"}, AllVarTypes: true, RandomDuration: true})
 
 	// create frame test snap
-	frameTest := test.GenerateSnapshot(0, &test.GenerateOptions{Attrs: map[string]string{"test_id": "frame_test"}, AsyncFrame: true, ColumnFrame: true, TranspiledFrame: true, RandomDuration: true})
+	frameTest := test.GenerateSnapshot(0, &test.GenerateOptions{Attrs: map[string]interface{}{"test_id": "frame_test"}, AsyncFrame: true, ColumnFrame: true, TranspiledFrame: true, RandomDuration: true})
 
 	// create all tags snapshot
-	tagsSnapshot := test.GenerateSnapshot(0, &test.GenerateOptions{Attrs: map[string]string{"test_id": "all_tags"}, AllAttrs: true, RandomDuration: true})
+	tagsSnapshot := test.GenerateSnapshot(0, &test.GenerateOptions{Attrs: map[string]interface{}{"test_id": "all_tags"}, AllAttrs: true, RandomDuration: true})
 
 	return []*tp.Snapshot{snapshotNoVars, snapshot, resourceSnap, varTest, frameTest, tagsSnapshot}
 }

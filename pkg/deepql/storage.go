@@ -77,23 +77,7 @@ type FetchSnapshotResponse struct {
 	Bytes   func() uint64
 }
 
-type SnapshotResultFetcher interface {
-	Fetch(context.Context, FetchSnapshotRequest) (FetchSnapshotResponse, error)
-}
-
-type SnapshotResultFetcherWrapper struct {
-	f func(ctx context.Context, req FetchSnapshotRequest) (FetchSnapshotResponse, error)
-}
-
-var _ = (SnapshotResultFetcher)(&SnapshotResultFetcherWrapper{})
-
-func NewSnapshotResultFetcherWrapper(f func(ctx context.Context, req FetchSnapshotRequest) (FetchSnapshotResponse, error)) SnapshotResultFetcher {
-	return SnapshotResultFetcherWrapper{f}
-}
-
-func (s SnapshotResultFetcherWrapper) Fetch(ctx context.Context, request FetchSnapshotRequest) (FetchSnapshotResponse, error) {
-	return s.f(ctx, request)
-}
+type SnapshotResultFetcher func(context.Context, FetchSnapshotRequest) (FetchSnapshotResponse, error)
 
 type TriggerHandler func(context.Context, *deeppb.CreateTracepointRequest) (*deeppb.LoadTracepointResponse, error)
 
