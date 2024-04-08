@@ -226,7 +226,7 @@ func newTrigger(typ string, opts []configOption) trigger {
 
 			metric: false,
 
-			span: "",
+			span: "line",
 
 			log:       "",
 			targeting: make(map[string]string),
@@ -258,6 +258,9 @@ func applyFuncForTrigger(lhs string) func(c *configOption, tri *trigger) error {
 	case "method":
 		return func(c *configOption, tri *trigger) error {
 			tri.method = c.rhs.S
+			if tri.primary == "span" {
+				tri.span = "method"
+			}
 			return nil
 		}
 	case "fireCount", "fire_count":

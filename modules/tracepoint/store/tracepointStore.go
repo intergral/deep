@@ -19,6 +19,7 @@ package store
 
 import (
 	"context"
+	"github.com/intergral/deep/pkg/deepql"
 	"hash/fnv"
 	"sort"
 	"strconv"
@@ -43,13 +44,15 @@ type TPStore struct {
 type ResourceTPStore interface {
 	ProcessRequest(req *deeppb.LoadTracepointRequest) (*deeppb.LoadTracepointResponse, error)
 	AddTracepoint(tp *tp.TracePointConfig) error
-	DeleteTracepoint(tpID string) error
+	DeleteTracepoints(ids ...string) error
 }
 
 type OrgTPStore interface {
-	DeleteTracepoint(tpID string) error
+	DeleteTracepoints(ids ...string) error
 	forResource(resource []*cp.KeyValue) (ResourceTPStore, error)
 	AddTracepoint(tracepoint *tp.TracePointConfig) error
+	FindTracepoints(request *deepql.CommandRequest) ([]*tp.TracePointConfig, error)
+	LoadAll() ([]*tp.TracePointConfig, error)
 }
 
 // NewStore will create a new store to handle reading and writing to disk
@@ -119,6 +122,8 @@ type orgStore struct {
 	mu         sync.Mutex
 }
 
+var _ OrgTPStore = (*orgStore)(nil)
+
 // AddTracepoint will add a tracepoint to the org and any matching resource stores
 func (os *orgStore) AddTracepoint(tp *tp.TracePointConfig) error {
 	os.mu.Lock()
@@ -138,14 +143,17 @@ func (os *orgStore) AddTracepoint(tp *tp.TracePointConfig) error {
 	return nil
 }
 
-// DeleteTracepoint will remove a tracepoint from the org and any matching resource stores
-func (os *orgStore) DeleteTracepoint(tpID string) error {
+// DeleteTracepoints will remove a tracepoint from the org and any matching resource stores
+func (os *orgStore) DeleteTracepoints(ids ...string) error {
 	os.mu.Lock()
 	defer os.mu.Unlock()
 	for _, store := range os.userStores {
-		_ = store.DeleteTracepoint(tpID)
+		err := store.DeleteTracepoints(ids...)
+		if err != nil {
+			return err
+		}
 	}
-	os.block.DeleteTracepoint(tpID)
+	os.block.DeleteTracepoints(ids...)
 	return nil
 }
 
@@ -195,6 +203,53 @@ func (os *orgStore) keyForResource(id string, resource []*cp.KeyValue) string {
 	return strconv.Itoa(int(h.Sum32()))
 }
 
+func (os *orgStore) FindTracepoints(request *deepql.CommandRequest) ([]*tp.TracePointConfig, error) {
+	os.mu.Lock()
+	defer os.mu.Unlock()
+
+	all := os.block.Tps()
+
+	var found []*tp.TracePointConfig
+
+	for _, config := range all {
+		if os.matched(config, request) {
+			found = append(found, config)
+		}
+	}
+
+	return found, nil
+}
+
+func (os *orgStore) LoadAll() ([]*tp.TracePointConfig, error) {
+	os.mu.Lock()
+	defer os.mu.Unlock()
+	return os.block.Tps(), nil
+}
+
+func (os *orgStore) matched(config *tp.TracePointConfig, request *deepql.CommandRequest) bool {
+	for _, condition := range request.Conditions {
+		switch condition.Attribute {
+		case "path":
+			if !condition.MatchesString(config.Path) {
+				return false
+			}
+		case "method":
+			if !condition.MatchesString(config.Args["method"]) {
+				return false
+			}
+		case "id":
+			if !condition.MatchesString(config.ID) {
+				return false
+			}
+		case "line":
+			if !condition.MatchesInt(int(config.LineNumber)) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // resourceStore is the in memory filtered list of the resource config
 // e.g. this is the list of tracepoints that will affect a give client
 // these are updated when clients connect, or tracepoint configs change
@@ -207,6 +262,8 @@ type resourceStore struct {
 	resource    []*cp.KeyValue
 	os          *orgStore
 }
+
+var _ ResourceTPStore = (*resourceStore)(nil)
 
 // ProcessRequest will process a request to load the tracepoints for a resource
 func (us *resourceStore) ProcessRequest(req *deeppb.LoadTracepointRequest) (*deeppb.LoadTracepointResponse, error) {
@@ -231,22 +288,22 @@ func (us *resourceStore) AddTracepoint(tp *tp.TracePointConfig) error {
 	return nil
 }
 
-// DeleteTracepoint from this resource
-func (us *resourceStore) DeleteTracepoint(tpID string) error {
-	tpToRemoveIndex := -1
+// DeleteTracepoints from this resource
+func (us *resourceStore) DeleteTracepoints(ids ...string) error {
+	var tpToRemoveIndex []int
 	for i, config := range us.tps {
-		if config.ID == tpID {
-			tpToRemoveIndex = i
-			break
+		for _, id := range ids {
+			if config.ID == id {
+				tpToRemoveIndex = append(tpToRemoveIndex, i)
+			}
 		}
 	}
 
-	if tpToRemoveIndex == -1 {
-		// todo return error?
+	if len(tpToRemoveIndex) == 0 {
 		return nil
 	}
 
-	us.tps = us.remove(us.tps, tpToRemoveIndex)
+	us.tps = us.removeAll(us.tps, tpToRemoveIndex...)
 	us.rehash()
 	return nil
 }
@@ -265,4 +322,30 @@ func (us *resourceStore) remove(array []*tp.TracePointConfig, index int) []*tp.T
 	array[index] = array[len(array)-1]
 	array[len(array)-1] = nil
 	return array[:len(array)-1]
+}
+
+func (us *resourceStore) removeAll(tps []*tp.TracePointConfig, idxs ...int) []*tp.TracePointConfig {
+	for _, i := range idxs {
+		tps[i] = nil
+	}
+	return us.removeNils(tps)
+}
+
+func (us *resourceStore) removeNils(things []*tp.TracePointConfig) []*tp.TracePointConfig {
+	for i := 0; i < len(things); {
+		if things[i] != nil {
+			i++
+			continue
+		}
+
+		if i < len(things)-1 {
+			copy(things[i:], things[i+1:])
+		}
+
+		things[len(things)-1] = nil
+		things = things[:len(things)-1]
+	}
+
+	things = things[:len(things):len(things)]
+	return things
 }

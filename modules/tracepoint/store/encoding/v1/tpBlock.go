@@ -18,6 +18,7 @@
 package v1
 
 import (
+	"github.com/intergral/deep/modules/tracepoint/store/encoding/types"
 	"time"
 
 	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
@@ -29,6 +30,8 @@ type tpBlock struct {
 	tenantID  string
 	lastFlush int64
 }
+
+var _ types.TPBlock = (*tpBlock)(nil)
 
 func (t *tpBlock) ForResource(resource []*cp.KeyValue) ([]*deep_tp.TracePointConfig, error) {
 	var tps []*deep_tp.TracePointConfig
@@ -58,21 +61,23 @@ func (t *tpBlock) AddTracepoint(tp *deep_tp.TracePointConfig) {
 	t.tps = append(t.tps, tp)
 }
 
-func (t *tpBlock) DeleteTracepoint(tpID string) {
-	tpToRemoveIndex := -1
+func (t *tpBlock) DeleteTracepoints(ids ...string) {
+	var tpToRemoveIndex []int
 	for i, config := range t.tps {
-		if config.ID == tpID {
-			tpToRemoveIndex = i
-			break
+		for _, s := range ids {
+			if config.ID == s {
+				tpToRemoveIndex = append(tpToRemoveIndex, i)
+				break
+			}
 		}
 	}
 
-	if tpToRemoveIndex == -1 {
+	if len(tpToRemoveIndex) == 0 {
 		// todo return error?
 		return
 	}
 
-	t.tps = t.remove(t.tps, tpToRemoveIndex)
+	t.tps = t.removeAll(t.tps, tpToRemoveIndex...)
 }
 
 func (t *tpBlock) matches(tp *deep_tp.TracePointConfig, resource []*cp.KeyValue) bool {
@@ -83,6 +88,31 @@ func (t *tpBlock) remove(tps []*deep_tp.TracePointConfig, i int) []*deep_tp.Trac
 	tps[i] = tps[len(tps)-1]
 	tps[len(tps)-1] = nil
 	return tps[:len(tps)-1]
+}
+
+func (t *tpBlock) removeAll(tps []*deep_tp.TracePointConfig, idxs ...int) []*deep_tp.TracePointConfig {
+	for _, i := range idxs {
+		tps[i] = nil
+	}
+	return t.removeNils(tps)
+}
+
+func (t *tpBlock) removeNils(things []*deep_tp.TracePointConfig) []*deep_tp.TracePointConfig {
+	for i := 0; i < len(things); {
+		if things[i] != nil {
+			i++
+			continue
+		}
+
+		if i < len(things)-1 {
+			copy(things[i:], things[i+1:])
+		}
+
+		things[len(things)-1] = nil
+		things = things[:len(things)-1]
+	}
+
+	return things[:len(things):len(things)]
 }
 
 func ResourceMatches(tp *deep_tp.TracePointConfig, resource []*cp.KeyValue) bool {

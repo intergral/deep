@@ -20,67 +20,72 @@ package deepql
 import (
 	"errors"
 	"fmt"
+	"golang.org/x/exp/maps"
 )
 
 const (
-	list       = "list"
-	deleteType = "delete"
+	List       = "list"
+	DeleteType = "delete"
 )
 
 var commandTypes = map[string]int{
-	list:       COMMAND,
-	deleteType: COMMAND,
+	List:       COMMAND,
+	DeleteType: COMMAND,
 }
 
 type command struct {
 	command string
 
-	file string
-	id   string
+	rules []configOption
+	id    string
 
 	errors []error
 }
 
 func (c *command) validate() error {
+
+	// if id is set then we cannot use other values
+	if c.id != "" && len(c.rules) != 0 {
+		c.errors = append(c.errors, fmt.Errorf("invalid command: cannot use id with query"))
+	}
+
 	if len(c.errors) > 0 {
 		return errors.Join(c.errors...)
 	}
 	return nil
 }
 
+func (c *command) buildConditions() []Condition {
+	mappedToAttr := map[string]Condition{}
+	for _, rule := range c.rules {
+		key := fmt.Sprintf("%s-%d", rule.lhs, rule.op)
+		if v, ok := mappedToAttr[key]; ok {
+			mappedToAttr[key] = Condition{
+				Attribute: rule.lhs,
+				Op:        rule.op,
+				Operands:  append(v.Operands, rule.rhs),
+			}
+		} else {
+			mappedToAttr[key] = Condition{
+				Attribute: rule.lhs,
+				Op:        rule.op,
+				Operands:  []Static{rule.rhs},
+			}
+		}
+	}
+	return maps.Values(mappedToAttr)
+}
+
 func newCommand(typ string, opts []configOption) command {
 	var cmd command
 	switch typ {
-	case list:
-		cmd = command{command: list}
-	case deleteType:
-		cmd = command{command: deleteType}
+	case List:
+		cmd = command{command: List}
+	case DeleteType:
+		cmd = command{command: DeleteType}
 	}
 
-	for _, cfg := range opts {
-		err := cfg.apply(&cmd)
-		if err != nil {
-			cmd.errors = append(cmd.errors, err)
-		}
-	}
+	cmd.rules = opts
 
 	return cmd
-}
-
-func applyFuncForCommand(lhs string) func(c *configOption, cmd *command) error {
-	switch lhs {
-	case "file":
-		return func(c *configOption, cmd *command) error {
-			cmd.file = c.rhs.S
-			return nil
-		}
-	case "id":
-		return func(c *configOption, cmd *command) error {
-			cmd.id = c.rhs.S
-			return nil
-		}
-	}
-	return func(c *configOption, cmd *command) error {
-		return errors.New(fmt.Sprintf("parse error unrecognized option: %s", lhs))
-	}
 }

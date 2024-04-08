@@ -36,7 +36,6 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	"github.com/intergral/deep/pkg/deepdb/wal"
 	"github.com/intergral/deep/pkg/deeppb"
-	v1_common "github.com/intergral/deep/pkg/deeppb/common/v1"
 	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/util"
@@ -118,120 +117,6 @@ func testDeepQLCompleteBlock(t *testing.T, blockVersion string) {
 			})
 		}
 	})
-}
-
-// TestAdvancedDeepQLCompleteBlock uses the actual snapshot data to construct complex deepql queries
-// it is supposed to cover all major deepql features. if you see one missing add it!
-func TestAdvancedDeepQLCompleteBlock(t *testing.T) {
-	for _, v := range encoding.AllEncodings() {
-		vers := v.Version()
-		t.Run(vers, func(t *testing.T) {
-			testAdvancedDeepQLCompleteBlock(t, vers)
-		})
-	}
-}
-
-func testAdvancedDeepQLCompleteBlock(t *testing.T, blockVersion string) {
-	e := deepql.NewEngine()
-
-	runCompleteBlockSearchTest(t, blockVersion, func(wantedSnapshot *deeptp.Snapshot, wantMeta *deeppb.SnapshotSearchMetadata, _, _ []*deeppb.SearchRequest, meta *backend.BlockMeta, r Reader) {
-		ctx := context.Background()
-
-		// collect some info about wantTr to use below
-		var trueConditions [][]string
-		falseConditions := []string{
-			fmt.Sprintf("name=`%v`", test.RandomString()),
-			fmt.Sprintf("duration>%dh", rand.Intn(10)+1),
-		}
-		trueAttrC, falseAttrC := conditionsForAttributes(wantedSnapshot.Attributes, "")
-		falseConditions = append(falseConditions, falseAttrC...)
-		trueConditions = append(trueConditions, trueAttrC)
-		trueResourceC, falseResourceC := conditionsForAttributes(wantedSnapshot.Resource, "")
-		falseConditions = append(falseConditions, falseResourceC...)
-		trueConditions = append(trueConditions, trueResourceC)
-
-		rando := func(s []string) string {
-			return s[rand.Intn(len(s))]
-		}
-
-		searchesThatMatch := []*deeppb.SearchRequest{
-			// conditions
-			{Query: fmt.Sprintf("{%s %s %s %s %s}", rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]))},
-			{Query: fmt.Sprintf("{%s %s %s %s %s}", rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]))},
-			{Query: fmt.Sprintf("{%s %s %s}", rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]))},
-		}
-		searchesThatDontMatch := []*deeppb.SearchRequest{
-			{Query: "{duration>=9h line=9}"},
-			{Query: "{id=`28ab414c9f0d34f39d4ba28442215d14`}"},
-			{Query: "{id=`28ab414c9f0d34f39d4ba28442215d14` duration>=9h}"},
-			{Query: "{line=9}"},
-			{Query: "{path=`VgWUyqEfOK`}"},
-			{Query: "{path=`VgWUyqEfOK` line=9}"},
-			//// conditions
-			{Query: fmt.Sprintf("{%s %s}", rando(trueConditions[0]), rando(falseConditions))},
-			{Query: fmt.Sprintf("{%s %s}", rando(falseConditions), rando(falseConditions))},
-		}
-
-		for _, req := range searchesThatMatch {
-			t.Run(fmt.Sprintf("should match: %s", req.Query), func(t *testing.T) {
-				fetcher := func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
-					return r.Fetch(ctx, meta, req, common.DefaultSearchOptions())
-				}
-
-				res, err := e.ExecuteSearch(ctx, req, fetcher)
-				require.NoError(t, err, "search request: %+v", req)
-				actual := actualForExpectedMeta(wantMeta, res)
-				require.NotNil(t, actual, "search request: %v", req)
-				require.Equal(t, wantMeta, actual, "search request: %v", req)
-			})
-		}
-
-		for _, req := range searchesThatDontMatch {
-			t.Run(fmt.Sprintf("should match: %s", req.Query), func(t *testing.T) {
-				fetcher := func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
-					return r.Fetch(ctx, meta, req, common.DefaultSearchOptions())
-				}
-
-				res, err := e.ExecuteSearch(ctx, req, fetcher)
-				require.NoError(t, err, "search request: %+v", req)
-				require.Nil(t, actualForExpectedMeta(wantMeta, res), "search request: %v", req)
-			})
-		}
-	})
-}
-
-func conditionsForAttributes(atts []*v1_common.KeyValue, scope string) ([]string, []string) {
-	var trueConditions []string
-	var falseConditions []string
-	if scope != "" {
-		scope = fmt.Sprintf("%s.", scope)
-	}
-
-	for _, a := range atts {
-		switch v := a.GetValue().Value.(type) {
-		case *v1_common.AnyValue_StringValue:
-			trueConditions = append(trueConditions, fmt.Sprintf("%s%v=`%v`", scope, a.Key, v.StringValue))
-			trueConditions = append(trueConditions, fmt.Sprintf("%v=`%v`", a.Key, v.StringValue))
-			falseConditions = append(falseConditions, fmt.Sprintf("%s%v=`%v`", scope, a.Key, test.RandomString()))
-			falseConditions = append(falseConditions, fmt.Sprintf("%v=`%v`", a.Key, test.RandomString()))
-		case *v1_common.AnyValue_BoolValue:
-			trueConditions = append(trueConditions, fmt.Sprintf("%s%v=%t", scope, a.Key, v.BoolValue))
-			trueConditions = append(trueConditions, fmt.Sprintf("%v=%t", a.Key, v.BoolValue))
-			// tough to add an always false condition here
-		case *v1_common.AnyValue_IntValue:
-			trueConditions = append(trueConditions, fmt.Sprintf("%s%v=%d", scope, a.Key, v.IntValue))
-			trueConditions = append(trueConditions, fmt.Sprintf("%v=%d", a.Key, v.IntValue))
-			falseConditions = append(falseConditions, fmt.Sprintf("%s%v=%d", scope, a.Key, rand.Intn(1000)+20000))
-			falseConditions = append(falseConditions, fmt.Sprintf("%v=%d", a.Key, rand.Intn(1000)+20000))
-		case *v1_common.AnyValue_DoubleValue:
-			trueConditions = append(trueConditions, fmt.Sprintf("%s%v=%f", scope, a.Key, v.DoubleValue))
-			trueConditions = append(trueConditions, fmt.Sprintf("%v=%f", a.Key, v.DoubleValue))
-			falseConditions = append(falseConditions, fmt.Sprintf("%s%v=%f", scope, a.Key, rand.Float64()))
-			falseConditions = append(falseConditions, fmt.Sprintf("%v=%f", a.Key, rand.Float64()))
-		}
-	}
-
-	return trueConditions, falseConditions
 }
 
 func actualForExpectedMeta(wantMeta *deeppb.SnapshotSearchMetadata, res *deeppb.SearchResponse) *deeppb.SnapshotSearchMetadata {

@@ -463,6 +463,7 @@ type TracepointConfigServiceClient interface {
 	LoadTracepoints(ctx context.Context, in *LoadTracepointRequest, opts ...grpc.CallOption) (*LoadTracepointResponse, error)
 	CreateTracepoint(ctx context.Context, in *CreateTracepointRequest, opts ...grpc.CallOption) (*CreateTracepointResponse, error)
 	DeleteTracepoint(ctx context.Context, in *DeleteTracepointRequest, opts ...grpc.CallOption) (*DeleteTracepointResponse, error)
+	ExecuteDeepQl(ctx context.Context, in *DeepQlRequest, opts ...grpc.CallOption) (*DeepQlResponse, error)
 }
 
 type tracepointConfigServiceClient struct {
@@ -500,6 +501,15 @@ func (c *tracepointConfigServiceClient) DeleteTracepoint(ctx context.Context, in
 	return out, nil
 }
 
+func (c *tracepointConfigServiceClient) ExecuteDeepQl(ctx context.Context, in *DeepQlRequest, opts ...grpc.CallOption) (*DeepQlResponse, error) {
+	out := new(DeepQlResponse)
+	err := c.cc.Invoke(ctx, "/deeppb.TracepointConfigService/ExecuteDeepQl", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TracepointConfigServiceServer is the server API for TracepointConfigService service.
 // All implementations must embed UnimplementedTracepointConfigServiceServer
 // for forward compatibility
@@ -507,6 +517,7 @@ type TracepointConfigServiceServer interface {
 	LoadTracepoints(context.Context, *LoadTracepointRequest) (*LoadTracepointResponse, error)
 	CreateTracepoint(context.Context, *CreateTracepointRequest) (*CreateTracepointResponse, error)
 	DeleteTracepoint(context.Context, *DeleteTracepointRequest) (*DeleteTracepointResponse, error)
+	ExecuteDeepQl(context.Context, *DeepQlRequest) (*DeepQlResponse, error)
 	mustEmbedUnimplementedTracepointConfigServiceServer()
 }
 
@@ -522,6 +533,9 @@ func (UnimplementedTracepointConfigServiceServer) CreateTracepoint(context.Conte
 }
 func (UnimplementedTracepointConfigServiceServer) DeleteTracepoint(context.Context, *DeleteTracepointRequest) (*DeleteTracepointResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteTracepoint not implemented")
+}
+func (UnimplementedTracepointConfigServiceServer) ExecuteDeepQl(context.Context, *DeepQlRequest) (*DeepQlResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExecuteDeepQl not implemented")
 }
 func (UnimplementedTracepointConfigServiceServer) mustEmbedUnimplementedTracepointConfigServiceServer() {
 }
@@ -591,6 +605,24 @@ func _TracepointConfigService_DeleteTracepoint_Handler(srv interface{}, ctx cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TracepointConfigService_ExecuteDeepQl_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeepQlRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TracepointConfigServiceServer).ExecuteDeepQl(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/deeppb.TracepointConfigService/ExecuteDeepQl",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TracepointConfigServiceServer).ExecuteDeepQl(ctx, req.(*DeepQlRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TracepointConfigService_ServiceDesc is the grpc.ServiceDesc for TracepointConfigService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -609,6 +641,10 @@ var TracepointConfigService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteTracepoint",
 			Handler:    _TracepointConfigService_DeleteTracepoint_Handler,
+		},
+		{
+			MethodName: "ExecuteDeepQl",
+			Handler:    _TracepointConfigService_ExecuteDeepQl_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

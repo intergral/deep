@@ -1126,18 +1126,128 @@ func (*PushBytesResponse) Descriptor() ([]byte, []int) {
 	return file_deep_proto_rawDescGZIP(), []int{17}
 }
 
+type DeepQlRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Query string `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+}
+
+func (x *DeepQlRequest) Reset() {
+	*x = DeepQlRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_deep_proto_msgTypes[18]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DeepQlRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeepQlRequest) ProtoMessage() {}
+
+func (x *DeepQlRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_deep_proto_msgTypes[18]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeepQlRequest.ProtoReflect.Descriptor instead.
+func (*DeepQlRequest) Descriptor() ([]byte, []int) {
+	return file_deep_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *DeepQlRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+type DeepQlResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	All      []*v1.TracePointConfig `protobuf:"bytes,1,rep,name=all,proto3" json:"all,omitempty"`
+	Affected []*v1.TracePointConfig `protobuf:"bytes,2,rep,name=affected,proto3" json:"affected,omitempty"`
+	Type     string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
+}
+
+func (x *DeepQlResponse) Reset() {
+	*x = DeepQlResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_deep_proto_msgTypes[19]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DeepQlResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeepQlResponse) ProtoMessage() {}
+
+func (x *DeepQlResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_deep_proto_msgTypes[19]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeepQlResponse.ProtoReflect.Descriptor instead.
+func (*DeepQlResponse) Descriptor() ([]byte, []int) {
+	return file_deep_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *DeepQlResponse) GetAll() []*v1.TracePointConfig {
+	if x != nil {
+		return x.All
+	}
+	return nil
+}
+
+func (x *DeepQlResponse) GetAffected() []*v1.TracePointConfig {
+	if x != nil {
+		return x.Affected
+	}
+	return nil
+}
+
+func (x *DeepQlResponse) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
 type LoadTracepointRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Request *v11.PollRequest `protobuf:"bytes,1,opt,name=Request,proto3,oneof" json:"Request,omitempty"`
+	Request *v11.PollRequest `protobuf:"bytes,1,opt,name=request,proto3,oneof" json:"request,omitempty"`
 }
 
 func (x *LoadTracepointRequest) Reset() {
 	*x = LoadTracepointRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_deep_proto_msgTypes[18]
+		mi := &file_deep_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1150,7 +1260,7 @@ func (x *LoadTracepointRequest) String() string {
 func (*LoadTracepointRequest) ProtoMessage() {}
 
 func (x *LoadTracepointRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_deep_proto_msgTypes[18]
+	mi := &file_deep_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1163,7 +1273,7 @@ func (x *LoadTracepointRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoadTracepointRequest.ProtoReflect.Descriptor instead.
 func (*LoadTracepointRequest) Descriptor() ([]byte, []int) {
-	return file_deep_proto_rawDescGZIP(), []int{18}
+	return file_deep_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *LoadTracepointRequest) GetRequest() *v11.PollRequest {
@@ -1178,13 +1288,13 @@ type LoadTracepointResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Response *v11.PollResponse `protobuf:"bytes,1,opt,name=Response,proto3" json:"Response,omitempty"`
+	Response *v11.PollResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
 }
 
 func (x *LoadTracepointResponse) Reset() {
 	*x = LoadTracepointResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_deep_proto_msgTypes[19]
+		mi := &file_deep_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1197,7 +1307,7 @@ func (x *LoadTracepointResponse) String() string {
 func (*LoadTracepointResponse) ProtoMessage() {}
 
 func (x *LoadTracepointResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_deep_proto_msgTypes[19]
+	mi := &file_deep_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1210,7 +1320,7 @@ func (x *LoadTracepointResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoadTracepointResponse.ProtoReflect.Descriptor instead.
 func (*LoadTracepointResponse) Descriptor() ([]byte, []int) {
-	return file_deep_proto_rawDescGZIP(), []int{19}
+	return file_deep_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *LoadTracepointResponse) GetResponse() *v11.PollResponse {
@@ -1225,13 +1335,13 @@ type CreateTracepointRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Tracepoint *v1.TracePointConfig `protobuf:"bytes,1,opt,name=Tracepoint,proto3" json:"Tracepoint,omitempty"`
+	Tracepoint *v1.TracePointConfig `protobuf:"bytes,1,opt,name=tracepoint,proto3" json:"tracepoint,omitempty"`
 }
 
 func (x *CreateTracepointRequest) Reset() {
 	*x = CreateTracepointRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_deep_proto_msgTypes[20]
+		mi := &file_deep_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1244,7 +1354,7 @@ func (x *CreateTracepointRequest) String() string {
 func (*CreateTracepointRequest) ProtoMessage() {}
 
 func (x *CreateTracepointRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_deep_proto_msgTypes[20]
+	mi := &file_deep_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1257,7 +1367,7 @@ func (x *CreateTracepointRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTracepointRequest.ProtoReflect.Descriptor instead.
 func (*CreateTracepointRequest) Descriptor() ([]byte, []int) {
-	return file_deep_proto_rawDescGZIP(), []int{20}
+	return file_deep_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *CreateTracepointRequest) GetTracepoint() *v1.TracePointConfig {
@@ -1271,12 +1381,14 @@ type CreateTracepointResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
+
+	Created *v1.TracePointConfig `protobuf:"bytes,1,opt,name=created,proto3" json:"created,omitempty"`
 }
 
 func (x *CreateTracepointResponse) Reset() {
 	*x = CreateTracepointResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_deep_proto_msgTypes[21]
+		mi := &file_deep_proto_msgTypes[23]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1289,7 +1401,7 @@ func (x *CreateTracepointResponse) String() string {
 func (*CreateTracepointResponse) ProtoMessage() {}
 
 func (x *CreateTracepointResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_deep_proto_msgTypes[21]
+	mi := &file_deep_proto_msgTypes[23]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1302,7 +1414,14 @@ func (x *CreateTracepointResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTracepointResponse.ProtoReflect.Descriptor instead.
 func (*CreateTracepointResponse) Descriptor() ([]byte, []int) {
-	return file_deep_proto_rawDescGZIP(), []int{21}
+	return file_deep_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *CreateTracepointResponse) GetCreated() *v1.TracePointConfig {
+	if x != nil {
+		return x.Created
+	}
+	return nil
 }
 
 type DeleteTracepointRequest struct {
@@ -1310,13 +1429,13 @@ type DeleteTracepointRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	TracepointID string `protobuf:"bytes,1,opt,name=TracepointID,proto3" json:"TracepointID,omitempty"`
+	TracepointID string `protobuf:"bytes,1,opt,name=tracepointID,proto3" json:"tracepointID,omitempty"`
 }
 
 func (x *DeleteTracepointRequest) Reset() {
 	*x = DeleteTracepointRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_deep_proto_msgTypes[22]
+		mi := &file_deep_proto_msgTypes[24]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1329,7 +1448,7 @@ func (x *DeleteTracepointRequest) String() string {
 func (*DeleteTracepointRequest) ProtoMessage() {}
 
 func (x *DeleteTracepointRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_deep_proto_msgTypes[22]
+	mi := &file_deep_proto_msgTypes[24]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1342,7 +1461,7 @@ func (x *DeleteTracepointRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTracepointRequest.ProtoReflect.Descriptor instead.
 func (*DeleteTracepointRequest) Descriptor() ([]byte, []int) {
-	return file_deep_proto_rawDescGZIP(), []int{22}
+	return file_deep_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *DeleteTracepointRequest) GetTracepointID() string {
@@ -1356,12 +1475,14 @@ type DeleteTracepointResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
+
+	Deleted *v1.TracePointConfig `protobuf:"bytes,1,opt,name=deleted,proto3" json:"deleted,omitempty"`
 }
 
 func (x *DeleteTracepointResponse) Reset() {
 	*x = DeleteTracepointResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_deep_proto_msgTypes[23]
+		mi := &file_deep_proto_msgTypes[25]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1374,7 +1495,7 @@ func (x *DeleteTracepointResponse) String() string {
 func (*DeleteTracepointResponse) ProtoMessage() {}
 
 func (x *DeleteTracepointResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_deep_proto_msgTypes[23]
+	mi := &file_deep_proto_msgTypes[25]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1387,7 +1508,14 @@ func (x *DeleteTracepointResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTracepointResponse.ProtoReflect.Descriptor instead.
 func (*DeleteTracepointResponse) Descriptor() ([]byte, []int) {
-	return file_deep_proto_rawDescGZIP(), []int{23}
+	return file_deep_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *DeleteTracepointResponse) GetDeleted() *v1.TracePointConfig {
+	if x != nil {
+		return x.Deleted
+	}
+	return nil
 }
 
 var File_deep_proto protoreflect.FileDescriptor
@@ -1530,32 +1658,53 @@ var file_deep_proto_rawDesc = []byte{
 	0x73, 0x6e, 0x61, 0x70, 0x73, 0x68, 0x6f, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x08,
 	0x73, 0x6e, 0x61, 0x70, 0x73, 0x68, 0x6f, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18, 0x02,
 	0x20, 0x01, 0x28, 0x0c, 0x52, 0x02, 0x49, 0x44, 0x22, 0x13, 0x0a, 0x11, 0x50, 0x75, 0x73, 0x68,
-	0x42, 0x79, 0x74, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x5f, 0x0a,
-	0x15, 0x4c, 0x6f, 0x61, 0x64, 0x54, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x3a, 0x0a, 0x07, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62,
-	0x2e, 0x70, 0x6f, 0x6c, 0x6c, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x6f, 0x6c, 0x6c, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x48, 0x00, 0x52, 0x07, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x88,
-	0x01, 0x01, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x52,
-	0x0a, 0x16, 0x4c, 0x6f, 0x61, 0x64, 0x54, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x38, 0x0a, 0x08, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x64, 0x65, 0x65,
-	0x70, 0x70, 0x62, 0x2e, 0x70, 0x6f, 0x6c, 0x6c, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x6f, 0x6c, 0x6c,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52, 0x08, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x22, 0x61, 0x0a, 0x17, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x54, 0x72, 0x61, 0x63,
-	0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x46, 0x0a,
-	0x0a, 0x54, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x0b, 0x32, 0x26, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x2e, 0x74, 0x72, 0x61, 0x63, 0x65,
-	0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x72, 0x61, 0x63, 0x65, 0x50, 0x6f,
-	0x69, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x0a, 0x54, 0x72, 0x61, 0x63, 0x65,
-	0x70, 0x6f, 0x69, 0x6e, 0x74, 0x22, 0x1a, 0x0a, 0x18, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x54,
-	0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x3d, 0x0a, 0x17, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x54, 0x72, 0x61, 0x63, 0x65,
-	0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x22, 0x0a, 0x0c,
-	0x54, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x0c, 0x54, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x49, 0x44,
-	0x22, 0x1a, 0x0a, 0x18, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x54, 0x72, 0x61, 0x63, 0x65, 0x70,
-	0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x32, 0xde, 0x03, 0x0a,
+	0x42, 0x79, 0x74, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x25, 0x0a,
+	0x0d, 0x44, 0x65, 0x65, 0x70, 0x51, 0x6c, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x14,
+	0x0a, 0x05, 0x71, 0x75, 0x65, 0x72, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x71,
+	0x75, 0x65, 0x72, 0x79, 0x22, 0xa2, 0x01, 0x0a, 0x0e, 0x44, 0x65, 0x65, 0x70, 0x51, 0x6c, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x38, 0x0a, 0x03, 0x61, 0x6c, 0x6c, 0x18, 0x01,
+	0x20, 0x03, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x2e, 0x74, 0x72,
+	0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x72, 0x61, 0x63,
+	0x65, 0x50, 0x6f, 0x69, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x03, 0x61, 0x6c,
+	0x6c, 0x12, 0x42, 0x0a, 0x08, 0x61, 0x66, 0x66, 0x65, 0x63, 0x74, 0x65, 0x64, 0x18, 0x02, 0x20,
+	0x03, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x2e, 0x74, 0x72, 0x61,
+	0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x72, 0x61, 0x63, 0x65,
+	0x50, 0x6f, 0x69, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x08, 0x61, 0x66, 0x66,
+	0x65, 0x63, 0x74, 0x65, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x03, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x22, 0x5f, 0x0a, 0x15, 0x4c, 0x6f, 0x61,
+	0x64, 0x54, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x12, 0x3a, 0x0a, 0x07, 0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x2e, 0x70, 0x6f, 0x6c,
+	0x6c, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x6f, 0x6c, 0x6c, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x48, 0x00, 0x52, 0x07, 0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x88, 0x01, 0x01, 0x42, 0x0a,
+	0x0a, 0x08, 0x5f, 0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x52, 0x0a, 0x16, 0x4c, 0x6f,
+	0x61, 0x64, 0x54, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x38, 0x0a, 0x08, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x2e,
+	0x70, 0x6f, 0x6c, 0x6c, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x6f, 0x6c, 0x6c, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x52, 0x08, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x61,
+	0x0a, 0x17, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x54, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69,
+	0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x46, 0x0a, 0x0a, 0x74, 0x72, 0x61,
+	0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e,
+	0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x2e, 0x74, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e,
+	0x74, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x72, 0x61, 0x63, 0x65, 0x50, 0x6f, 0x69, 0x6e, 0x74, 0x43,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x0a, 0x74, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e,
+	0x74, 0x22, 0x5c, 0x0a, 0x18, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x54, 0x72, 0x61, 0x63, 0x65,
+	0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x40, 0x0a,
+	0x07, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x26,
+	0x2e, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x2e, 0x74, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69,
+	0x6e, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x72, 0x61, 0x63, 0x65, 0x50, 0x6f, 0x69, 0x6e, 0x74,
+	0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x07, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x22,
+	0x3d, 0x0a, 0x17, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x54, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f,
+	0x69, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x22, 0x0a, 0x0c, 0x74, 0x72,
+	0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x0c, 0x74, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x49, 0x44, 0x22, 0x5c,
+	0x0a, 0x18, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x54, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69,
+	0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x40, 0x0a, 0x07, 0x64, 0x65,
+	0x6c, 0x65, 0x74, 0x65, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x64, 0x65,
+	0x65, 0x70, 0x70, 0x62, 0x2e, 0x74, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e,
+	0x76, 0x31, 0x2e, 0x54, 0x72, 0x61, 0x63, 0x65, 0x50, 0x6f, 0x69, 0x6e, 0x74, 0x43, 0x6f, 0x6e,
+	0x66, 0x69, 0x67, 0x52, 0x07, 0x64, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x64, 0x32, 0xde, 0x03, 0x0a,
 	0x0e, 0x51, 0x75, 0x65, 0x72, 0x69, 0x65, 0x72, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12,
 	0x4f, 0x0a, 0x10, 0x46, 0x69, 0x6e, 0x64, 0x53, 0x6e, 0x61, 0x70, 0x73, 0x68, 0x6f, 0x74, 0x42,
 	0x79, 0x49, 0x44, 0x12, 0x1b, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x2e, 0x53, 0x6e, 0x61,
@@ -1597,7 +1746,7 @@ var file_deep_proto_rawDesc = []byte{
 	0x2e, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x2e, 0x50, 0x75, 0x73, 0x68, 0x42, 0x79, 0x74, 0x65,
 	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x19, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x70,
 	0x62, 0x2e, 0x50, 0x75, 0x73, 0x68, 0x42, 0x79, 0x74, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0x00, 0x32, 0x9f, 0x02, 0x0a, 0x17, 0x54, 0x72, 0x61, 0x63, 0x65, 0x70,
+	0x6e, 0x73, 0x65, 0x22, 0x00, 0x32, 0xe1, 0x02, 0x0a, 0x17, 0x54, 0x72, 0x61, 0x63, 0x65, 0x70,
 	0x6f, 0x69, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63,
 	0x65, 0x12, 0x52, 0x0a, 0x0f, 0x4c, 0x6f, 0x61, 0x64, 0x54, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f,
 	0x69, 0x6e, 0x74, 0x73, 0x12, 0x1d, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x2e, 0x4c, 0x6f,
@@ -1615,10 +1764,14 @@ var file_deep_proto_rawDesc = []byte{
 	0x74, 0x65, 0x54, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75,
 	0x65, 0x73, 0x74, 0x1a, 0x20, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x2e, 0x44, 0x65, 0x6c,
 	0x65, 0x74, 0x65, 0x54, 0x72, 0x61, 0x63, 0x65, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x26, 0x5a, 0x24, 0x67, 0x69, 0x74, 0x68, 0x75,
-	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x67, 0x72, 0x61, 0x6c, 0x2f,
-	0x64, 0x65, 0x65, 0x70, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x62,
-	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x40, 0x0a, 0x0d, 0x45, 0x78, 0x65, 0x63, 0x75,
+	0x74, 0x65, 0x44, 0x65, 0x65, 0x70, 0x51, 0x6c, 0x12, 0x15, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x70,
+	0x62, 0x2e, 0x44, 0x65, 0x65, 0x70, 0x51, 0x6c, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x16, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x70, 0x62, 0x2e, 0x44, 0x65, 0x65, 0x70, 0x51, 0x6c, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x26, 0x5a, 0x24, 0x67, 0x69, 0x74,
+	0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x67, 0x72, 0x61,
+	0x6c, 0x2f, 0x64, 0x65, 0x65, 0x70, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x64, 0x65, 0x65, 0x70, 0x70,
+	0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1633,7 +1786,7 @@ func file_deep_proto_rawDescGZIP() []byte {
 	return file_deep_proto_rawDescData
 }
 
-var file_deep_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
+var file_deep_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
 var file_deep_proto_goTypes = []interface{}{
 	(*SearchRequest)(nil),             // 0: deeppb.SearchRequest
 	(*SearchBlockRequest)(nil),        // 1: deeppb.SearchBlockRequest
@@ -1653,57 +1806,65 @@ var file_deep_proto_goTypes = []interface{}{
 	(*PushSnapshotResponse)(nil),      // 15: deeppb.PushSnapshotResponse
 	(*PushBytesRequest)(nil),          // 16: deeppb.PushBytesRequest
 	(*PushBytesResponse)(nil),         // 17: deeppb.PushBytesResponse
-	(*LoadTracepointRequest)(nil),     // 18: deeppb.LoadTracepointRequest
-	(*LoadTracepointResponse)(nil),    // 19: deeppb.LoadTracepointResponse
-	(*CreateTracepointRequest)(nil),   // 20: deeppb.CreateTracepointRequest
-	(*CreateTracepointResponse)(nil),  // 21: deeppb.CreateTracepointResponse
-	(*DeleteTracepointRequest)(nil),   // 22: deeppb.DeleteTracepointRequest
-	(*DeleteTracepointResponse)(nil),  // 23: deeppb.DeleteTracepointResponse
-	nil,                               // 24: deeppb.SearchRequest.TagsEntry
-	(*v1.Snapshot)(nil),               // 25: deeppb.tracepoint.v1.Snapshot
-	(*v11.PollRequest)(nil),           // 26: deeppb.poll.v1.PollRequest
-	(*v11.PollResponse)(nil),          // 27: deeppb.poll.v1.PollResponse
+	(*DeepQlRequest)(nil),             // 18: deeppb.DeepQlRequest
+	(*DeepQlResponse)(nil),            // 19: deeppb.DeepQlResponse
+	(*LoadTracepointRequest)(nil),     // 20: deeppb.LoadTracepointRequest
+	(*LoadTracepointResponse)(nil),    // 21: deeppb.LoadTracepointResponse
+	(*CreateTracepointRequest)(nil),   // 22: deeppb.CreateTracepointRequest
+	(*CreateTracepointResponse)(nil),  // 23: deeppb.CreateTracepointResponse
+	(*DeleteTracepointRequest)(nil),   // 24: deeppb.DeleteTracepointRequest
+	(*DeleteTracepointResponse)(nil),  // 25: deeppb.DeleteTracepointResponse
+	nil,                               // 26: deeppb.SearchRequest.TagsEntry
+	(*v1.Snapshot)(nil),               // 27: deeppb.tracepoint.v1.Snapshot
 	(*v1.TracePointConfig)(nil),       // 28: deeppb.tracepoint.v1.TracePointConfig
+	(*v11.PollRequest)(nil),           // 29: deeppb.poll.v1.PollRequest
+	(*v11.PollResponse)(nil),          // 30: deeppb.poll.v1.PollResponse
 }
 var file_deep_proto_depIdxs = []int32{
-	24, // 0: deeppb.SearchRequest.Tags:type_name -> deeppb.SearchRequest.TagsEntry
+	26, // 0: deeppb.SearchRequest.Tags:type_name -> deeppb.SearchRequest.TagsEntry
 	0,  // 1: deeppb.SearchBlockRequest.searchReq:type_name -> deeppb.SearchRequest
 	3,  // 2: deeppb.SearchResponse.snapshots:type_name -> deeppb.SnapshotSearchMetadata
 	4,  // 3: deeppb.SearchResponse.metrics:type_name -> deeppb.SearchMetrics
 	9,  // 4: deeppb.SearchTagValuesV2Response.tagValues:type_name -> deeppb.TagValue
-	25, // 5: deeppb.SnapshotByIDResponse.snapshot:type_name -> deeppb.tracepoint.v1.Snapshot
+	27, // 5: deeppb.SnapshotByIDResponse.snapshot:type_name -> deeppb.tracepoint.v1.Snapshot
 	13, // 6: deeppb.SnapshotByIDResponse.metrics:type_name -> deeppb.SnapshotByIDMetrics
-	25, // 7: deeppb.PushSnapshotRequest.snapshot:type_name -> deeppb.tracepoint.v1.Snapshot
-	26, // 8: deeppb.LoadTracepointRequest.Request:type_name -> deeppb.poll.v1.PollRequest
-	27, // 9: deeppb.LoadTracepointResponse.Response:type_name -> deeppb.poll.v1.PollResponse
-	28, // 10: deeppb.CreateTracepointRequest.Tracepoint:type_name -> deeppb.tracepoint.v1.TracePointConfig
-	11, // 11: deeppb.QuerierService.FindSnapshotByID:input_type -> deeppb.SnapshotByIDRequest
-	0,  // 12: deeppb.QuerierService.SearchRecent:input_type -> deeppb.SearchRequest
-	1,  // 13: deeppb.QuerierService.SearchBlock:input_type -> deeppb.SearchBlockRequest
-	5,  // 14: deeppb.QuerierService.SearchTags:input_type -> deeppb.SearchTagsRequest
-	7,  // 15: deeppb.QuerierService.SearchTagValues:input_type -> deeppb.SearchTagValuesRequest
-	7,  // 16: deeppb.QuerierService.SearchTagValuesV2:input_type -> deeppb.SearchTagValuesRequest
-	14, // 17: deeppb.MetricsGenerator.PushSnapshot:input_type -> deeppb.PushSnapshotRequest
-	16, // 18: deeppb.IngesterService.PushBytes:input_type -> deeppb.PushBytesRequest
-	18, // 19: deeppb.TracepointConfigService.LoadTracepoints:input_type -> deeppb.LoadTracepointRequest
-	20, // 20: deeppb.TracepointConfigService.CreateTracepoint:input_type -> deeppb.CreateTracepointRequest
-	22, // 21: deeppb.TracepointConfigService.DeleteTracepoint:input_type -> deeppb.DeleteTracepointRequest
-	12, // 22: deeppb.QuerierService.FindSnapshotByID:output_type -> deeppb.SnapshotByIDResponse
-	2,  // 23: deeppb.QuerierService.SearchRecent:output_type -> deeppb.SearchResponse
-	2,  // 24: deeppb.QuerierService.SearchBlock:output_type -> deeppb.SearchResponse
-	6,  // 25: deeppb.QuerierService.SearchTags:output_type -> deeppb.SearchTagsResponse
-	8,  // 26: deeppb.QuerierService.SearchTagValues:output_type -> deeppb.SearchTagValuesResponse
-	10, // 27: deeppb.QuerierService.SearchTagValuesV2:output_type -> deeppb.SearchTagValuesV2Response
-	15, // 28: deeppb.MetricsGenerator.PushSnapshot:output_type -> deeppb.PushSnapshotResponse
-	17, // 29: deeppb.IngesterService.PushBytes:output_type -> deeppb.PushBytesResponse
-	19, // 30: deeppb.TracepointConfigService.LoadTracepoints:output_type -> deeppb.LoadTracepointResponse
-	21, // 31: deeppb.TracepointConfigService.CreateTracepoint:output_type -> deeppb.CreateTracepointResponse
-	23, // 32: deeppb.TracepointConfigService.DeleteTracepoint:output_type -> deeppb.DeleteTracepointResponse
-	22, // [22:33] is the sub-list for method output_type
-	11, // [11:22] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	27, // 7: deeppb.PushSnapshotRequest.snapshot:type_name -> deeppb.tracepoint.v1.Snapshot
+	28, // 8: deeppb.DeepQlResponse.all:type_name -> deeppb.tracepoint.v1.TracePointConfig
+	28, // 9: deeppb.DeepQlResponse.affected:type_name -> deeppb.tracepoint.v1.TracePointConfig
+	29, // 10: deeppb.LoadTracepointRequest.request:type_name -> deeppb.poll.v1.PollRequest
+	30, // 11: deeppb.LoadTracepointResponse.response:type_name -> deeppb.poll.v1.PollResponse
+	28, // 12: deeppb.CreateTracepointRequest.tracepoint:type_name -> deeppb.tracepoint.v1.TracePointConfig
+	28, // 13: deeppb.CreateTracepointResponse.created:type_name -> deeppb.tracepoint.v1.TracePointConfig
+	28, // 14: deeppb.DeleteTracepointResponse.deleted:type_name -> deeppb.tracepoint.v1.TracePointConfig
+	11, // 15: deeppb.QuerierService.FindSnapshotByID:input_type -> deeppb.SnapshotByIDRequest
+	0,  // 16: deeppb.QuerierService.SearchRecent:input_type -> deeppb.SearchRequest
+	1,  // 17: deeppb.QuerierService.SearchBlock:input_type -> deeppb.SearchBlockRequest
+	5,  // 18: deeppb.QuerierService.SearchTags:input_type -> deeppb.SearchTagsRequest
+	7,  // 19: deeppb.QuerierService.SearchTagValues:input_type -> deeppb.SearchTagValuesRequest
+	7,  // 20: deeppb.QuerierService.SearchTagValuesV2:input_type -> deeppb.SearchTagValuesRequest
+	14, // 21: deeppb.MetricsGenerator.PushSnapshot:input_type -> deeppb.PushSnapshotRequest
+	16, // 22: deeppb.IngesterService.PushBytes:input_type -> deeppb.PushBytesRequest
+	20, // 23: deeppb.TracepointConfigService.LoadTracepoints:input_type -> deeppb.LoadTracepointRequest
+	22, // 24: deeppb.TracepointConfigService.CreateTracepoint:input_type -> deeppb.CreateTracepointRequest
+	24, // 25: deeppb.TracepointConfigService.DeleteTracepoint:input_type -> deeppb.DeleteTracepointRequest
+	18, // 26: deeppb.TracepointConfigService.ExecuteDeepQl:input_type -> deeppb.DeepQlRequest
+	12, // 27: deeppb.QuerierService.FindSnapshotByID:output_type -> deeppb.SnapshotByIDResponse
+	2,  // 28: deeppb.QuerierService.SearchRecent:output_type -> deeppb.SearchResponse
+	2,  // 29: deeppb.QuerierService.SearchBlock:output_type -> deeppb.SearchResponse
+	6,  // 30: deeppb.QuerierService.SearchTags:output_type -> deeppb.SearchTagsResponse
+	8,  // 31: deeppb.QuerierService.SearchTagValues:output_type -> deeppb.SearchTagValuesResponse
+	10, // 32: deeppb.QuerierService.SearchTagValuesV2:output_type -> deeppb.SearchTagValuesV2Response
+	15, // 33: deeppb.MetricsGenerator.PushSnapshot:output_type -> deeppb.PushSnapshotResponse
+	17, // 34: deeppb.IngesterService.PushBytes:output_type -> deeppb.PushBytesResponse
+	21, // 35: deeppb.TracepointConfigService.LoadTracepoints:output_type -> deeppb.LoadTracepointResponse
+	23, // 36: deeppb.TracepointConfigService.CreateTracepoint:output_type -> deeppb.CreateTracepointResponse
+	25, // 37: deeppb.TracepointConfigService.DeleteTracepoint:output_type -> deeppb.DeleteTracepointResponse
+	19, // 38: deeppb.TracepointConfigService.ExecuteDeepQl:output_type -> deeppb.DeepQlResponse
+	27, // [27:39] is the sub-list for method output_type
+	15, // [15:27] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_deep_proto_init() }
@@ -1929,7 +2090,7 @@ func file_deep_proto_init() {
 			}
 		}
 		file_deep_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*LoadTracepointRequest); i {
+			switch v := v.(*DeepQlRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1941,7 +2102,7 @@ func file_deep_proto_init() {
 			}
 		}
 		file_deep_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*LoadTracepointResponse); i {
+			switch v := v.(*DeepQlResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1953,7 +2114,7 @@ func file_deep_proto_init() {
 			}
 		}
 		file_deep_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CreateTracepointRequest); i {
+			switch v := v.(*LoadTracepointRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1965,7 +2126,7 @@ func file_deep_proto_init() {
 			}
 		}
 		file_deep_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CreateTracepointResponse); i {
+			switch v := v.(*LoadTracepointResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1977,7 +2138,7 @@ func file_deep_proto_init() {
 			}
 		}
 		file_deep_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DeleteTracepointRequest); i {
+			switch v := v.(*CreateTracepointRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1989,6 +2150,30 @@ func file_deep_proto_init() {
 			}
 		}
 		file_deep_proto_msgTypes[23].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CreateTracepointResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_deep_proto_msgTypes[24].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DeleteTracepointRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_deep_proto_msgTypes[25].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DeleteTracepointResponse); i {
 			case 0:
 				return &v.state
@@ -2001,14 +2186,14 @@ func file_deep_proto_init() {
 			}
 		}
 	}
-	file_deep_proto_msgTypes[18].OneofWrappers = []interface{}{}
+	file_deep_proto_msgTypes[20].OneofWrappers = []interface{}{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_deep_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   25,
+			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   4,
 		},

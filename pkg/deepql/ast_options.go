@@ -30,10 +30,6 @@ func (c *configOption) apply(cfg interface{}) error {
 		return applyFuncForTrigger(c.lhs)(c, v)
 	}
 
-	if v, ok := cfg.(*command); ok {
-		return applyFuncForCommand(c.lhs)(c, v)
-	}
-
 	return nil
 }
 

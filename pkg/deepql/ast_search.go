@@ -35,7 +35,11 @@ func (s search) buildConditions() []Condition {
 	for _, rule := range s.rules {
 		key := fmt.Sprintf("%s-%d", rule.lhs, rule.op)
 		if v, ok := mappedToAttr[key]; ok {
-			v.Operands = append(v.Operands, rule.rhs)
+			mappedToAttr[key] = Condition{
+				Attribute: rule.lhs,
+				Op:        rule.op,
+				Operands:  append(v.Operands, rule.rhs),
+			}
 		} else {
 			mappedToAttr[key] = Condition{
 				Attribute: rule.lhs,

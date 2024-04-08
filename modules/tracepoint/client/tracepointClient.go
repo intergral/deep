@@ -183,6 +183,9 @@ func (ts *TPClient) LoadTracepoints(ctx context.Context, req *deeppb.LoadTracepo
 	tokenFor := TokenFor(tenantID)
 
 	get, err := ts.ring.Get(tokenFor, ring.Read, nil, nil, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	doResults, err := get.Do(ctx, 0, func(funCtx context.Context, desc *ring.InstanceDesc) (interface{}, error) {
 		// todo error handling
@@ -227,6 +230,45 @@ func (ts *TPClient) LoadTracepoints(ctx context.Context, req *deeppb.LoadTracepo
 	}
 
 	return responses[0], nil
+}
+
+func (ts *TPClient) ExecuteDeepQl(ctx context.Context, query string) (*deeppb.DeepQlResponse, error) {
+	tenantID, err := util.ExtractTenantID(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "error extracting tenant id in Tracepoint.LoadTracepoints")
+	}
+
+	tokenFor := TokenFor(tenantID)
+
+	get, err := ts.ring.Get(tokenFor, ring.Read, nil, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	doResults, err := get.Do(ctx, 0, func(funCtx context.Context, desc *ring.InstanceDesc) (interface{}, error) {
+		// todo error handling
+		client, _ := ts.pool.GetClientFor(desc.Addr)
+
+		grpClient := client.(*tpClient)
+		tracepoints, err := grpClient.ExecuteDeepQl(funCtx, &deeppb.DeepQlRequest{Query: query})
+		if err != nil {
+			print(err)
+		}
+
+		return tracepoints, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(doResults) != 1 {
+		return nil, errors.Errorf("expected 1 response, got %d", len(doResults))
+	}
+
+	response := doResults[0].(*deeppb.DeepQlResponse)
+
+	return response, nil
 }
 
 // TokenFor generates a token used for finding ingesters from ring

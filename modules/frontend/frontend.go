@@ -18,7 +18,13 @@
 package frontend
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/opentracing/opentracing-go"
+	"github.com/pkg/errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -149,7 +155,53 @@ func newSnapshotByIDMiddleware(cfg Config, logger log.Logger) Middleware {
 				}, nil
 			}
 
+			// check marshalling format
+			marshallingFormat := api.HeaderAcceptJSON
+			if r.Header.Get(api.HeaderAccept) == api.HeaderAcceptProtobuf {
+				marshallingFormat = api.HeaderAcceptProtobuf
+			}
+
+			// enforce all communication internal to Deep to be in protobuf bytes
+			r.Header.Set(api.HeaderAccept, api.HeaderAcceptProtobuf)
+
 			resp, err := rt.RoundTrip(r)
+
+			if resp != nil && resp.StatusCode == http.StatusOK {
+				body, err := io.ReadAll(resp.Body)
+				_ = resp.Body.Close()
+				if err != nil {
+					return nil, errors.Wrap(err, "error reading response body at query frontend")
+				}
+				responseObject := &deeppb.SnapshotByIDResponse{}
+				err = proto.Unmarshal(body, responseObject)
+				if err != nil {
+					return nil, err
+				}
+
+				if marshallingFormat == api.HeaderAcceptJSON {
+					var jsonSnapshot bytes.Buffer
+					marshaller := &jsonpb.Marshaler{}
+					err = marshaller.Marshal(&jsonSnapshot, responseObject.Snapshot)
+					if err != nil {
+						return nil, err
+					}
+					resp.Body = io.NopCloser(bytes.NewReader(jsonSnapshot.Bytes()))
+				} else {
+					snapshotBuffer, err := proto.Marshal(responseObject.Snapshot)
+					if err != nil {
+						return nil, err
+					}
+					resp.Body = io.NopCloser(bytes.NewReader(snapshotBuffer))
+				}
+
+				if resp.Header != nil {
+					resp.Header.Set(api.HeaderContentType, marshallingFormat)
+				}
+			}
+			span := opentracing.SpanFromContext(r.Context())
+			if span != nil {
+				span.SetTag("contentType", marshallingFormat)
+			}
 
 			return resp, err
 		})

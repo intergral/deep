@@ -19,7 +19,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -115,57 +114,15 @@ func (ta *TracepointAPI) QueryTracepointHandler(w http.ResponseWriter, r *http.R
 	}
 
 	span.SetTag("deepql", query)
-	expr, err := deepql.ParseString(query)
+	_, err := deepql.ParseString(query)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if expr.IsTrigger() {
-		query, err := deepql.NewEngine().ExecuteTriggerQuery(ctx, expr, func(ctx context.Context, request *deeppb.CreateTracepointRequest) (*deeppb.LoadTracepointResponse, error) {
-			_, err := ta.client.CreateTracepoint(ctx, request)
-			if err != nil {
-				return nil, err
-			}
-			return ta.client.LoadTracepoints(ctx, &deeppb.LoadTracepointRequest{
-				Request: &pb.PollRequest{},
-			})
-		})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("x-deepql-type", "tracepoint")
-		api.ParseMessageToHttp(w, r, span, query.Response)
-		return
-	}
-
-	if expr.IsCommand() {
-		query, err := deepql.NewEngine().ExecuteCommandQuery(ctx, expr, func(ctx context.Context, request *deepql.CommandRequest) (*deeppb.LoadTracepointResponse, error) {
-			if request.LoadRequest != nil {
-				return ta.client.LoadTracepoints(ctx, request.LoadRequest)
-			}
-			if request.DeleteRequest != nil {
-				_, err := ta.client.DeleteTracepoint(ctx, request.DeleteRequest)
-				if err != nil {
-					return nil, err
-				}
-				return ta.client.LoadTracepoints(ctx, &deeppb.LoadTracepointRequest{
-					Request: &pb.PollRequest{},
-				})
-			}
-			return nil, errors.New("unknown command request")
-		})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("x-deepql-type", "tracepoint")
-		api.ParseMessageToHttp(w, r, span, query.Response)
-		return
-	}
-
-	http.Error(w, "unsupported query operation", http.StatusBadRequest)
+	resp, err := ta.client.ExecuteDeepQl(ctx, query)
+	w.Header().Set("x-deepql-type", "tracepoint")
+	api.ParseMessageToHttp(w, r, span, resp)
 }
 
 func (ta *TracepointAPI) LoadTracepointHandler(w http.ResponseWriter, r *http.Request) {

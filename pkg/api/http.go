@@ -543,7 +543,7 @@ func ValidateAndSanitizeRequest(r *http.Request) (string, string, string, int64,
 
 func ParseMessageToHttp(w http.ResponseWriter, r *http.Request, span opentracing.Span, data proto.Message) {
 	if r.Header.Get(HeaderAccept) == HeaderAcceptProtobuf {
-		span.SetTag("contentType", HeaderAcceptProtobuf)
+		span.SetTag(HeaderContentType, HeaderAcceptProtobuf)
 		b, err := proto.Marshal(data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -558,7 +558,7 @@ func ParseMessageToHttp(w http.ResponseWriter, r *http.Request, span opentracing
 		return
 	}
 
-	span.SetTag("contentType", HeaderAcceptJSON)
+	span.SetTag(HeaderContentType, HeaderAcceptJSON)
 	marshaller := &jsonpb.Marshaler{}
 	err := marshaller.Marshal(w, data)
 	if err != nil {

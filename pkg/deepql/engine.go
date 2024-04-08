@@ -28,7 +28,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/intergral/deep/pkg/deeppb"
 	v1 "github.com/intergral/deep/pkg/deeppb/common/v1"
-	pb "github.com/intergral/deep/pkg/deeppb/poll/v1"
 	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/opentracing/opentracing-go"
@@ -61,14 +60,14 @@ func (e *Engine) ExecuteSearch(ctx context.Context, searchReq *deeppb.SearchRequ
 	return nil, errors.New("invalid deepql search query")
 }
 
-func (e *Engine) ExecuteTriggerQuery(ctx context.Context, expr *RootExpr, handler TriggerHandler) (*deeppb.LoadTracepointResponse, error) {
+func (e *Engine) ExecuteTriggerQuery(ctx context.Context, expr *RootExpr, handler TriggerHandler) (*deeptp.TracePointConfig, []*deeptp.TracePointConfig, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "deepql.Engine.ExecuteTriggerQuery")
 	defer span.Finish()
 	span.SetTag("ql_type", "trigger")
 
 	request, err := createTriggerRequest(expr.trigger)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	return handler(ctx, request)
@@ -91,22 +90,24 @@ func createTriggerRequest(t *trigger) (*deeppb.CreateTracepointRequest, error) {
 			Metrics:   nil,
 		},
 	}
-
-	startTime, err := parseTimeWindow(t.windowStart)
-	if err != nil {
-		return nil, err
+	if t.windowStart != "" {
+		startTime, err := parseTimeWindow(t.windowStart)
+		if err != nil {
+			return nil, err
+		}
+		req.Tracepoint.Args["window_start"] = strconv.FormatInt(startTime.Unix(), 10)
 	}
 
-	endDur, err := parseTimeWindow(t.windowEnd)
-	if err != nil {
-		return nil, err
+	if t.windowEnd != "" {
+		endDur, err := parseTimeWindow(t.windowEnd)
+		if err != nil {
+			return nil, err
+		}
+		req.Tracepoint.Args["window_end"] = strconv.FormatInt(endDur.Unix(), 10)
 	}
-
-	req.Tracepoint.Args["window_start"] = strconv.FormatInt(startTime.Unix(), 10)
-	req.Tracepoint.Args["window_end"] = strconv.FormatInt(endDur.Unix(), 10)
 
 	if t.method != "" {
-		req.Tracepoint.Args["method"] = t.method
+		req.Tracepoint.Args["method_name"] = t.method
 	}
 
 	if t.log != "" {
@@ -199,29 +200,24 @@ func processLabels(prefix string, req *deeppb.CreateTracepointRequest, labels []
 	}
 }
 
-func (e *Engine) ExecuteCommandQuery(ctx context.Context, expr *RootExpr, handler CommandHandler) (*deeppb.LoadTracepointResponse, error) {
+func (e *Engine) ExecuteCommandQuery(ctx context.Context, expr *RootExpr, handler CommandHandler) ([]*deeptp.TracePointConfig, []*deeptp.TracePointConfig, string, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "deepql.Engine.ExecuteCommandQuery")
 	defer span.Finish()
 	span.SetTag("ql_type", "command")
 
 	request, err := createCommandRequest(expr.command)
 	if err != nil {
-		return nil, err
+		return nil, nil, "", err
 	}
 
 	return handler(ctx, request)
 }
 
 func createCommandRequest(c *command) (*CommandRequest, error) {
-	if c.command == list {
-		return &CommandRequest{LoadRequest: &deeppb.LoadTracepointRequest{
-			Request: &pb.PollRequest{},
-		}}, nil
-	}
-	if c.command == deleteType {
-		return &CommandRequest{DeleteRequest: &deeppb.DeleteTracepointRequest{TracepointID: c.id}}, nil
-	}
-	return nil, errors.New("invalid command")
+	return &CommandRequest{
+		Command:    c.command,
+		Conditions: c.buildConditions(),
+	}, nil
 }
 
 func doSearchSnapshotRequest(ctx context.Context, req *deeppb.SearchRequest, s *search, fetcher SnapshotResultFetcher) (*deeppb.SearchResponse, error) {

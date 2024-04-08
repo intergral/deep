@@ -19,6 +19,8 @@ package deepql
 
 import (
 	"context"
+	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	"regexp"
 
 	"github.com/intergral/deep/pkg/deeppb"
 )
@@ -29,6 +31,78 @@ type Condition struct {
 	Attribute string
 	Op        Operator
 	Operands  Operands
+}
+
+func (c Condition) MatchesString(value string) bool {
+	switch c.Op {
+	case OpEqual:
+		for _, o := range c.Operands {
+			if o.S != value {
+				return false
+			}
+		}
+	case OpNotEqual:
+		for _, o := range c.Operands {
+			if o.S == value {
+				return false
+			}
+		}
+	case OpRegex:
+		for _, o := range c.Operands {
+			if ok, err := regexp.MatchString(o.S, value); !ok || err != nil {
+				return false
+			}
+		}
+	case OpNotRegex:
+		for _, o := range c.Operands {
+			if ok, err := regexp.MatchString(o.S, value); ok || err != nil {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (c Condition) MatchesInt(value int) bool {
+	switch c.Op {
+	case OpEqual:
+		for _, o := range c.Operands {
+			if o.N != value {
+				return false
+			}
+		}
+	case OpNotEqual:
+		for _, o := range c.Operands {
+			if o.N == value {
+				return false
+			}
+		}
+	case OpGreater:
+		for _, o := range c.Operands {
+			if value <= o.N {
+				return false
+			}
+		}
+	case OpGreaterEqual:
+		for _, o := range c.Operands {
+			if value < o.N {
+				return false
+			}
+		}
+	case OpLess:
+		for _, o := range c.Operands {
+			if value >= o.N {
+				return false
+			}
+		}
+	case OpLessEqual:
+		for _, o := range c.Operands {
+			if value > o.N {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 type FetchSnapshotRequest struct {
@@ -79,11 +153,11 @@ type FetchSnapshotResponse struct {
 
 type SnapshotResultFetcher func(context.Context, FetchSnapshotRequest) (FetchSnapshotResponse, error)
 
-type TriggerHandler func(context.Context, *deeppb.CreateTracepointRequest) (*deeppb.LoadTracepointResponse, error)
+type TriggerHandler func(context.Context, *deeppb.CreateTracepointRequest) (*deeptp.TracePointConfig, []*deeptp.TracePointConfig, error)
 
 type CommandRequest struct {
-	DeleteRequest *deeppb.DeleteTracepointRequest
-	LoadRequest   *deeppb.LoadTracepointRequest
+	Command    string
+	Conditions []Condition
 }
 
-type CommandHandler func(context.Context, *CommandRequest) (*deeppb.LoadTracepointResponse, error)
+type CommandHandler func(context.Context, *CommandRequest) ([]*deeptp.TracePointConfig, []*deeptp.TracePointConfig, string, error)

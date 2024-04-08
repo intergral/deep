@@ -77,23 +77,27 @@ func TestParseString(t *testing.T) {
 		},
 		{
 			deepQl:  "list{}",
-			command: &command{command: list},
+			command: &command{command: List},
 		},
 		{
-			deepQl:  "list{file=\"some_file.py\"}",
-			command: &command{command: list, file: "some_file.py"},
+			deepQl:  "list{path=\"some_file.py\"}",
+			command: &command{command: List, rules: []configOption{newConfigOption(OpEqual, "path", Static{Type: TypeString, S: "some_file.py"})}},
 		},
 		{
-			deepQl:  "delete{file=\"some_file.py\"}",
-			command: &command{command: deleteType, file: "some_file.py"},
+			deepQl:  "delete{path=\"some_file.py\"}",
+			command: &command{command: DeleteType, rules: []configOption{newConfigOption(OpEqual, "path", Static{Type: TypeString, S: "some_file.py"})}},
 		},
 		{
 			deepQl:  "delete{id=\"alksjdsa89dashd89\"}",
-			command: &command{command: deleteType, id: "alksjdsa89dashd89"},
+			command: &command{command: DeleteType, rules: []configOption{newConfigOption(OpEqual, "id", Static{Type: TypeString, S: "alksjdsa89dashd89"})}},
+		},
+		{
+			deepQl:  "delete{id=\"alksjdsa89dashd89\" id=\"otherid\"}",
+			command: &command{command: DeleteType, rules: []configOption{newConfigOption(OpEqual, "id", Static{Type: TypeString, S: "otherid"}), newConfigOption(OpEqual, "id", Static{Type: TypeString, S: "alksjdsa89dashd89"})}},
 		},
 		{
 			deepQl:  "delete{line=88}",
-			wantErr: "parse error unrecognized option: line",
+			command: &command{command: DeleteType, rules: []configOption{newConfigOption(OpEqual, "line", Static{Type: TypeInt, N: 88})}},
 		},
 		{
 			deepQl: "{}",
@@ -196,6 +200,6 @@ func TestParseString(t *testing.T) {
 	}
 }
 
-func asRef(dur time.Duration) *time.Duration {
+func asRef[T any](dur T) *T {
 	return &dur
 }
