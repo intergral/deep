@@ -21,12 +21,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/intergral/deep/pkg/deepql"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/intergral/deep/pkg/deepql"
 
 	"github.com/go-kit/log"
 	"github.com/golang/protobuf/jsonpb"

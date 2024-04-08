@@ -36,7 +36,6 @@ func (e unsupportedError) Error() string {
 }
 
 func (r RootExpr) validate() error {
-
 	var errs []error
 	if r.trigger != nil && r.command != nil {
 		return errors.New("fatal error: cannot define a trigger and a command")

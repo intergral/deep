@@ -3,11 +3,12 @@ package test
 import (
 	"crypto/rand"
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	rand2 "math/rand"
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/golang/protobuf/proto"
 
 	"github.com/google/uuid"
 	cp "github.com/intergral/deep/pkg/deeppb/common/v1"

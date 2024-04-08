@@ -23,8 +23,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang/protobuf/jsonpb" //nolint:all //deprecated
-	"github.com/golang/protobuf/proto"  //nolint:all //ProtoReflect
 	"github.com/gorilla/mux"
 	"github.com/intergral/deep/pkg/api"
 	"github.com/intergral/deep/pkg/deeppb"
@@ -87,30 +85,7 @@ func (q *Querier) SnapshotByIdHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}
 
-	if r.Header.Get(api.HeaderAccept) == api.HeaderAcceptProtobuf {
-		span.SetTag("contentType", api.HeaderAcceptProtobuf)
-		b, err := proto.Marshal(resp)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set(api.HeaderContentType, api.HeaderAcceptProtobuf)
-		_, err = w.Write(b)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		return
-	}
-
-	span.SetTag("contentType", api.HeaderAcceptJSON)
-	marshaller := &jsonpb.Marshaler{}
-	err = marshaller.Marshal(w, resp)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
+	api.ParseMessageToHttp(w, r, span, resp)
 }
 
 func (q *Querier) SearchHandler(w http.ResponseWriter, r *http.Request) {
@@ -157,13 +132,7 @@ func (q *Querier) SearchHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	marshaller := &jsonpb.Marshaler{}
-	err := marshaller.Marshal(w, resp)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
+	api.ParseMessageToHttp(w, r, span, resp)
 }
 
 func (q *Querier) SearchTagsHandler(w http.ResponseWriter, r *http.Request) {
@@ -182,13 +151,7 @@ func (q *Querier) SearchTagsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	marshaller := &jsonpb.Marshaler{}
-	err = marshaller.Marshal(w, resp)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
+	api.ParseMessageToHttp(w, r, span, resp)
 }
 
 func (q *Querier) SearchTagValuesHandler(w http.ResponseWriter, r *http.Request) {
@@ -215,13 +178,7 @@ func (q *Querier) SearchTagValuesHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	marshaller := &jsonpb.Marshaler{}
-	err = marshaller.Marshal(w, resp)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
+	api.ParseMessageToHttp(w, r, span, resp)
 }
 
 func (q *Querier) SearchTagValuesV2Handler(w http.ResponseWriter, r *http.Request) {
@@ -249,11 +206,5 @@ func (q *Querier) SearchTagValuesV2Handler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	marshaller := &jsonpb.Marshaler{}
-	err = marshaller.Marshal(w, resp)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set(api.HeaderContentType, api.HeaderAcceptJSON)
+	api.ParseMessageToHttp(w, r, span, resp)
 }

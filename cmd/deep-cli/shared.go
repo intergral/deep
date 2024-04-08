@@ -19,12 +19,12 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
 	"sort"
 	"strconv"
 	"time"
+
+	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -140,16 +140,6 @@ func loadBlock(r backend.Reader, c backend.Compactor, tenantID string, id uuid.U
 	return &blockStats{
 		unifiedBlockMeta: getMeta(meta, compactedMeta, windowRange),
 	}, nil
-}
-
-func printAsJSON(value interface{}) error {
-	asJSON, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(string(asJSON))
-	return nil
 }
 
 type GRCPClient struct {

@@ -21,16 +21,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"strconv"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/intergral/deep/pkg/deeppb"
-	"github.com/intergral/deep/pkg/deeppb/common/v1"
+	v1 "github.com/intergral/deep/pkg/deeppb/common/v1"
 	pb "github.com/intergral/deep/pkg/deeppb/poll/v1"
 	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/opentracing/opentracing-go"
-	"io"
-	"strconv"
-	"time"
 )
 
 type Engine struct{}
@@ -209,7 +210,6 @@ func (e *Engine) ExecuteCommandQuery(ctx context.Context, expr *RootExpr, handle
 	}
 
 	return handler(ctx, request)
-
 }
 
 func createCommandRequest(c *command) (*CommandRequest, error) {

@@ -20,12 +20,13 @@ package deepdb
 import (
 	"context"
 	"fmt"
-	"github.com/intergral/deep/pkg/deepql"
 	"math/rand"
 	"path"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/intergral/deep/pkg/deepql"
 
 	"github.com/go-kit/log"
 	"github.com/google/uuid"

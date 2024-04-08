@@ -19,8 +19,9 @@ package deepql
 
 import (
 	"fmt"
-	"golang.org/x/exp/maps"
 	"time"
+
+	"golang.org/x/exp/maps"
 )
 
 type search struct {

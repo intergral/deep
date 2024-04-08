@@ -20,9 +20,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/intergral/deep/pkg/util"
 	"google.golang.org/grpc"
-	"time"
 
 	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/util/test"

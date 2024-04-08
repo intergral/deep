@@ -20,14 +20,15 @@ package api
 import (
 	"errors"
 	"fmt"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
-	"github.com/opentracing/opentracing-go"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+	"github.com/opentracing/opentracing-go"
 
 	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/deepql"

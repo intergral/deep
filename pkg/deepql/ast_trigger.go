@@ -20,8 +20,9 @@ package deepql
 import (
 	"errors"
 	"fmt"
-	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"strings"
+
+	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 )
 
 const (

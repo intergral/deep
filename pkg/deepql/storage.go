@@ -19,6 +19,7 @@ package deepql
 
 import (
 	"context"
+
 	"github.com/intergral/deep/pkg/deeppb"
 )
 

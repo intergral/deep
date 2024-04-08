@@ -234,7 +234,6 @@ func searchStandardTagValues(ctx context.Context, tag string, pf *parquet.File, 
 			FieldAttrValDouble,
 			FieldAttrValBool,
 			makeIter, keyPred, cb)
-
 		if err != nil {
 			return errors.Wrap(err, "search snapshot key values")
 		}
