@@ -61,7 +61,7 @@ type QueryFrontend struct {
 
 // New returns a new QueryFrontend
 func New(cfg Config, next http.RoundTripper, tpNext http.RoundTripper, o *overrides.Overrides, store storage.Store, logger log.Logger, registerer prometheus.Registerer) (*QueryFrontend, error) {
-	_ = level.Info(logger).Log("msg", "creating middleware in query frontend")
+	level.Info(logger).Log("msg", "creating middleware in query frontend")
 
 	if cfg.SnapshotByID.QueryShards < minQueryShards || cfg.SnapshotByID.QueryShards > maxQueryShards {
 		return nil, fmt.Errorf("frontend query shards should be between %d and %d (both inclusive)", minQueryShards, maxQueryShards)
