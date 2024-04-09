@@ -7,25 +7,33 @@ To attach a metric
 a '[Metric](https://github.com/intergral/deep-proto/blob/master/deepproto/proto/tracepoint/v1/tracepoint.proto#L45)'
 must be attached to the tracepoint config.
 
-```json
-{
-  "path": "some/file.py",
-  "line_number": 22,
-  "metrics": [
+=== "API"
+
+    ```json
     {
-      "name": "session_created",
-      "labelExpressions": [
+      "path": "some/file.py",
+      "line_number": 22,
+      "metrics": [
         {
-          "key": "user_id",
-          "value": {
-            "expression": "user.id"
-          }
+          "name": "session_created",
+          "labelExpressions": [
+            {
+              "key": "user_id",
+              "value": {
+                "expression": "user.id"
+              }
+            }
+          ]
         }
       ]
     }
-  ]
-}
-```
+    ```
+
+=== "DeepQL"
+
+    ```
+    metric{path="some/file.py" line=22 name="session_created" label_user_id="{user.id}"}
+    ```
 
 The above example would create a metric called `session_created` with the labels `user_ud: 167252` (the value of the
 label evaluated at runtime). The value of the labels can be either expressions (as above) or static values. The value of

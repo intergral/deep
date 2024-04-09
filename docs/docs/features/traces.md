@@ -12,15 +12,23 @@ Additionally, the argument `method_name` can be set (to the name of the method) 
 file with that name. If `method_name` is set then the `line_number` property is ignored for the span. This method also
 allows for '[method entry tracepoints](./method_entry.md)'  
 
-```json
-{
-  "path": "some/file.py",
-  "line_number": 22,
-  "args": {
-    "span": "method"
-  }
-}
-```
+=== "API"
+
+    ```json
+    {
+      "path": "some/file.py",
+      "line_number": 22,
+      "args": {
+        "span": "method"
+      }
+    }
+    ```
+
+=== "DeepQL"
+
+    ```
+    span{path="some/file.py" line=22 span="method"}
+    ```
 
 # Supported providers
 

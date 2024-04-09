@@ -1,4 +1,5 @@
 nav:
+    - DeepQL: deepql.md
     - Tracepoints: tracepoints.md
     - Snapshot: snapshots.md
     - Method Entry: method_entry.md

@@ -7,12 +7,20 @@ The way Deep triggers controls its data collection is with '[Tracepoints](./trac
 definition of a point of code (file and line number), with some customisations of how to collect data. The default
 behaviour is to create a snapshot that contains the stack and variable data at that point in the code.
 
-```json
-{
-  "path": "some/file.py",
-  "line_number": 22
-}
-```
+=== "API"
+    
+    ```json
+    {
+      "path": "some/file.py",
+      "line_number": 22
+    }
+    ```
+
+=== "DeepQL"
+
+    ```
+    snapshot{path="some/file.py" line=22}
+    ```
 
 ## Data Collection
 
