@@ -203,3 +203,60 @@ func TestParseString(t *testing.T) {
 func asRef[T any](dur T) *T {
 	return &dur
 }
+
+func Test_parseTimeWindow(t *testing.T) {
+	now := time.Now()
+	tests := []struct {
+		input   string
+		want    string
+		wantErr bool
+	}{
+		{
+			input:   "now",
+			want:    now.Format(time.DateTime),
+			wantErr: false,
+		},
+		{
+			input:   "1985-12-20",
+			want:    "1985-12-20 00:00:00",
+			wantErr: false,
+		},
+		{
+			input: "12:01:00",
+			want: func() string {
+				return now.Format(time.DateOnly) + " 12:01:00"
+			}(),
+			wantErr: false,
+		},
+		{
+			input: "7m",
+			want: func() string {
+				return now.Add(7 * time.Minute).Format(time.DateTime)
+			}(),
+			wantErr: false,
+		},
+		{
+			input:   "",
+			want:    now.Format(time.DateTime),
+			wantErr: false,
+		},
+		{
+			input:   "now",
+			want:    now.Format(time.DateTime),
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got, err := parseTimeWindow(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseTimeWindow() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			check := got.Format(time.DateTime)
+			if !reflect.DeepEqual(check, tt.want) {
+				t.Errorf("parseTimeWindow() got = %v, want %v", check, tt.want)
+			}
+		})
+	}
+}

@@ -25,6 +25,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/intergral/deep/pkg/deepql"
 
 	"github.com/intergral/deep/modules/storage"
@@ -35,6 +37,7 @@ import (
 	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
 	pb "github.com/intergral/deep/pkg/deeppb/poll/v1"
 	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	"github.com/intergral/deep/pkg/util"
 )
 
 type TPStore struct {
@@ -224,7 +227,7 @@ func (os *orgStore) FindTracepoints(request *deepql.CommandRequest) ([]*tp.Trace
 func (os *orgStore) LoadAll() ([]*tp.TracePointConfig, error) {
 	os.mu.Lock()
 	defer os.mu.Unlock()
-	return os.block.Tps(), nil
+	return slices.Clone(os.block.Tps()), nil
 }
 
 func (os *orgStore) matched(config *tp.TracePointConfig, request *deepql.CommandRequest) bool {
@@ -304,7 +307,7 @@ func (us *resourceStore) DeleteTracepoints(ids ...string) error {
 		return nil
 	}
 
-	us.tps = us.removeAll(us.tps, tpToRemoveIndex...)
+	us.tps = util.RemoveAll(us.tps, tpToRemoveIndex...)
 	us.rehash()
 	return nil
 }
@@ -316,37 +319,4 @@ func (us *resourceStore) rehash() {
 		_, _ = h.Write([]byte(config.ID))
 	}
 	us.currentHash = strconv.Itoa(int(h.Sum32()))
-}
-
-// remove element at index from array then return the new array
-func (us *resourceStore) remove(array []*tp.TracePointConfig, index int) []*tp.TracePointConfig {
-	array[index] = array[len(array)-1]
-	array[len(array)-1] = nil
-	return array[:len(array)-1]
-}
-
-func (us *resourceStore) removeAll(tps []*tp.TracePointConfig, idxs ...int) []*tp.TracePointConfig {
-	for _, i := range idxs {
-		tps[i] = nil
-	}
-	return us.removeNils(tps)
-}
-
-func (us *resourceStore) removeNils(things []*tp.TracePointConfig) []*tp.TracePointConfig {
-	for i := 0; i < len(things); {
-		if things[i] != nil {
-			i++
-			continue
-		}
-
-		if i < len(things)-1 {
-			copy(things[i:], things[i+1:])
-		}
-
-		things[len(things)-1] = nil
-		things = things[:len(things)-1]
-	}
-
-	things = things[:len(things):len(things)]
-	return things
 }

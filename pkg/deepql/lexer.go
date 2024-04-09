@@ -59,6 +59,7 @@ var tokens = map[string]int{
 func (l *lexer) Lex(lval *yySymType) int {
 	r := l.Scan()
 
+	//goland:noinspection GoSwitchMissingCasesForIotaConsts
 	switch r {
 	case scanner.EOF:
 		return 0
@@ -184,8 +185,9 @@ func tryScanDuration(number string, l *scanner.Scanner) (time.Duration, bool) {
 }
 
 func parseTimeWindow(d string) (time.Time, error) {
+	now := time.Now()
 	if d == "" || d == "now" {
-		return time.Now(), nil
+		return now, nil
 	}
 
 	isTime := strings.Contains(d, ":")
@@ -194,33 +196,34 @@ func parseTimeWindow(d string) (time.Time, error) {
 	if isTime && isDate {
 		parse, err := time.Parse(time.DateTime, d)
 		if err != nil {
-			return time.Time{}, err
+			return now, err
 		}
 		return parse, nil
 	}
 
 	if isTime {
-		parse, err := time.Parse(time.RFC3339, d)
+		parse, err := time.Parse(time.TimeOnly, d)
 		if err != nil {
-			return time.Time{}, err
+			return now, err
 		}
+		parse = time.Date(now.Year(), now.Month(), now.Day(), parse.Hour(), parse.Minute(), parse.Second(), 0, time.UTC)
 		return parse, nil
 	}
 
 	if isDate {
 		parse, err := time.Parse(time.DateOnly, d)
 		if err != nil {
-			return time.Time{}, err
+			return now, err
 		}
 		return parse, nil
 	}
 
 	duration, err := parseDuration(d)
 	if err != nil {
-		return time.Time{}, err
+		return now, err
 	}
 
-	return time.Now().Add(duration), nil
+	return now.Add(duration), nil
 }
 
 func parseDuration(d string) (time.Duration, error) {

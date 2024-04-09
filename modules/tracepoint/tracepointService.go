@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"sync"
 
-	pb "github.com/intergral/deep/pkg/deeppb/poll/v1"
 	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/deepql"
 
@@ -217,11 +216,11 @@ func (ts *TPService) ExecuteDeepQl(ctx context.Context, req *deeppb.DeepQlReques
 			if err != nil {
 				return nil, nil, err
 			}
-			tracepoints, err := ts.LoadTracepoints(ctx, &deeppb.LoadTracepointRequest{Request: &pb.PollRequest{}})
+			all, err := orgStore.LoadAll()
 			if err != nil {
 				return nil, nil, err
 			}
-			return tracepoint.Created, tracepoints.Response.Response, nil
+			return tracepoint.Created, all, nil
 		})
 		if err != nil {
 			return nil, err

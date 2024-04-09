@@ -20,22 +20,24 @@ package v1
 import (
 	"time"
 
+	"github.com/intergral/deep/pkg/util"
+
 	"github.com/intergral/deep/modules/tracepoint/store/encoding/types"
 
 	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
-	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 )
 
 type tpBlock struct {
-	tps       []*deep_tp.TracePointConfig
+	tps       []*deeptp.TracePointConfig
 	tenantID  string
 	lastFlush int64
 }
 
 var _ types.TPBlock = (*tpBlock)(nil)
 
-func (t *tpBlock) ForResource(resource []*cp.KeyValue) ([]*deep_tp.TracePointConfig, error) {
-	var tps []*deep_tp.TracePointConfig
+func (t *tpBlock) ForResource(resource []*cp.KeyValue) ([]*deeptp.TracePointConfig, error) {
+	var tps []*deeptp.TracePointConfig
 
 	for _, tp := range t.tps {
 		if t.matches(tp, resource) {
@@ -50,7 +52,7 @@ func (t *tpBlock) TenantID() string {
 	return t.tenantID
 }
 
-func (t *tpBlock) Tps() []*deep_tp.TracePointConfig {
+func (t *tpBlock) Tps() []*deeptp.TracePointConfig {
 	return t.tps
 }
 
@@ -58,7 +60,7 @@ func (t *tpBlock) Flushed() {
 	t.lastFlush = time.Now().UnixMilli()
 }
 
-func (t *tpBlock) AddTracepoint(tp *deep_tp.TracePointConfig) {
+func (t *tpBlock) AddTracepoint(tp *deeptp.TracePointConfig) {
 	t.tps = append(t.tps, tp)
 }
 
@@ -78,45 +80,14 @@ func (t *tpBlock) DeleteTracepoints(ids ...string) {
 		return
 	}
 
-	t.tps = t.removeAll(t.tps, tpToRemoveIndex...)
+	t.tps = util.RemoveAll(t.tps, tpToRemoveIndex...)
 }
 
-func (t *tpBlock) matches(tp *deep_tp.TracePointConfig, resource []*cp.KeyValue) bool {
+func (t *tpBlock) matches(tp *deeptp.TracePointConfig, resource []*cp.KeyValue) bool {
 	return ResourceMatches(tp, resource)
 }
 
-func (t *tpBlock) remove(tps []*deep_tp.TracePointConfig, i int) []*deep_tp.TracePointConfig {
-	tps[i] = tps[len(tps)-1]
-	tps[len(tps)-1] = nil
-	return tps[:len(tps)-1]
-}
-
-func (t *tpBlock) removeAll(tps []*deep_tp.TracePointConfig, idxs ...int) []*deep_tp.TracePointConfig {
-	for _, i := range idxs {
-		tps[i] = nil
-	}
-	return t.removeNils(tps)
-}
-
-func (t *tpBlock) removeNils(things []*deep_tp.TracePointConfig) []*deep_tp.TracePointConfig {
-	for i := 0; i < len(things); {
-		if things[i] != nil {
-			i++
-			continue
-		}
-
-		if i < len(things)-1 {
-			copy(things[i:], things[i+1:])
-		}
-
-		things[len(things)-1] = nil
-		things = things[:len(things)-1]
-	}
-
-	return things[:len(things):len(things)]
-}
-
-func ResourceMatches(tp *deep_tp.TracePointConfig, resource []*cp.KeyValue) bool {
+func ResourceMatches(tp *deeptp.TracePointConfig, resource []*cp.KeyValue) bool {
 	// if the resource targeting is empty then we match all
 	if len(resource) == 0 {
 		return true
