@@ -20,6 +20,7 @@ package deepql
 import (
 	"errors"
 	"fmt"
+
 	"golang.org/x/exp/maps"
 )
 
@@ -43,7 +44,6 @@ type command struct {
 }
 
 func (c *command) validate() error {
-
 	// if id is set then we cannot use other values
 	if c.id != "" && len(c.rules) != 0 {
 		c.errors = append(c.errors, fmt.Errorf("invalid command: cannot use id with query"))

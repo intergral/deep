@@ -19,12 +19,13 @@ package store
 
 import (
 	"context"
-	"github.com/intergral/deep/pkg/deepql"
 	"hash/fnv"
 	"sort"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/intergral/deep/pkg/deepql"
 
 	"github.com/intergral/deep/modules/storage"
 	"github.com/intergral/deep/modules/tracepoint/store/encoding"

@@ -20,10 +20,11 @@ package tracepoint
 import (
 	"context"
 	"fmt"
+	"sync"
+
 	pb "github.com/intergral/deep/pkg/deeppb/poll/v1"
 	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/deepql"
-	"sync"
 
 	gkLog "github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -236,7 +237,7 @@ func (ts *TPService) ExecuteDeepQl(ctx context.Context, req *deeppb.DeepQlReques
 
 	if expr.IsCommand() {
 		affect, all, commandType, err := engine.ExecuteCommandQuery(ctx, expr, func(ctx context.Context, request *deepql.CommandRequest) ([]*tp.TracePointConfig, []*tp.TracePointConfig, string, error) {
-			return ts.runQuery(ctx, orgStore, request)
+			return ts.runQuery(orgStore, request)
 		})
 		if err != nil {
 			return nil, err
@@ -251,7 +252,7 @@ func (ts *TPService) ExecuteDeepQl(ctx context.Context, req *deeppb.DeepQlReques
 	return nil, errors.New("invalid query expression")
 }
 
-func (ts *TPService) runQuery(ctx context.Context, store tp_store.OrgTPStore, request *deepql.CommandRequest) ([]*tp.TracePointConfig, []*tp.TracePointConfig, string, error) {
+func (ts *TPService) runQuery(store tp_store.OrgTPStore, request *deepql.CommandRequest) ([]*tp.TracePointConfig, []*tp.TracePointConfig, string, error) {
 	tps, err := store.FindTracepoints(request)
 	if err != nil {
 		return nil, nil, request.Command, err

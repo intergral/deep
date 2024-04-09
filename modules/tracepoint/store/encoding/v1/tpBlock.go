@@ -18,8 +18,9 @@
 package v1
 
 import (
-	"github.com/intergral/deep/modules/tracepoint/store/encoding/types"
 	"time"
+
+	"github.com/intergral/deep/modules/tracepoint/store/encoding/types"
 
 	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
 	deep_tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"

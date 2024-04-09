@@ -20,16 +20,17 @@ package frontend
 import (
 	"bytes"
 	"fmt"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
-	"github.com/intergral/deep/pkg/deeppb"
-	"github.com/opentracing/opentracing-go"
-	"github.com/pkg/errors"
 	"io"
 	"net/http"
 	"net/url"
 	"path"
 	"strings"
+
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+	"github.com/intergral/deep/pkg/deeppb"
+	"github.com/opentracing/opentracing-go"
+	"github.com/pkg/errors"
 
 	"github.com/intergral/deep/pkg/deepql"
 

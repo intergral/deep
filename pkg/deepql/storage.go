@@ -19,8 +19,9 @@ package deepql
 
 import (
 	"context"
-	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"regexp"
+
+	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 
 	"github.com/intergral/deep/pkg/deeppb"
 )
@@ -59,6 +60,8 @@ func (c Condition) MatchesString(value string) bool {
 				return false
 			}
 		}
+	default:
+		return false
 	}
 	return true
 }
@@ -101,6 +104,8 @@ func (c Condition) MatchesInt(value int) bool {
 				return false
 			}
 		}
+	default:
+		return false
 	}
 	return true
 }

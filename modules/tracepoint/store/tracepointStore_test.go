@@ -19,8 +19,9 @@ package store
 
 import (
 	"context"
-	"github.com/intergral/deep/pkg/deepql"
 	"testing"
+
+	"github.com/intergral/deep/pkg/deepql"
 
 	"github.com/intergral/deep/modules/storage"
 	"github.com/intergral/deep/pkg/deepdb"
@@ -360,7 +361,6 @@ func TestFindTracepoints(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.query, func(t *testing.T) {
-
 			parseString, err := deepql.ParseString(test.query)
 			assert.NoError(t, err)
 

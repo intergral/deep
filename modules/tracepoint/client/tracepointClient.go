@@ -133,14 +133,19 @@ func (ts *TPClient) CreateTracepoint(ctx context.Context, req *deeppb.CreateTrac
 	tokenFor := TokenFor(tenantID)
 
 	get, err := ts.ring.Get(tokenFor, ring.Read, nil, nil, nil)
+	if err != nil {
+		return nil, err
+	}
 	_, err = get.Do(ctx, 0, func(funCtx context.Context, desc *ring.InstanceDesc) (interface{}, error) {
-		// todo error handling
-		client, _ := ts.pool.GetClientFor(desc.Addr)
+		client, err := ts.pool.GetClientFor(desc.Addr)
+		if err != nil {
+			return nil, err
+		}
 
 		grpClient := client.(*tpClient)
 		tracepoints, err := grpClient.CreateTracepoint(funCtx, req)
 		if err != nil {
-			print(err)
+			return nil, err
 		}
 
 		return tracepoints, nil
@@ -158,14 +163,19 @@ func (ts *TPClient) DeleteTracepoint(ctx context.Context, req *deeppb.DeleteTrac
 	tokenFor := TokenFor(tenantID)
 
 	get, err := ts.ring.Get(tokenFor, ring.Read, nil, nil, nil)
+	if err != nil {
+		return nil, err
+	}
 	_, err = get.Do(ctx, 0, func(funCtx context.Context, desc *ring.InstanceDesc) (interface{}, error) {
-		// todo error handling
-		client, _ := ts.pool.GetClientFor(desc.Addr)
+		client, err := ts.pool.GetClientFor(desc.Addr)
+		if err != nil {
+			return nil, err
+		}
 
 		grpClient := client.(*tpClient)
 		tracepoints, err := grpClient.DeleteTracepoint(funCtx, req)
 		if err != nil {
-			print(err)
+			return nil, err
 		}
 
 		return tracepoints, nil
@@ -188,13 +198,15 @@ func (ts *TPClient) LoadTracepoints(ctx context.Context, req *deeppb.LoadTracepo
 	}
 
 	doResults, err := get.Do(ctx, 0, func(funCtx context.Context, desc *ring.InstanceDesc) (interface{}, error) {
-		// todo error handling
-		client, _ := ts.pool.GetClientFor(desc.Addr)
+		client, err := ts.pool.GetClientFor(desc.Addr)
+		if err != nil {
+			return nil, err
+		}
 
 		grpClient := client.(*tpClient)
 		tracepoints, err := grpClient.LoadTracepoints(funCtx, req)
 		if err != nil {
-			print(err)
+			return nil, err
 		}
 
 		return tracepoints, nil
@@ -246,18 +258,19 @@ func (ts *TPClient) ExecuteDeepQl(ctx context.Context, query string) (*deeppb.De
 	}
 
 	doResults, err := get.Do(ctx, 0, func(funCtx context.Context, desc *ring.InstanceDesc) (interface{}, error) {
-		// todo error handling
-		client, _ := ts.pool.GetClientFor(desc.Addr)
+		client, err := ts.pool.GetClientFor(desc.Addr)
+		if err != nil {
+			return nil, err
+		}
 
 		grpClient := client.(*tpClient)
 		tracepoints, err := grpClient.ExecuteDeepQl(funCtx, &deeppb.DeepQlRequest{Query: query})
 		if err != nil {
-			print(err)
+			return nil, err
 		}
 
 		return tracepoints, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
