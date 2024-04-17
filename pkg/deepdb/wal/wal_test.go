@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"context"
 	crand "crypto/rand"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -295,28 +296,32 @@ func testFetch(t *testing.T, e encoding.VersionedEncoding) {
 			require.NotEmpty(t, k)
 			require.NotEmpty(t, v)
 
-			query := fmt.Sprintf("{ .id = \"%s\" }", util.SnapshotIDToHexString(o.ID))
-			resp, err := block.Fetch(ctx, deepql.MustExtractFetchSnapshotRequest(query), common.DefaultSearchOptions())
+			query := fmt.Sprintf("{ id = \"%s\" }", util.SnapshotIDToHexString(o.ID))
+			engine := deepql.NewEngine()
+			resp, err := engine.ExecuteSearch(ctx, &deeppb.SearchRequest{Query: query}, func(ctx context.Context, request deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
+				return block.Fetch(ctx, request, common.DefaultSearchOptions())
+			})
+
 			// not all blocks support fetch
-			if err == common.ErrUnsupported {
+			if errors.Is(err, common.ErrUnsupported) {
 				return
 			}
 			require.NoError(t, err)
 
 			// grab the first result
-			ss, err := resp.Results.Next(ctx)
+			ss := resp.Snapshots[0]
 			require.NoError(t, err)
 			require.NotNil(t, ss)
 
 			// confirm snapshot id matches
 			expectedID := ids[i]
 			require.NotNil(t, ss)
-			require.Equal(t, ss.SnapshotID, expectedID)
+			require.Equal(t, ss.SnapshotID, util.SnapshotIDToHexString(expectedID))
 
 			// confirm no more matches
-			ss, err = resp.Results.Next(ctx)
-			require.NoError(t, err)
-			require.Nil(t, ss)
+			if len(resp.Snapshots) != 1 {
+				t.Error("should only get single result")
+			}
 		}
 	})
 }
@@ -405,7 +410,7 @@ func runWALTest(t testing.TB, encoding string, runner func([][]byte, []*deeptp.S
 		id := make([]byte, 16)
 		_, err = crand.Read(id)
 		require.NoError(t, err)
-		obj := test.GenerateSnapshot(rand.Int()%10+1, &test.GenerateOptions{Id: id, Attrs: map[string]string{"number": strconv.Itoa(i)}})
+		obj := test.GenerateSnapshot(rand.Int()%10+1, &test.GenerateOptions{Id: id, Attrs: map[string]interface{}{"number": strconv.Itoa(i)}})
 
 		ids = append(ids, id)
 

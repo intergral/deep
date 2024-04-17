@@ -375,7 +375,7 @@ func (s *searchSharder) backendRequests(ctx context.Context, tenantID string, pa
 				return nil, err
 			}
 
-			subR.RequestURI = buildUpstreamRequestURI(parent.URL.Path, subR.URL.Query())
+			subR.RequestURI = buildUpstreamRequestURI(api.PathPrefixQuerier, parent.URL.Path, subR.URL.Query())
 			reqs = append(reqs, subR)
 		}
 	}
@@ -416,7 +416,7 @@ func (s *searchSharder) ingesterRequest(ctx context.Context, tenantID string, pa
 	if err != nil {
 		return nil, err
 	}
-	subR.RequestURI = buildUpstreamRequestURI(parent.URL.Path, subR.URL.Query())
+	subR.RequestURI = buildUpstreamRequestURI(api.PathPrefixQuerier, parent.URL.Path, subR.URL.Query())
 
 	return subR, nil
 }

@@ -548,21 +548,16 @@ func (b *walBlock) SearchTags(ctx context.Context, cb common.TagCallback, _ comm
 }
 
 func (b *walBlock) SearchTagValues(ctx context.Context, tag string, cb common.TagCallback, opts common.SearchOptions) error {
-	att, ok := translateTagToAttribute[tag]
-	if !ok {
-		att = deepql.NewAttribute(tag)
-	}
-
 	// Wrap to v2-style
 	cb2 := func(v deepql.Static) bool {
-		cb(v.EncodeToString(false))
+		cb(v.String())
 		return false
 	}
 
-	return b.SearchTagValuesV2(ctx, att, cb2, opts)
+	return b.SearchTagValuesV2(ctx, tag, cb2, opts)
 }
 
-func (b *walBlock) SearchTagValuesV2(ctx context.Context, tag deepql.Attribute, cb common.TagCallbackV2, _ common.SearchOptions) error {
+func (b *walBlock) SearchTagValuesV2(ctx context.Context, tag string, cb common.TagCallbackV2, _ common.SearchOptions) error {
 	for i, page := range b.readFlushes() {
 		file, err := page.file()
 		if err != nil {

@@ -18,15 +18,15 @@
 package vparquet
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"math/rand"
 	"path"
 	"testing"
-	"time"
 
+	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/deepql"
+	"github.com/intergral/deep/pkg/util"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -41,21 +41,23 @@ func TestOne(t *testing.T) {
 	wantTr := fullyPopulatedTestSnapshot(nil)
 	b := makeBackendBlockWithSnapshots(t, []*Snapshot{wantTr})
 	ctx := context.Background()
-	req := deepql.MustExtractFetchSnapshotRequest(`{ .span.foo = "bar" || duration > 1s }`)
+	req := &deeppb.SearchRequest{
+		Query: `{ foo = "def" duration > 1s }`,
+		Start: 1000,
+		End:   10001,
+	}
 
-	req.StartTimeUnixNanos = uint64(1000 * time.Second)
-	req.EndTimeUnixNanos = uint64(1001 * time.Second)
+	engine := &deepql.Engine{}
+	resp, err := engine.ExecuteSearch(ctx, req, func(ctx context.Context, request deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
+		return b.Fetch(ctx, request, common.DefaultSearchOptions())
+	})
 
-	resp, err := b.Fetch(ctx, req, common.DefaultSearchOptions())
-	require.NoError(t, err, "search request:", req)
+	require.NoError(t, err, "search request:", req.Query)
 
-	snapshots, err := resp.Results.Next(ctx)
-	require.NoError(t, err, "search request:", req)
-
-	fmt.Println("-----------")
-	fmt.Println(resp.Results.(*snapshotMetadataIterator).iter)
-	fmt.Println("-----------")
-	fmt.Println(snapshots)
+	snapshot := resp.Snapshots[0]
+	if snapshot.SnapshotID != wantTr.IDText {
+		t.Error("Snapshot if doesn't match")
+	}
 }
 
 func TestBackendBlockSearchDeepql(t *testing.T) {
@@ -63,6 +65,7 @@ func TestBackendBlockSearchDeepql(t *testing.T) {
 	snapshots := make([]*Snapshot, 0, numSnapshots)
 	wantedSnapIdx := rand.Intn(numSnapshots)
 	wantedSnapshotID := test.ValidSnapshotID(nil)
+	wantedHexId := util.SnapshotIDToHexString(wantedSnapshotID)
 	for i := 0; i < numSnapshots; i++ {
 		if i == wantedSnapIdx {
 			snapshots = append(snapshots, fullyPopulatedTestSnapshot(wantedSnapshotID))
@@ -77,186 +80,145 @@ func TestBackendBlockSearchDeepql(t *testing.T) {
 	b := makeBackendBlockWithSnapshots(t, snapshots)
 	ctx := context.Background()
 
-	searchesThatMatch := []deepql.FetchSnapshotRequest{
-		{}, // Empty request
+	searchesThatMatch := []*deeppb.SearchRequest{
+		{
+			Query: "{}",
+		}, // Empty request
 		{
 			// Time range inside snapshot
-			StartTimeUnixNanos: uint64(1100 * 1e9),
-			EndTimeUnixNanos:   uint64(1600 * 1e9),
+			Start: 1100,
+			End:   1600,
+			Query: "{}",
 		},
 		{
 			// Time range overlap start
-			StartTimeUnixNanos: uint64(900 * 1e9),
-			EndTimeUnixNanos:   uint64(1500 * 1e9),
+			Start: 900,
+			End:   1500,
+			Query: "{}",
 		},
 		{
 			// Time range overlap end
-			StartTimeUnixNanos: uint64(1500 * 1e9),
-			EndTimeUnixNanos:   uint64(2100 * 1e9),
+			Start: 1500,
+			End:   2100,
+			Query: "{}",
 		},
 		// Intrinsics
-		deepql.MustExtractFetchSnapshotRequest(`{` + LabelDuration + ` =  100s}`),
-		deepql.MustExtractFetchSnapshotRequest(`{` + LabelDuration + ` >  99s}`),
-		deepql.MustExtractFetchSnapshotRequest(`{` + LabelDuration + ` >= 100s}`),
-		deepql.MustExtractFetchSnapshotRequest(`{` + LabelDuration + ` <  101s}`),
-		deepql.MustExtractFetchSnapshotRequest(`{` + LabelDuration + ` <= 100s}`),
-		deepql.MustExtractFetchSnapshotRequest(`{` + LabelDuration + ` <= 100s}`),
-		// deepql.MustExtractFetchSnapshotRequest(`{` + LabelStatus + ` = error}`),
-		// deepql.MustExtractFetchSnapshotRequest(`{` + LabelStatus + ` = 2}`),
-		// deepql.MustExtractFetchSnapshotRequest(`{` + LabelKind + ` = client }`),
+		{Query: `{` + LabelDuration + ` =  100s}`},
+		{Query: `{` + LabelDuration + ` >  99s}`},
+		{Query: `{` + LabelDuration + ` >= 100s}`},
+		{Query: `{` + LabelDuration + ` <  101s}`},
+		{Query: `{` + LabelDuration + ` <= 100s}`},
+		{Query: `{` + LabelDuration + ` <= 100s}`},
+
 		// Resource well-known attributes
-		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelServiceName + ` = "test-service-name"}`),
-		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelCluster + ` = "cluster"}`),
-		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelNamespace + ` = "namespace"}`),
-		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelPod + ` = "pod"}`),
-		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelContainer + ` = "container"}`),
-		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelK8sNamespaceName + ` = "k8snamespace"}`),
-		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelK8sClusterName + ` = "k8scluster"}`),
-		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelK8sPodName + ` = "k8spod"}`),
-		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelK8sContainerName + ` = "k8scontainer"}`),
-		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelCluster + ` = "cluster"}`),
-		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelNamespace + ` = "namespace"}`),
-		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelPod + ` = "pod"}`),
-		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelContainer + ` = "container"}`),
-		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelK8sNamespaceName + ` = "k8snamespace"}`),
-		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelK8sClusterName + ` = "k8scluster"}`),
-		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelK8sPodName + ` = "k8spod"}`),
-		deepql.MustExtractFetchSnapshotRequest(`{resource.` + LabelK8sContainerName + ` = "k8scontainer"}`),
-		// Span well-known attributes
-		// deepql.MustExtractFetchSnapshotRequest(`{.` + LabelHTTPStatusCode + ` = 500}`),
-		// deepql.MustExtractFetchSnapshotRequest(`{.` + LabelHTTPMethod + ` = "get"}`),
-		// deepql.MustExtractFetchSnapshotRequest(`{.` + LabelHTTPUrl + ` = "url/hello/world"}`),
-		// deepql.MustExtractFetchSnapshotRequest(`{span.` + LabelHTTPStatusCode + ` = 500}`),
-		// deepql.MustExtractFetchSnapshotRequest(`{span.` + LabelHTTPMethod + ` = "get"}`),
-		// deepql.MustExtractFetchSnapshotRequest(`{span.` + LabelHTTPUrl + ` = "url/hello/world"}`),
+		{Query: `{` + LabelServiceName + ` = "test-service-name"}`},
+		{Query: `{` + LabelCluster + ` = "cluster"}`},
+		{Query: `{` + LabelNamespace + ` = "namespace"}`},
+		{Query: `{` + LabelPod + ` = "pod"}`},
+		{Query: `{` + LabelContainer + ` = "container"}`},
+		{Query: `{` + LabelK8sNamespaceName + ` = "k8snamespace"}`},
+		{Query: `{` + LabelK8sClusterName + ` = "k8scluster"}`},
+		{Query: `{` + LabelK8sPodName + ` = "k8spod"}`},
+		{Query: `{` + LabelK8sContainerName + ` = "k8scontainer"}`},
+		{Query: `{resource.` + LabelCluster + ` = "cluster"}`},
+		{Query: `{resource.` + LabelNamespace + ` = "namespace"}`},
+		{Query: `{resource.` + LabelPod + ` = "pod"}`},
+		{Query: `{resource.` + LabelContainer + ` = "container"}`},
+		{Query: `{resource.` + LabelK8sNamespaceName + ` = "k8snamespace"}`},
+		{Query: `{resource.` + LabelK8sClusterName + ` = "k8scluster"}`},
+		{Query: `{resource.` + LabelK8sPodName + ` = "k8spod"}`},
+		{Query: `{resource.` + LabelK8sContainerName + ` = "k8scontainer"}`},
 		// Basic data types and operations
-		// deepql.MustExtractFetchSnapshotRequest(`{.float = 456.78}`),      // Float ==
-		// deepql.MustExtractFetchSnapshotRequest(`{.float != 456.79}`),     // Float !=
-		// deepql.MustExtractFetchSnapshotRequest(`{.float > 456.7}`),       // Float >
-		// deepql.MustExtractFetchSnapshotRequest(`{.float >= 456.78}`),     // Float >=
-		// deepql.MustExtractFetchSnapshotRequest(`{.float < 456.781}`),     // Float <
-		// deepql.MustExtractFetchSnapshotRequest(`{.bool = false}`),        // Bool ==
-		// deepql.MustExtractFetchSnapshotRequest(`{.bool != true}`),        // Bool !=
-		// deepql.MustExtractFetchSnapshotRequest(`{.bar = 123}`),           // Int ==
-		// deepql.MustExtractFetchSnapshotRequest(`{.bar != 124}`),          // Int !=
-		// deepql.MustExtractFetchSnapshotRequest(`{.bar > 122}`),           // Int >
-		// deepql.MustExtractFetchSnapshotRequest(`{.bar >= 123}`),          // Int >=
-		// deepql.MustExtractFetchSnapshotRequest(`{.bar < 124}`),           // Int <
-		// deepql.MustExtractFetchSnapshotRequest(`{.bar <= 123}`),          // Int <=
-		deepql.MustExtractFetchSnapshotRequest(`{.foo = "def"}`),         // String ==
-		deepql.MustExtractFetchSnapshotRequest(`{.foo != "deg"}`),        // String !=
-		deepql.MustExtractFetchSnapshotRequest(`{.foo =~ "d.*"}`),        // String Regex
-		deepql.MustExtractFetchSnapshotRequest(`{resource.foo = "abc"}`), // Resource-level only
-		// deepql.MustExtractFetchSnapshotRequest(`{.foo}`),                 // Projection only
+		{Query: `{float = 456.78}`},       // Float ==
+		{Query: `{float != 456.79}`},      // Float !=
+		{Query: `{float > 456.7}`},        // Float >
+		{Query: `{float >= 456.78}`},      // Float >=
+		{Query: `{float < 456.781}`},      // Float <
+		{Query: `{bool = false}`},         // Bool ==
+		{Query: `{bool != true}`},         // Bool !=
+		{Query: `{bar = 123}`},            // Int ==
+		{Query: `{bar != 124}`},           // Int !=
+		{Query: `{bar > 122}`},            // Int >
+		{Query: `{bar >= 123}`},           // Int >=
+		{Query: `{bar < 124}`},            // Int <
+		{Query: `{bar <= 123}`},           // Int <=
+		{Query: `{foo = "def"}`},          // String ==
+		{Query: `{foo != "deg"}`},         // String !=
+		{Query: `{foo =~ "d.*"}`},         // String Regex
+		{Query: `{resource.foo = "abc"}`}, // Resource-level only
 
 		// Edge cases
-		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelServiceName + ` = "test-service-name"}`),
-		deepql.MustExtractFetchSnapshotRequest(`{.foo = "def"}`),
+		{Query: `{` + LabelServiceName + ` = "test-service-name"}`},
+		{Query: `{foo = "def"}`},
 	}
 
+	engine := deepql.NewEngine()
 	for _, req := range searchesThatMatch {
-		resp, err := b.Fetch(ctx, req, common.DefaultSearchOptions())
-		require.NoError(t, err, "search request:", req)
+		t.Run(fmt.Sprintf("should find: %s", req.Query), func(t *testing.T) {
+			resp, err := engine.ExecuteSearch(ctx, req, func(ctx context.Context, request deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
+				return b.Fetch(ctx, request, common.DefaultSearchOptions())
+			})
+			require.NoError(t, err, "search request: %s", req.Query)
 
-		found := false
-		for {
-			snaps, err := resp.Results.Next(ctx)
-			require.NoError(t, err, "search request:", req)
-			if snaps == nil {
-				break
+			found := false
+
+			for _, snapshot := range resp.Snapshots {
+				if snapshot.SnapshotID == wantedHexId {
+					found = true
+					break
+				}
 			}
-			found = bytes.Equal(snaps.SnapshotID, wantedSnapshotID)
-			if found {
-				break
-			}
-		}
-		require.True(t, found, "search request:", req)
+
+			require.True(t, found, "search request: %s", req.Query)
+		})
 	}
 
-	searchesThatDontMatch := []deepql.FetchSnapshotRequest{
+	searchesThatDontMatch := []*deeppb.SearchRequest{
 		// TODO - Should the below query return data or not?  It does match the resource
-		deepql.MustExtractFetchSnapshotRequest(`{.foo =~ "xyz.*"}`),                            // Regex IN
-		deepql.MustExtractFetchSnapshotRequest(`{` + LabelDuration + ` >  100s}`),              // Intrinsic: duration
-		deepql.MustExtractFetchSnapshotRequest(`{.` + LabelServiceName + ` = "notmyservice"}`), // Well-known attribute: service.name not match
+		{Query: `{foo =~ "xyz.*"}`},                            // Regex IN
+		{Query: `{` + LabelDuration + ` >  100s}`},             // Intrinsic: duration
+		{Query: `{` + LabelServiceName + ` = "notmyservice"}`}, // Well-known attribute: service.name not match
 		{
 			// Time range after snapshot
-			StartTimeUnixNanos: uint64(3000 * time.Second),
-			EndTimeUnixNanos:   uint64(4000 * time.Second),
+			Start: 3000 * 1000,
+			End:   4000 * 1000,
+			Query: "{}",
 		},
 		{
 			// Time range before snapshot
-			StartTimeUnixNanos: uint64(600 * time.Second),
-			EndTimeUnixNanos:   uint64(700 * time.Second),
+			Start: 600 * 1000,
+			End:   700 * 1000,
+			Query: "{}",
 		},
-		{
-			// Matches some conditions but not all
-			// Mix of attribute and resource columns
-			AllConditions: true,
-			Conditions: []deepql.Condition{
-				parse(t, `{resource.cluster = "cluster"}`),     // match
-				parse(t, `{resource.namespace = "namespace"}`), // match
-				parse(t, `{.foo = "baz"}`),                     // no match
-			},
-		},
-		{
-			// Matches some conditions but not all
-			// Mix of resource columns
-			AllConditions: true,
-			Conditions: []deepql.Condition{
-				parse(t, `{resource.cluster = "notcluster"}`),  // no match
-				parse(t, `{resource.namespace = "namespace"}`), // match
-				parse(t, `{resource.foo = "abc"}`),             // match
-			},
-		},
-		{
-			// Matches some conditions but not all
-			// Only resource generic attr lookups
-			AllConditions: true,
-			Conditions: []deepql.Condition{
-				parse(t, `{resource.foo = "abc"}`), // match
-				parse(t, `{resource.bar = 123}`),   // no match
-			},
-		},
-		{
-			// Mix of duration with other conditions
-			AllConditions: true,
-			Conditions: []deepql.Condition{
-				parse(t, `{`+LabelDuration+` = 100s }`), // Match
-				parse(t, `{resource.bar = 123}`),        // no match
-			},
-		},
+		{Query: `{resource.cluster = "cluster" resource.namespace = "namespace" foo = "baz"}`},
+		{Query: `{resource.cluster = "notcluster" resource.namespace = "namespace" resource.foo = "abc"}`},
+		{Query: `{resource.foo = "abc" resource.bar = "123"}`},
+		{Query: `{` + LabelDuration + ` = 100s resource.bar = 123}`},
 	}
 
 	for _, req := range searchesThatDontMatch {
-		resp, err := b.Fetch(ctx, req, common.DefaultSearchOptions())
-		require.NoError(t, err, "search request:", req)
+		t.Run(fmt.Sprintf("shouldn't find: %s", req.Query), func(t *testing.T) {
+			resp, err := engine.ExecuteSearch(ctx, req, func(ctx context.Context, request deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
+				return b.Fetch(ctx, request, common.DefaultSearchOptions())
+			})
+			require.NoError(t, err, "search request: %s", req.Query)
 
-		for {
-			snaps, err := resp.Results.Next(ctx)
-			require.NoError(t, err, "search request:", req)
-			if snaps == nil {
-				break
+			found := false
+
+			for _, snapshot := range resp.Snapshots {
+				if snapshot.SnapshotID == wantedHexId {
+					found = true
+					break
+				}
 			}
-			require.NotEqual(t, wantedSnapshotID, snaps.SnapshotID, "search request:", req)
-		}
+
+			require.False(t, found, "search request: %s", req.Query)
+		})
 	}
-}
-
-func makeReq(conditions ...deepql.Condition) deepql.FetchSnapshotRequest {
-	return deepql.FetchSnapshotRequest{
-		Conditions: conditions,
-	}
-}
-
-func parse(t *testing.T, q string) deepql.Condition {
-	req, err := deepql.ExtractFetchSnapshotRequest(q)
-	require.NoError(t, err, "query:", q)
-
-	return req.Conditions[0]
 }
 
 func fullyPopulatedTestSnapshot(id common.ID) *Snapshot {
-	snapshot := test.GenerateSnapshot(0, &test.GenerateOptions{Id: id, LogMsg: true, ServiceName: "test-service-name", Resource: map[string]string{
+	snapshot := test.GenerateSnapshot(0, &test.GenerateOptions{Id: id, LogMsg: true, ServiceName: "test-service-name", Resource: map[string]interface{}{
 		"cluster":            "cluster",
 		"namespace":          "namespace",
 		"pod":                "pod",
@@ -266,8 +228,11 @@ func fullyPopulatedTestSnapshot(id common.ID) *Snapshot {
 		"k8s.pod.name":       "k8spod",
 		"k8s.container.name": "k8scontainer",
 		"foo":                "abc",
-	}, Attrs: map[string]string{
-		"foo": "def",
+	}, Attrs: map[string]interface{}{
+		"foo":   "def",
+		"float": 456.78,
+		"bool":  false,
+		"bar":   123,
 	}})
 	snapshot.TsNanos = 1500 * 1e9
 	snapshot.DurationNanos = 100 * 1e9
@@ -278,28 +243,28 @@ func fullyPopulatedTestSnapshot(id common.ID) *Snapshot {
 func BenchmarkBackendBlockdeepql(b *testing.B) {
 	testCases := []struct {
 		name string
-		req  deepql.FetchSnapshotRequest
+		req  *deeppb.SearchRequest
 	}{
 		// snapshot
-		{"spanAttNameNoMatch", deepql.MustExtractFetchSnapshotRequest("{ span.foo = `bar` }")},
-		{"spanAttValNoMatch", deepql.MustExtractFetchSnapshotRequest("{ span.bloom = `bar` }")},
-		{"spanAttValMatch", deepql.MustExtractFetchSnapshotRequest("{ span.bloom > 0 }")},
-		{"spanAttIntrinsicNoMatch", deepql.MustExtractFetchSnapshotRequest("{ name = `asdfasdf` }")},
-		{"spanAttIntrinsicMatch", deepql.MustExtractFetchSnapshotRequest("{ name = `gcs.ReadRange` }")},
+		{"spanAttNameNoMatch", &deeppb.SearchRequest{Query: "{ span.foo = `bar` }"}},
+		{"spanAttValNoMatch", &deeppb.SearchRequest{Query: "{ span.bloom = `bar` }"}},
+		{"spanAttValMatch", &deeppb.SearchRequest{Query: "{ span.bloom > 0 }"}},
+		{"spanAttIntrinsicNoMatch", &deeppb.SearchRequest{Query: "{ name = `asdfasdf` }"}},
+		{"spanAttIntrinsicMatch", &deeppb.SearchRequest{Query: "{ name = `gcs.ReadRange` }"}},
 
 		// resource
-		{"resourceAttNameNoMatch", deepql.MustExtractFetchSnapshotRequest("{ resource.foo = `bar` }")},
-		{"resourceAttValNoMatch", deepql.MustExtractFetchSnapshotRequest("{ resource.module.path = `bar` }")},
-		{"resourceAttValMatch", deepql.MustExtractFetchSnapshotRequest("{ resource.os.type = `linux` }")},
-		{"resourceAttIntrinsicNoMatch", deepql.MustExtractFetchSnapshotRequest("{ resource.service.name = `a` }")},
-		{"resourceAttIntrinsicMatch", deepql.MustExtractFetchSnapshotRequest("{ resource.service.name = `deep-query-frontend` }")},
+		{"resourceAttNameNoMatch", &deeppb.SearchRequest{Query: "{ resource.foo = `bar` }"}},
+		{"resourceAttValNoMatch", &deeppb.SearchRequest{Query: "{ resource.module.path = `bar` }"}},
+		{"resourceAttValMatch", &deeppb.SearchRequest{Query: "{ resource.os.type = `linux` }"}},
+		{"resourceAttIntrinsicNoMatch", &deeppb.SearchRequest{Query: "{ resource.service.name = `a` }"}},
+		{"resourceAttIntrinsicMatch", &deeppb.SearchRequest{Query: "{ resource.service.name = `deep-query-frontend` }"}},
 
 		// mixed
-		{"mixedNameNoMatch", deepql.MustExtractFetchSnapshotRequest("{ .foo = `bar` }")},
-		{"mixedValNoMatch", deepql.MustExtractFetchSnapshotRequest("{ .bloom = `bar` }")},
-		{"mixedValMixedMatchAnd", deepql.MustExtractFetchSnapshotRequest("{ resource.foo = `bar` && name = `gcs.ReadRange` }")},
-		{"mixedValMixedMatchOr", deepql.MustExtractFetchSnapshotRequest("{ resource.foo = `bar` || name = `gcs.ReadRange` }")},
-		{"mixedValBothMatch", deepql.MustExtractFetchSnapshotRequest("{ resource.service.name = `query-frontend` && name = `gcs.ReadRange` }")},
+		{"mixedNameNoMatch", &deeppb.SearchRequest{Query: "{ .foo = `bar` }"}},
+		{"mixedValNoMatch", &deeppb.SearchRequest{Query: "{ .bloom = `bar` }"}},
+		{"mixedValMixedMatchAnd", &deeppb.SearchRequest{Query: "{ resource.foo = `bar` && name = `gcs.ReadRange` }"}},
+		{"mixedValMixedMatchOr", &deeppb.SearchRequest{Query: "{ resource.foo = `bar` || name = `gcs.ReadRange` }"}},
+		{"mixedValBothMatch", &deeppb.SearchRequest{Query: "{ resource.service.name = `query-frontend` && name = `gcs.ReadRange` }"}},
 	}
 
 	ctx := context.TODO()
@@ -323,25 +288,22 @@ func BenchmarkBackendBlockdeepql(b *testing.B) {
 	_, _, err = block.openForSearch(ctx, opts)
 	require.NoError(b, err)
 
+	engine := deepql.NewEngine()
+
 	for _, tc := range testCases {
 		b.Run(tc.name, func(b *testing.B) {
 			b.ResetTimer()
 			bytesRead := 0
 
 			for i := 0; i < b.N; i++ {
-				resp, err := block.Fetch(ctx, tc.req, opts)
+				tc.req.Limit = 20
+				resp, err := engine.ExecuteSearch(ctx, tc.req, func(ctx context.Context, request deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
+					return block.Fetch(ctx, request, opts)
+				})
 				require.NoError(b, err)
 				require.NotNil(b, resp)
 
-				// Read first 20 results (if any)
-				for i := 0; i < 20; i++ {
-					ss, err := resp.Results.Next(ctx)
-					require.NoError(b, err)
-					if ss == nil {
-						break
-					}
-				}
-				bytesRead += int(resp.Bytes())
+				bytesRead += int(resp.Metrics.InspectedBytes)
 			}
 			b.SetBytes(int64(bytesRead) / int64(b.N))
 			b.ReportMetric(float64(bytesRead)/float64(b.N)/1000.0/1000.0, "MB_io/op")

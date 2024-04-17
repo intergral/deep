@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023  Intergral GmbH
+ * Copyright (C) 2024  Intergral GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -17,31 +17,31 @@
 
 package deepql
 
-import "fmt"
+import "strings"
 
-type AggregateOp int
+type configOption struct {
+	op  Operator
+	lhs string
+	rhs Static
+}
 
-const (
-	aggregateCount AggregateOp = iota
-	aggregateMax
-	aggregateMin
-	aggregateSum
-	aggregateAvg
-)
-
-func (a AggregateOp) String() string {
-	switch a {
-	case aggregateCount:
-		return "count"
-	case aggregateMax:
-		return "max"
-	case aggregateMin:
-		return "min"
-	case aggregateSum:
-		return "sum"
-	case aggregateAvg:
-		return "avg"
+func (c *configOption) apply(cfg interface{}) error {
+	if v, ok := cfg.(*trigger); ok {
+		return applyFuncForTrigger(c.lhs)(c, v)
 	}
 
-	return fmt.Sprintf("aggregate(%d)", a)
+	return nil
+}
+
+func newConfigOption(op Operator, lhs string, rhs Static) configOption {
+	return configOption{
+		op:  op,
+		lhs: lhs,
+		rhs: rhs,
+	}
+}
+
+func stripPrefix(lhs string, s string) string {
+	after, _ := strings.CutPrefix(lhs, s)
+	return after
 }

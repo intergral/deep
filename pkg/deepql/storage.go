@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023  Intergral GmbH
+ * Copyright (C) 2024  Intergral GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -17,41 +17,106 @@
 
 package deepql
 
-import "context"
+import (
+	"context"
+	"regexp"
+
+	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+
+	"github.com/intergral/deep/pkg/deeppb"
+)
 
 type Operands []Static
 
 type Condition struct {
-	Attribute Attribute
+	Attribute string
 	Op        Operator
 	Operands  Operands
 }
 
-// FilterSnapshots is a hint that allows the calling code to filter down snapshot to only
-// those that metadata needs to be retrieved for. If the returned snapshots have no
-// snapshots it is discarded and will not appear in FetchSnapshotResponse. The bool
-// return value is used to indicate if the Fetcher should continue iterating or if
-// it can bail out.
-type FilterSnapshots func(result *SnapshotResult) ([]*SnapshotResult, error)
+func (c Condition) MatchesString(value string) bool {
+	switch c.Op {
+	case OpEqual:
+		for _, o := range c.Operands {
+			if o.S != value {
+				return false
+			}
+		}
+	case OpNotEqual:
+		for _, o := range c.Operands {
+			if o.S == value {
+				return false
+			}
+		}
+	case OpRegex:
+		for _, o := range c.Operands {
+			if ok, err := regexp.MatchString(o.S, value); !ok || err != nil {
+				return false
+			}
+		}
+	case OpNotRegex:
+		for _, o := range c.Operands {
+			if ok, err := regexp.MatchString(o.S, value); ok || err != nil {
+				return false
+			}
+		}
+	default:
+		return false
+	}
+	return true
+}
+
+func (c Condition) MatchesInt(value int) bool {
+	switch c.Op {
+	case OpEqual:
+		for _, o := range c.Operands {
+			if o.N != value {
+				return false
+			}
+		}
+	case OpNotEqual:
+		for _, o := range c.Operands {
+			if o.N == value {
+				return false
+			}
+		}
+	case OpGreater:
+		for _, o := range c.Operands {
+			if value <= o.N {
+				return false
+			}
+		}
+	case OpGreaterEqual:
+		for _, o := range c.Operands {
+			if value < o.N {
+				return false
+			}
+		}
+	case OpLess:
+		for _, o := range c.Operands {
+			if value >= o.N {
+				return false
+			}
+		}
+	case OpLessEqual:
+		for _, o := range c.Operands {
+			if value > o.N {
+				return false
+			}
+		}
+	default:
+		return false
+	}
+	return true
+}
 
 type FetchSnapshotRequest struct {
 	StartTimeUnixNanos uint64
 	EndTimeUnixNanos   uint64
 	Conditions         []Condition
-
-	// AllConditions, by default the storage layer fetches snapshots meeting any of the criteria.
-	// This hint is for common cases like { x && y && z } where the storage layer
-	// can make extra optimizations by returning only snapshots that meet
-	// all criteria.
-	AllConditions bool
-	Filter        FilterSnapshots
 }
 
 type SnapshotResult struct {
-	// these fields are actually used by the engine to evaluate queries
-	Scalar   Static
-	Snapshot Snapshot
-
 	SnapshotID         []byte
 	ServiceName        string
 	FilePath           string
@@ -63,28 +128,22 @@ type SnapshotResult struct {
 func (s *SnapshotResult) clone() *SnapshotResult {
 	return &SnapshotResult{
 		SnapshotID:         s.SnapshotID,
-		Scalar:             s.Scalar,
 		ServiceName:        s.ServiceName,
 		FilePath:           s.FilePath,
 		LineNo:             s.LineNo,
 		StartTimeUnixNanos: s.StartTimeUnixNanos,
 		DurationNanos:      s.DurationNanos,
-		Snapshot:           s.Snapshot, // we're not deep cloning into the snapshots themselves
 	}
 }
 
 type Snapshot interface {
 	// Attributes are the actual fields used by the engine to evaluate queries
 	// if a Filter parameter is passed the snapshots returned will only have this field populated
-	Attributes() map[Attribute]Static
+	Attributes() map[string]Static
 
 	ID() []byte
 	StartTimeUnixNanos() uint64
 	EndTimeUnixNanos() uint64
-}
-
-func (f *FetchSnapshotRequest) appendCondition(c ...Condition) {
-	f.Conditions = append(f.Conditions, c...)
 }
 
 type SnapshotResultIterator interface {
@@ -97,20 +156,13 @@ type FetchSnapshotResponse struct {
 	Bytes   func() uint64
 }
 
-type SnapshotResultFetcher interface {
-	Fetch(context.Context, FetchSnapshotRequest) (FetchSnapshotResponse, error)
+type SnapshotResultFetcher func(context.Context, FetchSnapshotRequest) (FetchSnapshotResponse, error)
+
+type TriggerHandler func(context.Context, *deeppb.CreateTracepointRequest) (*deeptp.TracePointConfig, []*deeptp.TracePointConfig, error)
+
+type CommandRequest struct {
+	Command    string
+	Conditions []Condition
 }
 
-type SnapshotResultFetcherWrapper struct {
-	f func(ctx context.Context, req FetchSnapshotRequest) (FetchSnapshotResponse, error)
-}
-
-var _ = (SnapshotResultFetcher)(&SnapshotResultFetcherWrapper{})
-
-func NewSnapshotResultFetcherWrapper(f func(ctx context.Context, req FetchSnapshotRequest) (FetchSnapshotResponse, error)) SnapshotResultFetcher {
-	return SnapshotResultFetcherWrapper{f}
-}
-
-func (s SnapshotResultFetcherWrapper) Fetch(ctx context.Context, request FetchSnapshotRequest) (FetchSnapshotResponse, error) {
-	return s.f(ctx, request)
-}
+type CommandHandler func(context.Context, *CommandRequest) ([]*deeptp.TracePointConfig, []*deeptp.TracePointConfig, string, error)

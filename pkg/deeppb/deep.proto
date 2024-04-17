@@ -66,6 +66,7 @@ message SearchResponse {
   repeated SnapshotSearchMetadata snapshots = 1;
   SearchMetrics metrics = 2;
 }
+
 message SnapshotSearchMetadata {
   string snapshotID = 1;
   string serviceName = 2;
@@ -152,28 +153,40 @@ service TracepointConfigService {
   rpc LoadTracepoints(LoadTracepointRequest) returns (LoadTracepointResponse) {};
   rpc CreateTracepoint(CreateTracepointRequest) returns (CreateTracepointResponse) {};
   rpc DeleteTracepoint(DeleteTracepointRequest) returns (DeleteTracepointResponse) {};
+  rpc ExecuteDeepQl(DeepQlRequest) returns (DeepQlResponse) {}
+}
+
+message DeepQlRequest {
+  string query = 1;
+}
+
+message DeepQlResponse {
+  repeated deeppb.tracepoint.v1.TracePointConfig all = 1;
+  repeated deeppb.tracepoint.v1.TracePointConfig affected = 2;
+  string type = 3;
 }
 
 message LoadTracepointRequest {
-    optional deeppb.poll.v1.PollRequest Request  = 1;
+    optional deeppb.poll.v1.PollRequest request  = 1;
 }
 
 message LoadTracepointResponse {
-  deeppb.poll.v1.PollResponse Response = 1;
+  deeppb.poll.v1.PollResponse response = 1;
 }
 
 message CreateTracepointRequest {
-  deeppb.tracepoint.v1.TracePointConfig Tracepoint = 1;
+  deeppb.tracepoint.v1.TracePointConfig tracepoint = 1;
 }
 
 message CreateTracepointResponse {
-
+  deeppb.tracepoint.v1.TracePointConfig created = 1;
 }
 
 message DeleteTracepointRequest {
-  string TracepointID = 1;
+  string tracepointID = 1;
 }
 
 message DeleteTracepointResponse {
+  deeppb.tracepoint.v1.TracePointConfig deleted = 1;
 
 }

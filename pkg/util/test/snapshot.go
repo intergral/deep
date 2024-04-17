@@ -3,19 +3,23 @@ package test
 import (
 	"crypto/rand"
 	"fmt"
+	rand2 "math/rand"
 	"reflect"
 	"strconv"
 	"time"
 
+	"github.com/golang/protobuf/proto"
+
 	"github.com/google/uuid"
 	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
 	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	deeptp "github.com/intergral/go-deep-proto/tracepoint/v1"
 )
 
 type GenerateOptions struct {
 	Id              []byte
-	Attrs           map[string]string
-	Resource        map[string]string
+	Attrs           map[string]interface{}
+	Resource        map[string]interface{}
 	AllResource     bool
 	AllAttrs        bool
 	AllVarTypes     bool
@@ -27,6 +31,7 @@ type GenerateOptions struct {
 	ServiceName     string
 	DurationNanos   uint64
 	LogMsg          bool
+	RandomDuration  bool
 }
 
 func AppendFrame(snapshot *tp.Snapshot) {
@@ -57,6 +62,7 @@ func GenerateSnapshot(index int, options *GenerateOptions) *tp.Snapshot {
 			RandomStrings:   false,
 			ServiceName:     "test-service",
 			DurationNanos:   1010101,
+			RandomDuration:  false,
 			LogMsg:          false,
 		}
 	}
@@ -67,16 +73,27 @@ func GenerateSnapshot(index int, options *GenerateOptions) *tp.Snapshot {
 
 	vars := make([]*tp.Variable, 0)
 
-	point := GenerateTracePoint(index, options)
+	watchResults, watches := generateWatchResults()
+	point := GenerateTracePoint(index, watches, options)
+
+	duration := options.DurationNanos
+	if options.RandomDuration {
+		if duration == 0 {
+			duration = uint64(rand2.Int())
+		} else {
+			duration = uint64(rand2.Int63n(int64(duration)))
+		}
+	}
+
 	snap := &tp.Snapshot{
 		ID:            options.Id,
 		Tracepoint:    point,
 		VarLookup:     nil,
 		TsNanos:       uint64(time.Now().UnixNano()),
 		Frames:        generateFrames(*options, vars),
-		Watches:       generateWatchResults(),
+		Watches:       watchResults,
 		Attributes:    generateAttributes(point, *options),
-		DurationNanos: options.DurationNanos,
+		DurationNanos: duration,
 		Resource:      generateResource(*options),
 		LogMsg:        generateLogMsg(options),
 	}
@@ -101,7 +118,7 @@ func MakeSnapshotID() []byte {
 	return id
 }
 
-func GenerateTracePoint(index int, options *GenerateOptions) *tp.TracePointConfig {
+func GenerateTracePoint(index int, watches []string, options *GenerateOptions) *tp.TracePointConfig {
 	newUUID, _ := uuid.NewUUID()
 
 	path := "/some/path/to/file_" + strconv.Itoa(index) + ".py"
@@ -114,7 +131,7 @@ func GenerateTracePoint(index int, options *GenerateOptions) *tp.TracePointConfi
 		Path:       path,
 		LineNumber: uint32(index),
 		Args:       nil,
-		Watches:    nil,
+		Watches:    watches,
 	}
 }
 
@@ -334,10 +351,30 @@ func generateResource(options GenerateOptions) []*cp.KeyValue {
 
 	if options.Resource != nil {
 		for k, v := range options.Resource {
-			values = append(values, &cp.KeyValue{
-				Key:   k,
-				Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: v}},
-			})
+			if val, ok := v.(string); ok {
+				values = append(values, &cp.KeyValue{
+					Key:   k,
+					Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: val}},
+				})
+			}
+			if val, ok := v.(int); ok {
+				values = append(values, &cp.KeyValue{
+					Key:   k,
+					Value: &cp.AnyValue{Value: &cp.AnyValue_IntValue{IntValue: int64(val)}},
+				})
+			}
+			if val, ok := v.(bool); ok {
+				values = append(values, &cp.KeyValue{
+					Key:   k,
+					Value: &cp.AnyValue{Value: &cp.AnyValue_BoolValue{BoolValue: val}},
+				})
+			}
+			if val, ok := v.(float64); ok {
+				values = append(values, &cp.KeyValue{
+					Key:   k,
+					Value: &cp.AnyValue{Value: &cp.AnyValue_DoubleValue{DoubleValue: val}},
+				})
+			}
 		}
 	}
 	return values
@@ -426,17 +463,37 @@ func generateAttributes(tp *tp.TracePointConfig, options GenerateOptions) []*cp.
 
 	if options.Attrs != nil {
 		for k, v := range options.Attrs {
-			keyValues = append(keyValues, &cp.KeyValue{
-				Key:   k,
-				Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: v}},
-			})
+			if val, ok := v.(string); ok {
+				keyValues = append(keyValues, &cp.KeyValue{
+					Key:   k,
+					Value: &cp.AnyValue{Value: &cp.AnyValue_StringValue{StringValue: val}},
+				})
+			}
+			if val, ok := v.(int); ok {
+				keyValues = append(keyValues, &cp.KeyValue{
+					Key:   k,
+					Value: &cp.AnyValue{Value: &cp.AnyValue_IntValue{IntValue: int64(val)}},
+				})
+			}
+			if val, ok := v.(bool); ok {
+				keyValues = append(keyValues, &cp.KeyValue{
+					Key:   k,
+					Value: &cp.AnyValue{Value: &cp.AnyValue_BoolValue{BoolValue: val}},
+				})
+			}
+			if val, ok := v.(float64); ok {
+				keyValues = append(keyValues, &cp.KeyValue{
+					Key:   k,
+					Value: &cp.AnyValue{Value: &cp.AnyValue_DoubleValue{DoubleValue: val}},
+				})
+			}
 		}
 	}
 
 	return keyValues
 }
 
-func generateWatchResults() []*tp.WatchResult {
+func generateWatchResults() ([]*tp.WatchResult, []string) {
 	return []*tp.WatchResult{
 		{
 			Expression: "some.thing",
@@ -448,7 +505,7 @@ func generateWatchResults() []*tp.WatchResult {
 			Expression: "some.bad",
 			Result:     &tp.WatchResult_ErrorResult{ErrorResult: "Cannot find 'bad' on object 'some'"},
 		},
-	}
+	}, []string{"some.thing", "some.bad"}
 }
 
 func makeVariable(vars []*tp.Variable, varId *tp.VariableID, variable *tp.Variable) *tp.VariableID {
@@ -492,4 +549,19 @@ func generateVarLookup(vars []*tp.Variable) map[string]*tp.Variable {
 	}
 
 	return varLookup
+}
+
+func ConvertToPublicType(in *tp.Snapshot) (*deeptp.Snapshot, error) {
+	convert, err := proto.Marshal(in)
+	if err != nil {
+		return nil, err
+	}
+
+	// deeppb_tp.Snapshot is wire-compatible with go-deep-proto
+	snapshot := &deeptp.Snapshot{}
+	err = proto.Unmarshal(convert, snapshot)
+	if err != nil {
+		return nil, err
+	}
+	return snapshot, nil
 }

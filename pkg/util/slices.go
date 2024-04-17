@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023  Intergral GmbH
+ * Copyright (C) 2024  Intergral GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,25 +15,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package types
+package util
 
 import (
-	"context"
+	"sort"
 
-	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
-	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	"golang.org/x/exp/slices"
 )
 
-type TPBlock interface {
-	ForResource(resource []*cp.KeyValue) ([]*deeptp.TracePointConfig, error)
-	TenantID() string
-	Tps() []*deeptp.TracePointConfig
-	Flushed()
-	AddTracepoint(config *deeptp.TracePointConfig)
-	DeleteTracepoints(id ...string)
+func Remove[S ~[]E, E any](array S, index int) S {
+	return slices.Delete(array, index, index+1)
 }
 
-type TPBackend interface {
-	Flush(ctx context.Context, block TPBlock) error
-	LoadBlock(ctx context.Context, tenantID string) (TPBlock, error)
+func RemoveAll[S ~[]E, E any](slice S, idxs ...int) S {
+	if len(idxs) == 1 {
+		return Remove(slice, idxs[0])
+	}
+
+	// Sort indices in descending order
+	sort.Sort(sort.Reverse(sort.IntSlice(idxs)))
+
+	for _, index := range idxs {
+		slice = append(slice[:index], slice[index+1:]...)
+	}
+
+	return slice
 }

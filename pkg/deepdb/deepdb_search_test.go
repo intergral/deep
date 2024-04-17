@@ -26,9 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/intergral/deep/pkg/deeppb"
-	v1_common "github.com/intergral/deep/pkg/deeppb/common/v1"
-	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/deepql"
 
 	"github.com/go-kit/log"
@@ -38,6 +35,8 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/encoding"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	"github.com/intergral/deep/pkg/deepdb/wal"
+	"github.com/intergral/deep/pkg/deeppb"
+	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/model"
 	"github.com/intergral/deep/pkg/util"
 	"github.com/intergral/deep/pkg/util/test"
@@ -93,193 +92,31 @@ func testDeepQLCompleteBlock(t *testing.T, blockVersion string) {
 		ctx := context.Background()
 
 		for _, req := range searchesThatMatch {
-			fetcher := deepql.NewSnapshotResultFetcherWrapper(func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
-				return r.Fetch(ctx, meta, req, common.DefaultSearchOptions())
-			})
+			t.Run(fmt.Sprintf("should match: %s", req.Query), func(t *testing.T) {
+				fetcher := func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
+					return r.Fetch(ctx, meta, req, common.DefaultSearchOptions())
+				}
 
-			res, err := e.Execute(ctx, req, fetcher)
-			require.NoError(t, err, "search request: %+v", req)
-			actual := actualForExpectedMeta(wantMeta, res)
-			require.NotNil(t, actual, "search request: %v", req)
-			require.Equal(t, wantMeta, actual, "search request: %v", req)
+				res, err := e.ExecuteSearch(ctx, req, fetcher)
+				require.NoError(t, err, "search request: %+v", req)
+				actual := actualForExpectedMeta(wantMeta, res)
+				require.NotNil(t, actual, "search request: %v", req)
+				require.Equal(t, wantMeta, actual, "search request: %v", req)
+			})
 		}
 
 		for _, req := range searchesThatDontMatch {
-			fetcher := deepql.NewSnapshotResultFetcherWrapper(func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
-				return r.Fetch(ctx, meta, req, common.DefaultSearchOptions())
-			})
+			t.Run(fmt.Sprintf("shouldn't match: %s", req.Query), func(t *testing.T) {
+				fetcher := func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
+					return r.Fetch(ctx, meta, req, common.DefaultSearchOptions())
+				}
 
-			res, err := e.Execute(ctx, req, fetcher)
-			require.NoError(t, err, "search request: %+v", req)
-			require.Nil(t, actualForExpectedMeta(wantMeta, res), "search request: %v", req)
+				res, err := e.ExecuteSearch(ctx, req, fetcher)
+				require.NoError(t, err, "search request: %+v", req)
+				require.Nil(t, actualForExpectedMeta(wantMeta, res), "search request: %v", req)
+			})
 		}
 	})
-}
-
-// TestAdvancedDeepQLCompleteBlock uses the actual snapshot data to construct complex deepql queries
-// it is supposed to cover all major deepql features. if you see one missing add it!
-func TestAdvancedDeepQLCompleteBlock(t *testing.T) {
-	for _, v := range encoding.AllEncodings() {
-		vers := v.Version()
-		t.Run(vers, func(t *testing.T) {
-			testAdvancedDeepQLCompleteBlock(t, vers)
-		})
-	}
-}
-
-func testAdvancedDeepQLCompleteBlock(t *testing.T, blockVersion string) {
-	e := deepql.NewEngine()
-
-	runCompleteBlockSearchTest(t, blockVersion, func(wantedSnapshot *deeptp.Snapshot, wantMeta *deeppb.SnapshotSearchMetadata, _, _ []*deeppb.SearchRequest, meta *backend.BlockMeta, r Reader) {
-		ctx := context.Background()
-
-		// collect some info about wantTr to use below
-		trueConditions := [][]string{}
-		falseConditions := []string{
-			fmt.Sprintf(".name=`%v`", test.RandomString()),
-			fmt.Sprintf("duration>%dh", rand.Intn(10)+1),
-		}
-		totalSpans := 0
-		trueAttrC, falseAttrC := conditionsForAttributes(wantedSnapshot.Attributes, "")
-		falseConditions = append(falseConditions, falseAttrC...)
-		trueConditions = append(trueConditions, trueAttrC)
-		trueResourceC, falseResourceC := conditionsForAttributes(wantedSnapshot.Resource, "")
-		falseConditions = append(falseConditions, falseResourceC...)
-		trueConditions = append(trueConditions, trueResourceC)
-
-		rando := func(s []string) string {
-			return s[rand.Intn(len(s))]
-		}
-
-		searchesThatMatch := []*deeppb.SearchRequest{
-			// conditions
-			{Query: fmt.Sprintf("{%s && %s && %s && %s && %s}", rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]))},
-			{Query: fmt.Sprintf("{%s || %s || %s || %s || %s}", rando(falseConditions), rando(falseConditions), rando(falseConditions), rando(trueConditions[0]), rando(falseConditions))},
-			{Query: fmt.Sprintf("{(%s && %s) || %s}", rando(falseConditions), rando(falseConditions), rando(trueConditions[0]))},
-			// snapshots
-			{Query: fmt.Sprintf("{%s} && {%s}", rando(trueConditions[0]), rando(trueConditions[1]))},
-			{Query: fmt.Sprintf("{%s} || {%s}", rando(trueConditions[0]), rando(falseConditions))},
-			{Query: fmt.Sprintf("{%s} && {%s} && {%s} && {%s} && {%s}", rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]), rando(trueConditions[0]))},
-			{Query: fmt.Sprintf("{%s} || {%s} || {%s} || {%s} || {%s}", rando(falseConditions), rando(falseConditions), rando(falseConditions), rando(trueConditions[0]), rando(falseConditions))},
-			{Query: fmt.Sprintf("{%s && %s} || {%s}", rando(falseConditions), rando(falseConditions), rando(trueConditions[0]))},
-			// pipelines
-			{Query: fmt.Sprintf("{%s} | {%s}", rando(trueConditions[0]), rando(trueConditions[0]))},
-			{Query: fmt.Sprintf("{%s || %s} | {%s}", rando(falseConditions), rando(trueConditions[0]), rando(trueConditions[0]))},
-			// pipeline expressions
-			{Query: fmt.Sprintf("({%s} | count() > 0) && ({%s} | count() > 0)", rando(trueConditions[0]), rando(trueConditions[1]))},
-			{Query: fmt.Sprintf("({%s} | count() > 0) || ({%s} | count() > 0)", rando(trueConditions[0]), rando(falseConditions))},
-			// counts
-			{Query: fmt.Sprintf("{} | count() = %d", totalSpans)},
-			{Query: fmt.Sprintf("{} | count() != %d", totalSpans+1)},
-			{Query: fmt.Sprintf("{ true } && { true } | count() = %d", totalSpans)},
-			{Query: fmt.Sprintf("{ true } || { true } | count() = %d", totalSpans)},
-			{Query: fmt.Sprintf("{ %s && %s } | count() = 1", rando(trueConditions[0]), rando(trueConditions[0]))},
-			// avgs/min/max/sum
-			//{Query: fmt.Sprintf("{ %s && %s } && { %s && %s } | avg(duration) = %dns",
-			//	rando(trueConditions[0]), rando(trueConditions[0]),
-			//	rando(trueConditions[1]), rando(trueConditions[1]),
-			//	(durationBySpan[0]+durationBySpan[1])/2)},
-			//{Query: fmt.Sprintf("{ %s && %s } && { %s && %s } | min(duration) = %dns",
-			//	rando(trueConditions[0]), rando(trueConditions[0]),
-			//	rando(trueConditions[1]), rando(trueConditions[1]),
-			//	math.Min64(int64(durationBySpan[0]), int64(durationBySpan[1])))},
-			//{Query: fmt.Sprintf("{ %s && %s } && { %s && %s } | max(duration) = %dns",
-			//	rando(trueConditions[0]), rando(trueConditions[0]),
-			//	rando(trueConditions[1]), rando(trueConditions[1]),
-			//	math.Max64(int64(durationBySpan[0]), int64(durationBySpan[1])))},
-			//{Query: fmt.Sprintf("{ %s && %s } && { %s && %s } | sum(duration) = %dns",
-			//	rando(trueConditions[0]), rando(trueConditions[0]),
-			//	rando(trueConditions[1]), rando(trueConditions[1]),
-			//	durationBySpan[0]+durationBySpan[1])},
-		}
-		searchesThatDontMatch := []*deeppb.SearchRequest{
-			{Query: "{duration>=9h || .line=9}"},
-			{Query: "{.id=`28ab414c9f0d34f39d4ba28442215d14`}"},
-			{Query: "{.id=`28ab414c9f0d34f39d4ba28442215d14` || duration>=9h}"},
-			{Query: "{.line=9}"},
-			{Query: "{.path=`VgWUyqEfOK`}"},
-			{Query: "{.path=`VgWUyqEfOK` || .line=9}"},
-			//// conditions
-			{Query: fmt.Sprintf("{%s && %s}", rando(trueConditions[0]), rando(falseConditions))},
-			{Query: fmt.Sprintf("{%s || %s}", rando(falseConditions), rando(falseConditions))},
-			//{Query: fmt.Sprintf("{%s && (%s || %s)}", rando(falseConditions), rando(falseConditions), rando(trueConditions[0]))},
-			//// snapshots
-			//{Query: fmt.Sprintf("{%s} && {%s}", rando(trueConditions[0]), rando(falseConditions))},
-			//{Query: fmt.Sprintf("{%s} || {%s}", rando(falseConditions), rando(falseConditions))},
-			//{Query: fmt.Sprintf("{%s && %s} || {%s}", rando(falseConditions), rando(falseConditions), rando(falseConditions))},
-			//// pipelines
-			//{Query: fmt.Sprintf("{%s} | {%s}", rando(trueConditions[0]), rando(falseConditions))},
-			//{Query: fmt.Sprintf("{%s} | {%s}", rando(falseConditions), rando(trueConditions[0]))},
-			//{Query: fmt.Sprintf("{%s || %s} | {%s}", rando(falseConditions), rando(trueConditions[0]), rando(falseConditions))},
-			//// pipeline expressions
-			//{Query: fmt.Sprintf("({%s} | count() > 0) && ({%s} | count() > 0)", rando(trueConditions[0]), rando(falseConditions))},
-			//{Query: fmt.Sprintf("({%s} | count() > 0) || ({%s} | count() > 0)", rando(falseConditions), rando(falseConditions))},
-			//// counts
-			//{Query: fmt.Sprintf("{} | count() = %d", totalSpans+1)},
-			//{Query: fmt.Sprintf("{} | count() != %d", totalSpans)},
-			//{Query: fmt.Sprintf("{} | count() < %d", totalSpans)},
-			//{Query: fmt.Sprintf("{} | count() > %d", totalSpans)},
-			//// avgs
-			//{Query: "{ } | avg(.dne) != 0"},
-			//{Query: "{ } | avg(duration) < 0"},
-			//{Query: "{ } | min(duration) < 0"},
-			//{Query: "{ } | max(duration) < 0"},
-			//{Query: "{ } | sum(duration) < 0"},
-		}
-
-		for _, req := range searchesThatMatch {
-			fetcher := deepql.NewSnapshotResultFetcherWrapper(func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
-				return r.Fetch(ctx, meta, req, common.DefaultSearchOptions())
-			})
-
-			res, err := e.Execute(ctx, req, fetcher)
-			require.NoError(t, err, "search request: %+v", req)
-			actual := actualForExpectedMeta(wantMeta, res)
-			require.NotNil(t, actual, "search request: %v", req)
-			require.Equal(t, wantMeta, actual, "search request: %v", req)
-		}
-
-		for _, req := range searchesThatDontMatch {
-			fetcher := deepql.NewSnapshotResultFetcherWrapper(func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
-				return r.Fetch(ctx, meta, req, common.DefaultSearchOptions())
-			})
-
-			res, err := e.Execute(ctx, req, fetcher)
-			require.NoError(t, err, "search request: %+v", req)
-			require.Nil(t, actualForExpectedMeta(wantMeta, res), "search request: %v", req)
-		}
-	})
-}
-
-func conditionsForAttributes(atts []*v1_common.KeyValue, scope string) ([]string, []string) {
-	trueConditions := []string{}
-	falseConditions := []string{}
-
-	for _, a := range atts {
-		switch v := a.GetValue().Value.(type) {
-		case *v1_common.AnyValue_StringValue:
-			trueConditions = append(trueConditions, fmt.Sprintf("%s.%v=`%v`", scope, a.Key, v.StringValue))
-			trueConditions = append(trueConditions, fmt.Sprintf(".%v=`%v`", a.Key, v.StringValue))
-			falseConditions = append(falseConditions, fmt.Sprintf("%s.%v=`%v`", scope, a.Key, test.RandomString()))
-			falseConditions = append(falseConditions, fmt.Sprintf(".%v=`%v`", a.Key, test.RandomString()))
-		case *v1_common.AnyValue_BoolValue:
-			trueConditions = append(trueConditions, fmt.Sprintf("%s.%v=%t", scope, a.Key, v.BoolValue))
-			trueConditions = append(trueConditions, fmt.Sprintf(".%v=%t", a.Key, v.BoolValue))
-			// tough to add an always false condition here
-		case *v1_common.AnyValue_IntValue:
-			trueConditions = append(trueConditions, fmt.Sprintf("%s.%v=%d", scope, a.Key, v.IntValue))
-			trueConditions = append(trueConditions, fmt.Sprintf(".%v=%d", a.Key, v.IntValue))
-			falseConditions = append(falseConditions, fmt.Sprintf("%s.%v=%d", scope, a.Key, rand.Intn(1000)+20000))
-			falseConditions = append(falseConditions, fmt.Sprintf(".%v=%d", a.Key, rand.Intn(1000)+20000))
-		case *v1_common.AnyValue_DoubleValue:
-			trueConditions = append(trueConditions, fmt.Sprintf("%s.%v=%f", scope, a.Key, v.DoubleValue))
-			trueConditions = append(trueConditions, fmt.Sprintf(".%v=%f", a.Key, v.DoubleValue))
-			falseConditions = append(falseConditions, fmt.Sprintf("%s.%v=%f", scope, a.Key, rand.Float64()))
-			falseConditions = append(falseConditions, fmt.Sprintf(".%v=%f", a.Key, rand.Float64()))
-		}
-	}
-
-	return trueConditions, falseConditions
 }
 
 func actualForExpectedMeta(wantMeta *deeppb.SnapshotSearchMetadata, res *deeppb.SearchResponse) *deeppb.SnapshotSearchMetadata {
@@ -375,20 +212,6 @@ func runCompleteBlockSearchTest(t testing.TB, blockVersion string, runner runner
 	// todo: do some compaction and then call runner again
 }
 
-func stringKV(k, v string) *v1_common.KeyValue {
-	return &v1_common.KeyValue{
-		Key:   k,
-		Value: &v1_common.AnyValue{Value: &v1_common.AnyValue_StringValue{StringValue: v}},
-	}
-}
-
-func intKV(k string, v int) *v1_common.KeyValue {
-	return &v1_common.KeyValue{
-		Key:   k,
-		Value: &v1_common.AnyValue{Value: &v1_common.AnyValue_IntValue{IntValue: int64(v)}},
-	}
-}
-
 // Helper function to make a tag search
 func makeReq(k, v string) *deeppb.SearchRequest {
 	return &deeppb.SearchRequest{
@@ -407,9 +230,9 @@ func addDeepQL(req *deeppb.SearchRequest) {
 		deepqlKey := k
 		switch deepqlKey {
 		case "root.service.name":
-			deepqlKey = ".service.name"
+			deepqlKey = "service.name"
 		default:
-			deepqlKey = "." + deepqlKey
+			deepqlKey = deepqlKey
 		}
 
 		deepqlVal := v
@@ -426,7 +249,7 @@ func addDeepQL(req *deeppb.SearchRequest) {
 		deepqlConditions = append(deepqlConditions, fmt.Sprintf("duration > %dms", req.MinDurationMs))
 	}
 
-	req.Query = "{" + strings.Join(deepqlConditions, "&&") + "}"
+	req.Query = "{" + strings.Join(deepqlConditions, " ") + "}"
 }
 
 // searchTestSuite returns a set of search test cases that ensure
@@ -452,13 +275,13 @@ func searchTestSuite() (
 	start = 1000
 	end = 1001
 
-	tr = test.GenerateSnapshot(1, &test.GenerateOptions{Id: id})
+	tr = fullyPopulatedTestSnapshot(id)
 	tr.TsNanos = 1500
 	tr.DurationNanos = 1500 * 1000000
 
 	expected = &deeppb.SnapshotSearchMetadata{
 		SnapshotID:        util.SnapshotIDToHexString(id),
-		ServiceName:       "deep-cli",
+		ServiceName:       "test-service-name",
 		FilePath:          tr.Tracepoint.Path,
 		LineNo:            tr.Tracepoint.LineNumber,
 		StartTimeUnixNano: tr.TsNanos,
@@ -469,53 +292,38 @@ func searchTestSuite() (
 	searchesThatMatch = []*deeppb.SearchRequest{
 		{
 			// Empty request
+			Query: "{}",
 		},
 		{
 			MinDurationMs: 999,
 			MaxDurationMs: 2001,
+			Query:         "{}",
 		},
-		//{
-		//	Start: 1000,
-		//	End:   2000,
-		//},
-		//{
-		//	// Overlaps start
-		//	Start: 999,
-		//	End:   1001,
-		//},
-		//{
-		//	// Overlaps end
-		//	Start: 1001,
-		//	End:   1002,
-		//},
 
 		// Well-known resource attributes
 		makeReq("frame", "single_frame"),
-		makeReq("service.name", "deep-cli"),
-		// makeReq("cluster", "MyCluster"),
-		// makeReq("namespace", "MyNamespace"),
-		// makeReq("pod", "MyPod"),
-		// makeReq("container", "MyContainer"),
-		// makeReq("k8s.cluster.name", "k8sCluster"),
-		// makeReq("k8s.namespace.name", "k8sNamespace"),
-		// makeReq("k8s.pod.name", "k8sPod"),
-		// makeReq("k8s.container.name", "k8sContainer"),
-		// makeReq("root.service.name", "RootService"),
-		// makeReq("root.name", "RootSpan"),
+		makeReq("service.name", "test-service-name"),
+		makeReq("cluster", "cluster"),
+		makeReq("namespace", "namespace"),
+		makeReq("pod", "pod"),
+		makeReq("container", "container"),
+		makeReq("k8s.cluster.name", "k8scluster"),
+		makeReq("k8s.namespace.name", "k8snamespace"),
+		makeReq("k8s.pod.name", "k8spod"),
+		makeReq("k8s.container.name", "k8scontainer"),
 
 		// Attributes
-		// makeReq("foo", "Bar"),
+		makeReq("foo", "def"),
 		// Resource attributes
-		// makeReq("bat", "Baz"),
+		makeReq("bat", "Baz"),
 
 		// Multiple
-		//{
-		//	Tags: map[string]string{
-		//		"service.name": "MyService",
-		//		"http.method":  "Get",
-		//		"foo":          "Bar",
-		//	},
-		//},
+		{
+			Tags: map[string]string{
+				"service.name": "test-service-name",
+				"foo":          "abc",
+			},
+		},
 	}
 
 	// Excludes
@@ -532,11 +340,11 @@ func searchTestSuite() (
 		},
 
 		// Well-known resource attributes
-		makeReq("service.name", "service"), // wrong case
-		makeReq("cluster", "cluster"),      // wrong case
-		makeReq("namespace", "namespace"),  // wrong case
-		makeReq("pod", "pod"),              // wrong case
-		makeReq("container", "container"),  // wrong case
+		makeReq("service.name", "Test-Service-Name"), // wrong case
+		makeReq("cluster", "Cluster"),                // wrong case
+		makeReq("namespace", "Namespace"),            // wrong case
+		makeReq("pod", "Pod"),                        // wrong case
+		makeReq("container", "Container"),            // wrong case
 
 		// Well-known attributes
 		makeReq("http.method", "post"),
@@ -559,4 +367,28 @@ func searchTestSuite() (
 	}
 
 	return
+}
+
+func fullyPopulatedTestSnapshot(id common.ID) *deeptp.Snapshot {
+	snapshot := test.GenerateSnapshot(0, &test.GenerateOptions{Id: id, LogMsg: true, ServiceName: "test-service-name", Resource: map[string]interface{}{
+		"cluster":            "cluster",
+		"namespace":          "namespace",
+		"pod":                "pod",
+		"container":          "container",
+		"k8s.namespace.name": "k8snamespace",
+		"k8s.cluster.name":   "k8scluster",
+		"k8s.pod.name":       "k8spod",
+		"k8s.container.name": "k8scontainer",
+		"foo":                "abc",
+		"bat":                "Baz",
+	}, Attrs: map[string]interface{}{
+		"foo":   "def",
+		"float": 456.78,
+		"bool":  false,
+		"bar":   123,
+	}})
+	snapshot.TsNanos = 1500 * 1e9
+	snapshot.DurationNanos = 100 * 1e9
+
+	return snapshot
 }

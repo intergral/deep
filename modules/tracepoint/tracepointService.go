@@ -22,6 +22,9 @@ import (
 	"fmt"
 	"sync"
 
+	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	"github.com/intergral/deep/pkg/deepql"
+
 	gkLog "github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/grafana/dskit/ring"
@@ -180,9 +183,98 @@ func (ts *TPService) DeleteTracepoint(ctx context.Context, req *deeppb.DeleteTra
 		return nil, err
 	}
 
-	err = tpStore.DeleteTracepoint(req.TracepointID)
+	err = tpStore.DeleteTracepoints(req.TracepointID)
 
 	err = ts.store.Flush(ctx, tpStore)
 
 	return &deeppb.DeleteTracepointResponse{}, nil
+}
+
+func (ts *TPService) ExecuteDeepQl(ctx context.Context, req *deeppb.DeepQlRequest) (*deeppb.DeepQlResponse, error) {
+	if ts.readonly {
+		return nil, ErrReadOnly
+	}
+	tenantID, err := util.ExtractTenantID(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "error extracting tenant id in ExecuteDeepQl")
+	}
+
+	orgStore, err := ts.store.ForOrg(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	expr, err := deepql.ParseString(req.Query)
+	if err != nil {
+		return nil, err
+	}
+	engine := deepql.NewEngine()
+
+	if expr.IsTrigger() {
+		affect, all, err := engine.ExecuteTriggerQuery(ctx, expr, func(ctx context.Context, request *deeppb.CreateTracepointRequest) (*tp.TracePointConfig, []*tp.TracePointConfig, error) {
+			tracepoint, err := ts.CreateTracepoint(ctx, request)
+			if err != nil {
+				return nil, nil, err
+			}
+			all, err := orgStore.LoadAll()
+			if err != nil {
+				return nil, nil, err
+			}
+			return tracepoint.Created, all, nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &deeppb.DeepQlResponse{
+			All: all,
+			Affected: []*tp.TracePointConfig{
+				affect,
+			},
+			Type: "create",
+		}, nil
+	}
+
+	if expr.IsCommand() {
+		affect, all, commandType, err := engine.ExecuteCommandQuery(ctx, expr, func(ctx context.Context, request *deepql.CommandRequest) ([]*tp.TracePointConfig, []*tp.TracePointConfig, string, error) {
+			return ts.runQuery(orgStore, request)
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &deeppb.DeepQlResponse{
+			All:      all,
+			Affected: affect,
+			Type:     commandType,
+		}, nil
+	}
+
+	return nil, errors.New("invalid query expression")
+}
+
+func (ts *TPService) runQuery(store tp_store.OrgTPStore, request *deepql.CommandRequest) ([]*tp.TracePointConfig, []*tp.TracePointConfig, string, error) {
+	tps, err := store.FindTracepoints(request)
+	if err != nil {
+		return nil, nil, request.Command, err
+	}
+
+	if request.Command == deepql.DeleteType {
+		ids := make([]string, len(tps))
+		for i, t := range tps {
+			ids[i] = t.ID
+		}
+		err := store.DeleteTracepoints(ids...)
+		if err != nil {
+			return nil, nil, request.Command, err
+		}
+	}
+
+	all, err := store.LoadAll()
+	if err != nil {
+		return nil, nil, request.Command, err
+	}
+	if len(tps) == 0 {
+		return nil, all, request.Command, nil
+	}
+
+	return tps, all, request.Command, nil
 }

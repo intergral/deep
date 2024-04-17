@@ -110,11 +110,11 @@ func TestBackendBlockSearchTagValuesV2(t *testing.T) {
 	block := makeBackendBlockWithSnapshots(t, []*Snapshot{fullyPopulatedTestSnapshot(common.ID{0})})
 
 	testCases := []struct {
-		tag  deepql.Attribute
+		tag  string
 		vals []deepql.Static
 	}{
 		// Attr present at both resource and snapshot level
-		{deepql.MustParseIdentifier(".foo"), []deepql.Static{
+		{"foo", []deepql.Static{
 			deepql.NewStaticString("abc"),
 			deepql.NewStaticString("def"),
 		}},

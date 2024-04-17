@@ -33,6 +33,8 @@ type TPEncoder struct {
 	Writer deepdb.TracepointWriter
 }
 
+var _ types.TPBackend = (*TPEncoder)(nil)
+
 func (t *TPEncoder) Flush(ctx context.Context, block types.TPBlock) error {
 	var positons []byte
 	var tpBytes []byte

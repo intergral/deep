@@ -270,6 +270,9 @@ func (t *App) initTracepointAPI() (services.Service, error) {
 
 	// trying to split GET and POST in the server handler with .Methods() doesn't work,
 	// so we do it ourselves in the handler
+	queryHandler := t.HTTPAuthMiddleware.Wrap(http.HandlerFunc(t.tracepointAPI.QueryTracepointHandler))
+	t.Server.HTTP.Handle(path.Join(api.PathPrefixTracepoints, addHTTPAPIPrefix(&t.cfg, api.PathTracepointsQuery)), queryHandler)
+
 	loadHandler := t.HTTPAuthMiddleware.Wrap(http.HandlerFunc(t.tracepointAPI.LoadTracepointHandler))
 	t.Server.HTTP.Handle(path.Join(api.PathPrefixTracepoints, addHTTPAPIPrefix(&t.cfg, api.PathTracepoints)), loadHandler)
 
@@ -340,8 +343,8 @@ func (t *App) initQuerier() (services.Service, error) {
 		t.HTTPAuthMiddleware,
 	)
 
-	tracesHandler := frontEndMiddleware.Wrap(http.HandlerFunc(t.querier.SnapshotByIdHandler))
-	t.Server.HTTP.Handle(path.Join(api.PathPrefixQuerier, addHTTPAPIPrefix(&t.cfg, api.PathSnapshots)), tracesHandler)
+	snapshotHandler := frontEndMiddleware.Wrap(http.HandlerFunc(t.querier.SnapshotByIdHandler))
+	t.Server.HTTP.Handle(path.Join(api.PathPrefixQuerier, addHTTPAPIPrefix(&t.cfg, api.PathSnapshots)), snapshotHandler)
 
 	searchHandler := t.HTTPAuthMiddleware.Wrap(http.HandlerFunc(t.querier.SearchHandler))
 	t.Server.HTTP.Handle(path.Join(api.PathPrefixQuerier, addHTTPAPIPrefix(&t.cfg, api.PathSearch)), searchHandler)

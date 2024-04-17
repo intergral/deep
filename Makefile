@@ -200,7 +200,7 @@ gen-deepql:
 
 .PHONY: gen-deepql-local
 gen-deepql-local:
-	goyacc -o pkg/deepql/expr.y.go pkg/deepql/expr.y
+	goyacc -l -o pkg/deepql/deepql.y.go pkg/deepql/deepql.y
 
 ### Check vendored and generated files are up to date
 .PHONY: vendor-check

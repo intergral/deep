@@ -129,10 +129,10 @@ func (i *tenantBlockManager) searchWAL(ctx context.Context, req *deeppb.SearchRe
 		opts := common.DefaultSearchOptions()
 		if api.IsDeepQLQuery(req) {
 			// note: we are creating new engine for each wal block,
-			// and engine.Execute is parsing the query for each block
-			resp, err = deepql.NewEngine().Execute(ctx, req, deepql.NewSnapshotResultFetcherWrapper(func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
+			// and engine.ExecuteSearch is parsing the query for each block
+			resp, err = deepql.NewEngine().ExecuteSearch(ctx, req, func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
 				return b.Fetch(ctx, req, opts)
-			}))
+			})
 		} else {
 			resp, err = b.Search(ctx, req, opts)
 		}
@@ -191,10 +191,10 @@ func (i *tenantBlockManager) searchLocalBlocks(ctx context.Context, req *deeppb.
 			opts := common.DefaultSearchOptions()
 			if api.IsDeepQLQuery(req) {
 				// note: we are creating new engine for each wal block,
-				// and engine.Execute is parsing the query for each block
-				resp, err = deepql.NewEngine().Execute(ctx, req, deepql.NewSnapshotResultFetcherWrapper(func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
+				// and engine.ExecuteSearch is parsing the query for each block
+				resp, err = deepql.NewEngine().ExecuteSearch(ctx, req, func(ctx context.Context, req deepql.FetchSnapshotRequest) (deepql.FetchSnapshotResponse, error) {
 					return e.Fetch(ctx, req, opts)
-				}))
+				})
 			} else {
 				resp, err = e.Search(ctx, req, opts)
 			}
@@ -344,11 +344,6 @@ func (i *tenantBlockManager) SearchTagValuesV2(ctx context.Context, req *deeppb.
 		return nil, err
 	}
 
-	tag, err := deepql.ParseIdentifier(req.TagName)
-	if err != nil {
-		return nil, err
-	}
-
 	limit := i.limiter.limits.MaxBytesPerTagValuesQuery(tenantID)
 	distinctValues := util.NewDistinctValueCollector[ComparableTagValue](limit, func(v ComparableTagValue) int { return v.size() })
 
@@ -385,9 +380,9 @@ func (i *tenantBlockManager) SearchTagValuesV2(ctx context.Context, req *deeppb.
 			return nil
 		}
 
-		err = s.SearchTagValuesV2(ctx, tag, cb, common.DefaultSearchOptions())
+		err = s.SearchTagValuesV2(ctx, req.TagName, cb, common.DefaultSearchOptions())
 		if err != nil && err != common.ErrUnsupported {
-			return fmt.Errorf("unexpected error searching tag values v2 (%s): %w", tag, err)
+			return fmt.Errorf("unexpected error searching tag values v2 (%s): %w", req.TagName, err)
 		}
 		return nil
 	}

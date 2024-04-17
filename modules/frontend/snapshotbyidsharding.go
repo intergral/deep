@@ -273,7 +273,7 @@ func (s *shardQuery) buildShardedRequests(parent *http.Request) ([]*http.Request
 		}
 
 		reqs[i].Header.Set(util.TenantIDHeaderName, tenantID)
-		uri := buildUpstreamRequestURI(reqs[i].URL.Path, q)
+		uri := buildUpstreamRequestURI(api.PathPrefixQuerier, reqs[i].URL.Path, q)
 		reqs[i].RequestURI = uri
 	}
 

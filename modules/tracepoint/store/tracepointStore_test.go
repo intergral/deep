@@ -21,6 +21,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/intergral/deep/pkg/deepql"
+
 	"github.com/intergral/deep/modules/storage"
 	"github.com/intergral/deep/pkg/deepdb"
 	"github.com/intergral/deep/pkg/deepdb/backend"
@@ -103,7 +105,7 @@ func TestCreatingDeleteTracepoint(t *testing.T) {
 	}
 	{
 		resource, _ := org.forResource(nil)
-		err = resource.DeleteTracepoint("1")
+		err = resource.DeleteTracepoints("1")
 		assert.NoError(t, err, "can not delete tracepoint")
 	}
 	{
@@ -245,5 +247,135 @@ func TestGetNewTracepointsOnPoll(t *testing.T) {
 		assert.Equal(t, 2, len(response.Response.Response))
 		assert.Equal(t, response.Response.CurrentHash, currentHash)
 		assert.Equal(t, response.Response.ResponseType, deeppb_poll.ResponseType_NO_CHANGE)
+	}
+}
+
+func TestFindTracepoints(t *testing.T) {
+	tpStore := createStore(t, "test-org")
+
+	org, _ := tpStore.ForOrg(context.Background(), "test-org")
+
+	_ = org.AddTracepoint(&tp.TracePointConfig{
+		ID:         "1",
+		Path:       "some_path",
+		LineNumber: 2,
+		Args: map[string]string{
+			"method": "amethod",
+		},
+		Targeting: nil,
+	})
+
+	_ = org.AddTracepoint(&tp.TracePointConfig{
+		ID:         "2",
+		Path:       "some_path",
+		LineNumber: 4,
+		Args:       map[string]string{},
+		Targeting:  nil,
+	})
+
+	_ = org.AddTracepoint(&tp.TracePointConfig{
+		ID:         "3",
+		Path:       "some_other_path",
+		LineNumber: 2,
+		Args:       map[string]string{},
+		Targeting:  nil,
+	})
+
+	_ = org.AddTracepoint(&tp.TracePointConfig{
+		ID:         "4",
+		Path:       "some_path",
+		LineNumber: 2,
+		Args:       map[string]string{},
+		Targeting:  nil,
+	})
+
+	_ = org.AddTracepoint(&tp.TracePointConfig{
+		ID:         "5",
+		Path:       "some_other_path",
+		LineNumber: 4,
+		Args: map[string]string{
+			"method": "test",
+		},
+		Targeting: nil,
+	})
+
+	_ = org.AddTracepoint(&tp.TracePointConfig{
+		ID:         "6",
+		Path:       "some_other_path",
+		LineNumber: 2,
+		Args:       map[string]string{},
+		Targeting:  nil,
+	})
+
+	all, err := org.LoadAll()
+	assert.NoError(t, err)
+	assert.Equal(t, 6, len(all))
+
+	parseString, err := deepql.ParseString("list{}")
+	assert.NoError(t, err)
+
+	query, _, _, err := deepql.NewEngine().ExecuteCommandQuery(context.Background(), parseString, func(ctx context.Context, request *deepql.CommandRequest) ([]*tp.TracePointConfig, []*tp.TracePointConfig, string, error) {
+		tracepoints, err := org.FindTracepoints(request)
+		return tracepoints, nil, "", err
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 6, len(query))
+
+	tests := []struct {
+		query       string
+		expectedTps []string
+	}{
+		{
+			query:       "list{}",
+			expectedTps: []string{"1", "2", "3", "4", "5", "6"},
+		},
+		{
+			query:       `list{id="1"}`,
+			expectedTps: []string{"1"},
+		},
+		{
+			query:       `list{id="1" id="3"}`,
+			expectedTps: []string{},
+		},
+		{
+			query:       `list{path=~"some.*"}`,
+			expectedTps: []string{"1", "2", "3", "4", "5", "6"},
+		},
+		{
+			query:       `list{path=~"some.*" line=2}`,
+			expectedTps: []string{"1", "3", "4", "6"},
+		},
+		{
+			query:       `list{path!~"some.*" line=2}`,
+			expectedTps: []string{},
+		},
+		{
+			query:       `list{path!~"some.*" line>2}`,
+			expectedTps: []string{},
+		},
+		{
+			query:       `list{line>2}`,
+			expectedTps: []string{"2", "5"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.query, func(t *testing.T) {
+			parseString, err := deepql.ParseString(test.query)
+			assert.NoError(t, err)
+
+			query, _, _, err := deepql.NewEngine().ExecuteCommandQuery(context.Background(), parseString, func(ctx context.Context, request *deepql.CommandRequest) ([]*tp.TracePointConfig, []*tp.TracePointConfig, string, error) {
+				tracepoints, err := org.FindTracepoints(request)
+				return tracepoints, nil, "", err
+			})
+			assert.NoError(t, err)
+			assert.Equal(t, len(test.expectedTps), len(query))
+
+			collectedIds := make([]string, len(query))
+			for i, tracepoint := range query {
+				collectedIds[i] = tracepoint.ID
+			}
+			assert.Equal(t, test.expectedTps, collectedIds)
+		})
 	}
 }

@@ -19,6 +19,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/intergral/deep/pkg/util/test"
 	"google.golang.org/grpc"
@@ -35,8 +36,17 @@ func (cmd *generateTagsCmd) Run(*globalOptions) error {
 	}(cmd.connection)
 
 	{
-		snapshot := cmd.generateSnapshot(0, &test.GenerateOptions{Attrs: map[string]string{"tag_test": "simple"}, Resource: map[string]string{"os_name": "windows"}, ServiceName: "tag_test"})
-		_, _ = client.Send(context.TODO(), snapshot)
+		snapshot := cmd.generateSnapshot(0, &test.GenerateOptions{Attrs: map[string]interface{}{"tag_test": "simple"}, Resource: map[string]interface{}{"os_name": "windows"}, ServiceName: "tag_test"})
+		publicType, err := test.ConvertToPublicType(snapshot)
+		if err != nil {
+			fmt.Printf("Error sending snapshot: %s\n", err)
+			return err
+		}
+		_, err = client.Send(context.TODO(), publicType)
+		if err != nil {
+			fmt.Printf("Error sending snapshot: %s\n", err)
+			return err
+		}
 	}
 
 	return nil

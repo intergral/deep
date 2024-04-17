@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023  Intergral GmbH
+ * Copyright (C) 2024  Intergral GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,25 +15,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package types
+package deepql
 
-import (
-	"context"
+type Operator int
 
-	cp "github.com/intergral/deep/pkg/deeppb/common/v1"
-	deeptp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+const (
+	OpNone Operator = iota
+	OpEqual
+	OpNotEqual
+	OpGreater
+	OpGreaterEqual
+	OpLess
+	OpLessEqual
+	OpRegex
+	OpNotRegex
 )
-
-type TPBlock interface {
-	ForResource(resource []*cp.KeyValue) ([]*deeptp.TracePointConfig, error)
-	TenantID() string
-	Tps() []*deeptp.TracePointConfig
-	Flushed()
-	AddTracepoint(config *deeptp.TracePointConfig)
-	DeleteTracepoints(id ...string)
-}
-
-type TPBackend interface {
-	Flush(ctx context.Context, block TPBlock) error
-	LoadBlock(ctx context.Context, tenantID string) (TPBlock, error)
-}

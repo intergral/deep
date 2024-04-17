@@ -19,13 +19,13 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
 	"time"
 
-	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
+	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -142,16 +142,6 @@ func loadBlock(r backend.Reader, c backend.Compactor, tenantID string, id uuid.U
 	}, nil
 }
 
-func printAsJSON(value interface{}) error {
-	asJSON, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(string(asJSON))
-	return nil
-}
-
 type GRCPClient struct {
 	frontendOptions
 
@@ -161,6 +151,7 @@ type GRCPClient struct {
 func (client *GRCPClient) connectGrpc() tp.SnapshotServiceClient {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	fmt.Printf("connecting to %s\n", client.Endpoint)
 	dial, err := grpc.Dial(client.Endpoint, opts...)
 	if err != nil {
 		panic(err)
