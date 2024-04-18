@@ -1,5 +1,5 @@
 <!-- main START -->
-# main (unreleased)
+# 1.0.7 (18/04/2024)
 - **[FEATURE]**: add support for deepql [#93](https://github.com/intergral/deep/pull/93) [@Umaaz](https://github.com/Umaaz)
 <!-- main START -->
 
