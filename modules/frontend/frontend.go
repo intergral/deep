@@ -60,7 +60,7 @@ type QueryFrontend struct {
 }
 
 // New returns a new QueryFrontend
-func New(cfg Config, next http.RoundTripper, tpNext http.RoundTripper, o *overrides.Overrides, store storage.Store, logger log.Logger, registerer prometheus.Registerer) (*QueryFrontend, error) {
+func New(cfg Config, next http.RoundTripper, o *overrides.Overrides, store storage.Store, logger log.Logger, registerer prometheus.Registerer) (*QueryFrontend, error) {
 	level.Info(logger).Log("msg", "creating middleware in query frontend")
 
 	if cfg.SnapshotByID.QueryShards < minQueryShards || cfg.SnapshotByID.QueryShards > maxQueryShards {
@@ -100,7 +100,7 @@ func New(cfg Config, next http.RoundTripper, tpNext http.RoundTripper, o *overri
 	search := searchMiddleware.Wrap(next)
 
 	tpMiddleware := newTracepointForwardMiddleware()
-	tpHandler := tpMiddleware.Wrap(tpNext)
+	tpHandler := tpMiddleware.Wrap(next)
 
 	return &QueryFrontend{
 		SnapshotByID:          newHandler(snapshots, snapshotByIDCounter, logger),

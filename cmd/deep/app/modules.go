@@ -367,14 +367,14 @@ func (t *App) initQuerier() (services.Service, error) {
 // tracepointAPI handles requests to change the config for tracepoints
 func (t *App) initQueryFrontend() (services.Service, error) {
 	// we create to 2 bridges (roundTrippers) one for each backend
-	roundTripper, tpTripper, v1, err := frontend.InitFrontend(t.cfg.Frontend.Config, frontend.CortexNoQuerierLimits{}, log.Logger, prometheus.DefaultRegisterer)
+	roundTripper, v1, err := frontend.InitFrontend(t.cfg.Frontend.Config, frontend.CortexNoQuerierLimits{}, log.Logger, prometheus.DefaultRegisterer)
 	if err != nil {
 		return nil, err
 	}
 	t.frontend = v1
 
 	// create query frontend
-	queryFrontend, err := frontend.New(t.cfg.Frontend, roundTripper, tpTripper, t.overrides, t.store, log.Logger, prometheus.DefaultRegisterer)
+	queryFrontend, err := frontend.New(t.cfg.Frontend, roundTripper, t.overrides, t.store, log.Logger, prometheus.DefaultRegisterer)
 	if err != nil {
 		return nil, err
 	}

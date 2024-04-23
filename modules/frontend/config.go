@@ -22,6 +22,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/intergral/deep/pkg/api"
+
 	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -103,12 +105,28 @@ func (CortexNoQuerierLimits) MaxQueriersPerUser(string) int { return 0 }
 // Returned RoundTripper can be wrapped in more round-tripper middlewares, and then eventually registered
 // into HTTP server using the Handler from this package. Returned RoundTripper is always non-nil
 // (if there are no errors), and it uses the returned frontend (if any).
-func InitFrontend(cfg v1.Config, limits v1.Limits, log log.Logger, reg prometheus.Registerer) (http.RoundTripper, http.RoundTripper, *v1.Frontend, error) {
+func InitFrontend(cfg v1.Config, limits v1.Limits, log log.Logger, reg prometheus.Registerer) (http.RoundTripper, *v1.Frontend, error) {
 	statVersion.Set("v1")
 	// No scheduler = use original frontend.
 	fr, err := v1.New(cfg, limits, log, reg)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
-	return transport.AdaptGrpcRoundTripperToHTTPRoundTripper(fr.QuerierRoundTrip), transport.AdaptGrpcRoundTripperToHTTPRoundTripper(fr.TracepointRoundTrip), fr, nil
+	// create both round trippers
+	searchRt := transport.AdaptGrpcRoundTripperToHTTPRoundTripper(fr.QuerierRoundTrip)
+	tracepointRt := transport.AdaptGrpcRoundTripperToHTTPRoundTripper(fr.TracepointRoundTrip)
+	// filter the round trippers based on the paths
+	tripper := transport.NewSplittingRoundTripper(&transport.SplitRule{
+		Rules: []string{
+			api.PathPrefixTracepoints,
+		},
+		RoundTripper: tracepointRt,
+	}, &transport.SplitRule{
+		Rules: []string{
+			api.PathPrefixQuerier,
+		},
+		RoundTripper: searchRt,
+	})
+
+	return tripper, fr, nil
 }
