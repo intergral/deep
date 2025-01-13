@@ -20,9 +20,10 @@ package otlpgrpc
 import (
 	"context"
 	"errors"
-	"github.com/grafana/dskit/user"
 	"net"
 	"testing"
+
+	"github.com/grafana/dskit/user"
 
 	"github.com/go-kit/log"
 	"github.com/stretchr/testify/require"
