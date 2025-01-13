@@ -34,20 +34,24 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 )
 
-type mockWorkingPTraceOTLPServer struct{}
+type mockGRPCServer struct {
+	ptraceotlp.UnimplementedGRPCServer
+	req ptraceotlp.ExportRequest
+}
 
-func (m *mockWorkingPTraceOTLPServer) Export(_ context.Context, _ ptraceotlp.Request) (ptraceotlp.Response, error) {
-	return ptraceotlp.NewResponse(), nil
+func (m *mockGRPCServer) Export(_ context.Context, _ ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
+	return ptraceotlp.NewExportResponse(), nil
 }
 
 type mockRecordingPTraceOTLPServer struct {
-	next ptraceotlp.Server
-	req  ptraceotlp.Request
+	next ptraceotlp.GRPCServer
+	req  ptraceotlp.ExportRequest
 }
 
-func (m *mockRecordingPTraceOTLPServer) Export(ctx context.Context, req ptraceotlp.Request) (ptraceotlp.Response, error) {
+func (m *mockRecordingPTraceOTLPServer) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
 	m.req = req
-	return m.next.Export(ctx, req)
+	export, err := m.next.Export(ctx, req)
+	return export, err
 }
 
 func newForwarder(t *testing.T, cfg Config, logger log.Logger) *Forwarder {
@@ -63,7 +67,7 @@ func newForwarder(t *testing.T, cfg Config, logger log.Logger) *Forwarder {
 	return f
 }
 
-func newListener(t *testing.T, srv ptraceotlp.Server) *bufconn.Listener {
+func newListener(t *testing.T, srv ptraceotlp.GRPCServer) *bufconn.Listener {
 	t.Helper()
 
 	const size = 1024 * 1024
@@ -78,7 +82,7 @@ func newListener(t *testing.T, srv ptraceotlp.Server) *bufconn.Listener {
 		s.GracefulStop()
 	})
 
-	ptraceotlp.RegisterServer(s, srv)
+	ptraceotlp.RegisterGRPCServer(s, srv)
 	go func() {
 		err := s.Serve(l)
 		if !errors.Is(err, grpc.ErrServerStopped) {
@@ -270,7 +274,8 @@ func Test_Forwarder_ForwardTraces_ReturnsNoErrorAndSentTracesMatchReceivedTraces
 	}
 	logger := log.NewNopLogger()
 	f := newForwarder(t, cfg, logger)
-	srv := &mockRecordingPTraceOTLPServer{next: &mockWorkingPTraceOTLPServer{}}
+
+	srv := &mockGRPCServer{}
 	l := newListener(t, srv)
 	d := newContextDialer(l)
 	err := f.Dial(context.Background(), grpc.WithContextDialer(d), grpc.WithBlock())
@@ -295,7 +300,7 @@ func Test_Forwarder_ForwardTraces_ReturnsErrorWithNoOrgIDInContext(t *testing.T)
 	}
 	logger := log.NewNopLogger()
 	f := newForwarder(t, cfg, logger)
-	srv := &mockWorkingPTraceOTLPServer{}
+	srv := &mockGRPCServer{}
 	l := newListener(t, srv)
 	d := newContextDialer(l)
 	err := f.Dial(context.Background(), grpc.WithContextDialer(d), grpc.WithBlock())
@@ -319,7 +324,7 @@ func Test_Forwarder_Shutdown_CallsCloseOnConnection(t *testing.T) {
 	logger := log.NewNopLogger()
 	f, err := NewForwarder(cfg, logger)
 	require.NoError(t, err)
-	srv := &mockWorkingPTraceOTLPServer{}
+	srv := &mockGRPCServer{}
 	l := newListener(t, srv)
 	d, conn := newContextDialerWithCountingConn(l)
 	err = f.Dial(context.Background(), grpc.WithContextDialer(d), grpc.WithBlock())
