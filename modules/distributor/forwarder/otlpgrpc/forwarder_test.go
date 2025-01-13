@@ -20,10 +20,9 @@ package otlpgrpc
 import (
 	"context"
 	"errors"
+	"github.com/grafana/dskit/user"
 	"net"
 	"testing"
-
-	"github.com/intergral/deep/pkg/util"
 
 	"github.com/go-kit/log"
 	"github.com/stretchr/testify/require"
@@ -39,7 +38,8 @@ type mockGRPCServer struct {
 	req ptraceotlp.ExportRequest
 }
 
-func (m *mockGRPCServer) Export(_ context.Context, _ ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
+func (m *mockGRPCServer) Export(_ context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
+	m.req = req
 	return ptraceotlp.NewExportResponse(), nil
 }
 
@@ -274,7 +274,6 @@ func Test_Forwarder_ForwardTraces_ReturnsNoErrorAndSentTracesMatchReceivedTraces
 	}
 	logger := log.NewNopLogger()
 	f := newForwarder(t, cfg, logger)
-
 	srv := &mockGRPCServer{}
 	l := newListener(t, srv)
 	d := newContextDialer(l)
@@ -282,7 +281,7 @@ func Test_Forwarder_ForwardTraces_ReturnsNoErrorAndSentTracesMatchReceivedTraces
 	require.NoError(t, err)
 	traces := ptrace.NewTraces()
 	traces.ResourceSpans().AppendEmpty().SetSchemaUrl("testURL")
-	ctx := util.InjectTenantID(context.Background(), "123")
+	ctx := user.InjectOrgID(context.Background(), "123")
 
 	// When
 	err = f.ForwardTraces(ctx, traces)
