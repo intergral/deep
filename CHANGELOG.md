@@ -1,7 +1,12 @@
-<!-- main START -->
+<!-- 1.0.8 START -->
+# 1.0.8 (18/04/2024)
+- **[FEATURE]**: add support for ipv6 [#119](https://github.com/intergral/deep/pull/119) [@Umaaz](https://github.com/Umaaz)
+<!-- 1.0.8 START -->
+
+<!-- 1.0.7 START -->
 # 1.0.7 (18/04/2024)
 - **[FEATURE]**: add support for deepql [#93](https://github.com/intergral/deep/pull/93) [@Umaaz](https://github.com/Umaaz)
-<!-- main START -->
+<!-- 1.0.7 START -->
 
 <!-- 1.0.6 START -->
 # 1.0.6 (14/03/2024)
