@@ -30,11 +30,10 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
+	"github.com/grafana/dskit/httpgrpc"
+	"github.com/grafana/dskit/tracing"
 	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/weaveworks/common/httpgrpc"
-	"github.com/weaveworks/common/httpgrpc/server"
-	"github.com/weaveworks/common/tracing"
 )
 
 const (
@@ -174,7 +173,7 @@ func writeError(w http.ResponseWriter, err error) error {
 			err = errRequestEntityTooLarge
 		}
 	}
-	server.WriteError(w, err)
+	httpgrpc.WriteError(w, err)
 	return err
 }
 

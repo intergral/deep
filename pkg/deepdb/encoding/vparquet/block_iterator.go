@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/segmentio/parquet-go"
+	"github.com/parquet-go/parquet-go"
 
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	deepIO "github.com/intergral/deep/pkg/io"

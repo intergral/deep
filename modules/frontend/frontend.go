@@ -250,7 +250,7 @@ func newSearchMiddleware(cfg Config, o *overrides.Overrides, reader deepdb.Reade
 
 // buildUpstreamRequestURI returns a uri based on the passed parameters
 // we do this because weaveworks/common uses the RequestURI field to translate from http.Request to httpgrpc.Request
-// https://github.com/weaveworks/common/blob/47e357f4e1badb7da17ad74bae63e228bdd76e8f/httpgrpc/server/server.go#L48
+// https://github.com/grafana/dskit/blob/47e357f4e1badb7da17ad74bae63e228bdd76e8f/httpgrpc/server/server.go#L48
 func buildUpstreamRequestURI(prefix, originalURI string, params url.Values) string {
 	const queryDelimiter = "?"
 

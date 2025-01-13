@@ -21,7 +21,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/weaveworks/common/user"
+	"github.com/grafana/dskit/user"
 )
 
 const (

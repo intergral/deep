@@ -26,7 +26,7 @@ import (
 
 	"github.com/intergral/deep/pkg/deepdb/encoding/vparquet"
 	pq "github.com/intergral/deep/pkg/parquetquery"
-	"github.com/segmentio/parquet-go"
+	"github.com/parquet-go/parquet-go"
 )
 
 type listColumnCmd struct {
@@ -64,9 +64,10 @@ func (cmd *listColumnCmd) Run(ctx *globalOptions) error {
 		fmt.Printf("\n***************       rowgroup %d      ********************\n\n\n", i)
 
 		pages := cc.Pages()
-		numPages := cc.ColumnIndex().NumPages()
-		fmt.Println("Min Value of rowgroup", cc.ColumnIndex().MinValue(0).Bytes())
-		fmt.Println("Max Value of rowgroup", cc.ColumnIndex().MaxValue(numPages-1).Bytes())
+		ci, _ := cc.ColumnIndex()
+		numPages := ci.NumPages()
+		fmt.Println("Min Value of rowgroup", ci.MinValue(0).Bytes())
+		fmt.Println("Max Value of rowgroup", ci.MaxValue(numPages-1).Bytes())
 
 		buffer := make([]parquet.Value, 10000)
 		for {

@@ -22,8 +22,8 @@ import (
 	"time"
 
 	"github.com/grafana/dskit/grpcclient"
+	"github.com/grafana/dskit/httpgrpc"
 	"github.com/intergral/deep/modules/frontend/v1/frontendv1pb"
-	"github.com/weaveworks/common/httpgrpc"
 	"google.golang.org/grpc"
 )
 

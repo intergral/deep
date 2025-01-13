@@ -22,7 +22,7 @@ import (
 	"encoding/binary"
 	"io"
 
-	"github.com/segmentio/parquet-go"
+	"github.com/parquet-go/parquet-go"
 
 	"github.com/google/uuid"
 	"github.com/intergral/deep/pkg/deepdb/backend"

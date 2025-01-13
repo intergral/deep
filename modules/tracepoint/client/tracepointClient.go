@@ -23,6 +23,7 @@ import (
 	"io"
 
 	"github.com/go-kit/log"
+	"github.com/grafana/dskit/middleware"
 	"github.com/grafana/dskit/ring"
 	ring_client "github.com/grafana/dskit/ring/client"
 	"github.com/grafana/dskit/services"
@@ -34,7 +35,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/weaveworks/common/middleware"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -60,12 +60,14 @@ func New(clientCfg Config, tracepointRing ring.ReadRing, logger log.Logger) (*TP
 		Help:      "The current number of tracepoint config clients.",
 	})
 
+	var factory ring_client.PoolAddrFunc = func(addr string) (ring_client.PoolClient, error) {
+		return newClient(addr, clientCfg)
+	}
+
 	pool := ring_client.NewPool("tp_pool",
 		clientCfg.PoolConfig,
 		ring_client.NewRingServiceDiscovery(tracepointRing),
-		func(addr string) (ring_client.PoolClient, error) {
-			return newClient(addr, clientCfg)
-		},
+		factory,
 		metricIngesterClients,
 		logger)
 

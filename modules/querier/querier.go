@@ -36,6 +36,7 @@ import (
 	"github.com/cristalhq/hedgedhttp"
 	"github.com/go-kit/log/level"
 	"github.com/google/uuid"
+	httpgrpc_server "github.com/grafana/dskit/httpgrpc/server"
 	"github.com/grafana/dskit/ring"
 	ring_client "github.com/grafana/dskit/ring/client"
 	"github.com/grafana/dskit/services"
@@ -44,7 +45,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	httpgrpc_server "github.com/weaveworks/common/httpgrpc/server"
 	"go.uber.org/multierr"
 	"golang.org/x/sync/semaphore"
 
@@ -111,7 +111,7 @@ type responseFromIngesters struct {
 
 // New makes a new Querier.
 func New(cfg Config, clientCfg ingester_client.Config, ring ring.ReadRing, store storage.Store, limits *overrides.Overrides) (*Querier, error) {
-	factory := func(addr string) (ring_client.PoolClient, error) {
+	var factory ring_client.PoolAddrFunc = func(addr string) (ring_client.PoolClient, error) {
 		return ingester_client.New(addr, clientCfg)
 	}
 

@@ -26,10 +26,10 @@ import (
 	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
+	instr "github.com/grafana/dskit/instrument"
 	otlog "github.com/opentracing/opentracing-go/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	instr "github.com/weaveworks/common/instrument"
 
 	"github.com/intergral/deep/pkg/util/math"
 	"github.com/intergral/deep/pkg/util/spanlogger"

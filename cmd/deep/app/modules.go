@@ -27,8 +27,10 @@ import (
 	"github.com/grafana/dskit/dns"
 	"github.com/grafana/dskit/kv/codec"
 	"github.com/grafana/dskit/kv/memberlist"
+	"github.com/grafana/dskit/middleware"
 	"github.com/grafana/dskit/modules"
 	"github.com/grafana/dskit/ring"
+	"github.com/grafana/dskit/server"
 	"github.com/grafana/dskit/services"
 	"github.com/intergral/deep/modules/compactor"
 	"github.com/intergral/deep/modules/distributor"
@@ -56,8 +58,6 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
-	"github.com/weaveworks/common/middleware"
-	"github.com/weaveworks/common/server"
 )
 
 // The various modules that make up deep.
@@ -450,7 +450,6 @@ func (t *App) initStore() (services.Service, error) {
 
 func (t *App) initMemberListKV() (services.Service, error) {
 	reg := prometheus.DefaultRegisterer
-	t.cfg.MemberlistKV.MetricsRegisterer = reg
 	t.cfg.MemberlistKV.MetricsNamespace = metricsNamespace
 	t.cfg.MemberlistKV.Codecs = []codec.Codec{
 		ring.GetCodec(),

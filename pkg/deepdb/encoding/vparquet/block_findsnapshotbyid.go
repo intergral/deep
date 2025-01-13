@@ -24,7 +24,7 @@ import (
 	"io"
 
 	deepTP "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
-	"github.com/segmentio/parquet-go"
+	"github.com/parquet-go/parquet-go"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"

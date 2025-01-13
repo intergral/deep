@@ -27,7 +27,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/intergral/deep/pkg/deepdb/encoding/vparquet"
 	"github.com/olekukonko/tablewriter"
-	"github.com/segmentio/parquet-go"
+	"github.com/parquet-go/parquet-go"
 )
 
 type listObjectsCmd struct {

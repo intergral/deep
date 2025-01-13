@@ -232,14 +232,16 @@ func New(cfg Config, tpClient *client.TPClient, clientCfg ingester_client.Config
 		tpClient:             tpClient,
 	}
 
+	var generatorsPoolFactory ring_client.PoolAddrFunc = func(addr string) (ring_client.PoolClient, error) {
+		return generator_client.New(addr, generatorClientCfg)
+	}
+
 	// this pool lets the distributor generate metrics via the generator client
 	d.generatorsPool = ring_client.NewPool(
 		"distributor_metrics_generator_pool",
 		generatorClientCfg.PoolConfig,
 		ring_client.NewRingServiceDiscovery(generatorsRing),
-		func(addr string) (ring_client.PoolClient, error) {
-			return generator_client.New(addr, generatorClientCfg)
-		},
+		generatorsPoolFactory,
 		metricGeneratorClients,
 		logger,
 	)

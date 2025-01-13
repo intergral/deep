@@ -21,7 +21,6 @@ import (
 	"flag"
 	"time"
 
-	"github.com/go-kit/log"
 	pkg_worker "github.com/intergral/deep/pkg/worker"
 	"github.com/pkg/errors"
 )
@@ -42,9 +41,9 @@ func (cfg *TPWorkerConfig) RegisterFlags(f *flag.FlagSet) {
 	cfg.GRPCClientConfig.RegisterFlagsWithPrefix("tracepoint.frontend-client", f)
 }
 
-func (cfg *TPWorkerConfig) Validate(log log.Logger) error {
+func (cfg *TPWorkerConfig) Validate() error {
 	if cfg.FrontendAddress != "" {
 		return errors.New("starting tracepoint api worker without frontend address is not supported")
 	}
-	return cfg.GRPCClientConfig.Validate(log)
+	return cfg.GRPCClientConfig.Validate()
 }

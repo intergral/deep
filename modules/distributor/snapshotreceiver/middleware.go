@@ -20,12 +20,12 @@ package snapshotreceiver
 import (
 	"context"
 
+	"github.com/grafana/dskit/user"
 	"github.com/intergral/deep/pkg/receivers/config/client"
 	receivers "github.com/intergral/deep/pkg/receivers/types"
 	"github.com/intergral/deep/pkg/util"
 	pb "github.com/intergral/go-deep-proto/poll/v1"
 	tp "github.com/intergral/go-deep-proto/tracepoint/v1"
-	"github.com/weaveworks/common/user"
 
 	"github.com/intergral/deep/pkg/util/log"
 )

@@ -37,12 +37,12 @@ import (
 	"github.com/golang/protobuf/proto" // nolint: all  //ProtoReflect
 	"github.com/grafana/dskit/flagext"
 	"github.com/grafana/dskit/kv"
+	dslog "github.com/grafana/dskit/log"
 	"github.com/grafana/dskit/ring"
 	ring_client "github.com/grafana/dskit/ring/client"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/weaveworks/common/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
@@ -206,7 +206,7 @@ func prepare(t *testing.T, limits *overrides.Limits, kvStore kv.Client, logger l
 		return ingesters[addr], nil
 	}
 
-	l := logging.Level{}
+	l := dslog.Level{}
 	_ = l.Set("error")
 	mw := receiver.MultiTenancyMiddleware()
 	d, err := New(distributorConfig, nil, clientConfig, mw, ingestersRing, generator_client.Config{}, nil, newOverrides, logger, prometheus.NewPedanticRegistry())
@@ -236,6 +236,41 @@ type mockRing struct {
 	prometheus.Counter
 	ingesters         []ring.InstanceDesc
 	replicationFactor uint32
+}
+
+func (r mockRing) InstancesWithTokensCount() int {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r mockRing) GetTokenRangesForInstance(instanceID string) (ring.TokenRanges, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r mockRing) InstancesInZoneCount(zone string) int {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r mockRing) InstancesWithTokensInZoneCount(zone string) int {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r mockRing) WritableInstancesWithTokensCount() int {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r mockRing) WritableInstancesWithTokensInZoneCount(zone string) int {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r mockRing) ZonesCount() int {
+	//TODO implement me
+	panic("implement me")
 }
 
 var _ ring.ReadRing = (*mockRing)(nil)

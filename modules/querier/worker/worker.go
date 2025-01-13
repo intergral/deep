@@ -21,7 +21,6 @@ import (
 	"flag"
 	"time"
 
-	"github.com/go-kit/log"
 	"github.com/intergral/deep/pkg/worker"
 	"github.com/pkg/errors"
 )
@@ -42,9 +41,9 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	cfg.GRPCClientConfig.RegisterFlagsWithPrefix("querier.frontend-client", f)
 }
 
-func (cfg *Config) Validate(log log.Logger) error {
+func (cfg *Config) Validate() error {
 	if cfg.FrontendAddress != "" {
 		return errors.New("starting querier worker without frontend address is not supported")
 	}
-	return cfg.GRPCClientConfig.Validate(log)
+	return cfg.GRPCClientConfig.Validate()
 }

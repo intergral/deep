@@ -26,7 +26,7 @@ import (
 
 	"github.com/intergral/deep/pkg/deeppb"
 	"github.com/intergral/deep/pkg/deepql"
-	"github.com/segmentio/parquet-go"
+	"github.com/parquet-go/parquet-go"
 
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	deepIO "github.com/intergral/deep/pkg/io"

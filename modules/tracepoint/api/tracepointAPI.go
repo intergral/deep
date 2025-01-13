@@ -32,6 +32,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	httpgrpc_server "github.com/grafana/dskit/httpgrpc/server"
 	"github.com/grafana/dskit/services"
 	"github.com/intergral/deep/modules/frontend/v1/frontendv1pb"
 	"github.com/intergral/deep/modules/tracepoint/client"
@@ -42,7 +43,6 @@ import (
 	rp "github.com/intergral/deep/pkg/deeppb/resource/v1"
 	"github.com/intergral/deep/pkg/worker"
 	"github.com/opentracing/opentracing-go"
-	httpgrpc_server "github.com/weaveworks/common/httpgrpc/server"
 )
 
 type TracepointAPI struct {

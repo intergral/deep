@@ -32,7 +32,7 @@ import (
 	"github.com/intergral/deep/pkg/deeppb"
 	deepTP "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/deepql"
-	"github.com/segmentio/parquet-go"
+	"github.com/parquet-go/parquet-go"
 
 	"github.com/google/uuid"
 	"github.com/grafana/dskit/multierror"
