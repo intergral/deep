@@ -147,12 +147,27 @@ services:
   grafana:
     image: grafana/grafana-oss
     volumes:
-      - ../shared/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
       - ../shared/dashboards:/etc/grafana/provisioning/dashboards/
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_DISABLE_LOGIN_FORM=true
-      - GF_INSTALL_PLUGINS=https://github.com/intergral/grafana-deep-panel/releases/download/v0.0.3/intergral-deep-panel-0.0.3.zip;intergral-deep-panel,https://github.com/intergral/grafana-deep-datasource/releases/download/v0.0.7/intergral-deep-datasource-0.0.7.zip;intergral-deep-datasource
+      - GF_INSTALL_PLUGINS=https://github.com/intergral/plugin-signer/releases/download/intergral%2Fgrafana-deep-tracepoint-panel.v1.0.0/intergral-deep-tracepoint-panel-1.0.0.zip;intergral-deep-tracepoint-panel,https://github.com/intergral/plugin-signer/releases/download/intergral%2Fgrafana-deep-panel.v1.0.2/intergral-deep-panel-1.0.2.zip;intergral-deep-panel,https://github.com/intergral/plugin-signer/releases/download/intergral%2Fgrafana-deep-datasource.v1.0.3/intergral-deep-datasource-1.0.3.zip;intergral-deep-datasource
     ports:
       - "3000:3000"
+
+  test_load:
+    image: intergral/deep-cli
+    depends_on:
+      - distributor
+    command:
+      - generate
+      - snapshot
+      - --endpoint=distributor:43315
+      - --count=3
+      - --sleep=5
+      - --iterations=-1
+      - --random-string
+      - --random-duration
+      - --duration-nanos=1000000000

@@ -1,7 +1,12 @@
-<!-- 1.0.8 START -->
-# 1.0.8 (18/04/2024)
+<!-- 1.0.9 START -->
+# 1.0.9 (18/04/2024)
 - **[FEATURE]**: add support for ipv6 [#119](https://github.com/intergral/deep/pull/119) [@Umaaz](https://github.com/Umaaz)
+<!-- 1.0.9 END -->
+
 <!-- 1.0.8 START -->
+# 1.0.8 (23/04/2024)
+- **[BUGFIX]**: fix deepql running in distributed mode [#95](https://github.com/intergral/deep/pull/95) [@Umaaz](https://github.com/Umaaz)
+<!-- 1.0.8 END -->
 
 <!-- 1.0.7 START -->
 # 1.0.7 (18/04/2024)

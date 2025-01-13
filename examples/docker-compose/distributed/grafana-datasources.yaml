@@ -25,4 +25,5 @@ datasources:
   apiVersion: 1
   uid: deep
   jsonData:
-    httpMethod: GET
+    experimental:
+      deepql: true
