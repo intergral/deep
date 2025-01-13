@@ -33,6 +33,7 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
+	"github.com/grafana/dskit/user"
 	"github.com/intergral/deep/modules/overrides"
 	"github.com/intergral/deep/pkg/api"
 	"github.com/intergral/deep/pkg/boundedwaitgroup"
@@ -41,7 +42,6 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/weaveworks/common/user"
 )
 
 const (

@@ -22,8 +22,8 @@ import (
 	"fmt"
 
 	"github.com/go-kit/log/level"
+	"github.com/grafana/dskit/server"
 	"github.com/grafana/dskit/services"
-	"github.com/weaveworks/common/server"
 
 	util_log "github.com/intergral/deep/pkg/util/log"
 )

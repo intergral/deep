@@ -24,8 +24,8 @@ import (
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 	"github.com/intergral/deep/pkg/deepql"
 	"github.com/intergral/deep/pkg/parquetquery"
+	"github.com/parquet-go/parquet-go"
 	"github.com/pkg/errors"
-	"github.com/segmentio/parquet-go"
 )
 
 // Lookup table of all well-known attributes with dedicated columns

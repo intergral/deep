@@ -20,7 +20,7 @@ package util
 import (
 	"context"
 
-	"github.com/weaveworks/common/tracing"
+	"github.com/grafana/dskit/tracing"
 	"go.opentelemetry.io/otel/trace"
 )
 

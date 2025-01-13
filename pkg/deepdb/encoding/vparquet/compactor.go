@@ -25,7 +25,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/segmentio/parquet-go"
+	"github.com/parquet-go/parquet-go"
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"

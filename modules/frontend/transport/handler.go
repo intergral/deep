@@ -31,11 +31,10 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
+	"github.com/grafana/dskit/httpgrpc"
 	"github.com/grafana/dskit/tenant"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/weaveworks/common/httpgrpc"
-	"github.com/weaveworks/common/httpgrpc/server"
 
 	querier_stats "github.com/intergral/deep/modules/querier/stats"
 	"github.com/intergral/deep/pkg/util"
@@ -252,7 +251,7 @@ func writeError(w http.ResponseWriter, err error) {
 			err = errRequestEntityTooLarge
 		}
 	}
-	server.WriteError(w, err)
+	httpgrpc.WriteError(w, err)
 }
 
 func writeServiceTimingHeader(queryResponseTime time.Duration, headers http.Header, stats *querier_stats.Stats) {

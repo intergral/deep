@@ -20,7 +20,7 @@ package vparquet
 import (
 	"context"
 
-	"github.com/segmentio/parquet-go"
+	"github.com/parquet-go/parquet-go"
 
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"
 )

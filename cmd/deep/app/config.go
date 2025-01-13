@@ -37,12 +37,12 @@ import (
 	"github.com/grafana/dskit/flagext"
 	"github.com/grafana/dskit/kv/memberlist"
 
+	"github.com/grafana/dskit/server"
 	generator_client "github.com/intergral/deep/modules/generator/client"
 	ingester_client "github.com/intergral/deep/modules/ingester/client"
 	"github.com/intergral/deep/modules/storage"
 	internalserver "github.com/intergral/deep/pkg/server"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/weaveworks/common/server"
 )
 
 // Config is the root config for App.
@@ -97,7 +97,7 @@ func (c *Config) RegisterFlagsAndApplyDefaults(prefix string, f *flag.FlagSet) {
 	flagext.DefaultValues(&c.InternalServer)
 
 	// Increase max message size to 16MB
-	c.Server.GPRCServerMaxRecvMsgSize = 16 * 1024 * 1024
+	c.Server.GRPCServerMaxRecvMsgSize = 16 * 1024 * 1024
 	c.Server.GRPCServerMaxSendMsgSize = 16 * 1024 * 1024
 
 	// The following GRPC server settings are added to address this issue - https://github.com/intergral/deep/issues/493

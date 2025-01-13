@@ -21,7 +21,7 @@ import (
 	"flag"
 	"time"
 
-	serverww "github.com/weaveworks/common/server"
+	serverww "github.com/grafana/dskit/server"
 )
 
 // Config extends weaveworks server config

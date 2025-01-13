@@ -24,8 +24,8 @@ import (
 	"sync"
 
 	"github.com/intergral/deep/pkg/deepql"
+	"github.com/parquet-go/parquet-go"
 	"github.com/pkg/errors"
-	"github.com/segmentio/parquet-go"
 
 	"github.com/intergral/deep/pkg/deepdb/backend"
 	"github.com/intergral/deep/pkg/deepdb/encoding/common"

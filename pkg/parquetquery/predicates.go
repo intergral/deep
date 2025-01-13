@@ -24,7 +24,7 @@ import (
 	"strings"
 	"sync"
 
-	pq "github.com/segmentio/parquet-go"
+	pq "github.com/parquet-go/parquet-go"
 )
 
 // Predicate is a pushdown predicate that can be applied at
@@ -68,7 +68,8 @@ func (p *StringInPredicate) String() string {
 func (p *StringInPredicate) KeepColumnChunk(cc pq.ColumnChunk) bool {
 	p.helper.setNewRowGroup()
 
-	if ci := cc.ColumnIndex(); ci != nil {
+	ci, err := cc.ColumnIndex()
+	if err == nil && ci != nil {
 		for _, subs := range p.ss {
 			for i := 0; i < ci.NumPages(); i++ {
 				ok := bytes.Compare(ci.MinValue(i).ByteArray(), subs) <= 0 && bytes.Compare(ci.MaxValue(i).ByteArray(), subs) >= 0
@@ -313,7 +314,8 @@ func (p *IntBetweenPredicate) String() string {
 }
 
 func (p *IntBetweenPredicate) KeepColumnChunk(c pq.ColumnChunk) bool {
-	if ci := c.ColumnIndex(); ci != nil {
+	ci, err := c.ColumnIndex()
+	if err == nil && ci != nil {
 		for i := 0; i < ci.NumPages(); i++ {
 			min := ci.MinValue(i).Int64()
 			max := ci.MaxValue(i).Int64()
@@ -369,7 +371,8 @@ func (p *GenericPredicate[T]) KeepColumnChunk(c pq.ColumnChunk) bool {
 		return true
 	}
 
-	if ci := c.ColumnIndex(); ci != nil {
+	ci, err := c.ColumnIndex()
+	if err == nil && ci != nil {
 		for i := 0; i < ci.NumPages(); i++ {
 			min := p.Extract(ci.MinValue(i))
 			max := p.Extract(ci.MaxValue(i))
@@ -434,7 +437,8 @@ func (p *FloatBetweenPredicate) String() string {
 }
 
 func (p *FloatBetweenPredicate) KeepColumnChunk(c pq.ColumnChunk) bool {
-	if ci := c.ColumnIndex(); ci != nil {
+	ci, err := c.ColumnIndex()
+	if err == nil && ci != nil {
 		for i := 0; i < ci.NumPages(); i++ {
 			min := ci.MinValue(i).Double()
 			max := ci.MaxValue(i).Double()

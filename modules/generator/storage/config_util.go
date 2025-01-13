@@ -22,8 +22,8 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
+	"github.com/grafana/dskit/user"
 	prometheus_config "github.com/prometheus/prometheus/config"
-	"github.com/weaveworks/common/user"
 
 	"github.com/intergral/deep/pkg/util"
 )

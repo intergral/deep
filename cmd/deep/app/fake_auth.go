@@ -21,8 +21,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/grafana/dskit/middleware"
 	"github.com/intergral/deep/pkg/util"
-	"github.com/weaveworks/common/middleware"
 	"google.golang.org/grpc"
 )
 

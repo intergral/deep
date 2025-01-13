@@ -27,23 +27,25 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/grafana/dskit/tracing"
+	"github.com/prometheus/common/version"
+
 	"github.com/drone/envsubst"
 	"github.com/go-kit/log/level"
 	"github.com/grafana/dskit/flagext"
+	dslog "github.com/grafana/dskit/log"
+	"github.com/grafana/dskit/spanprofiler"
 	"github.com/intergral/deep/cmd/deep/app"
 	"github.com/intergral/deep/cmd/deep/build"
 	"github.com/intergral/deep/pkg/util/log"
 	ot "github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/common/version"
-	"github.com/weaveworks/common/logging"
-	"github.com/weaveworks/common/tracing"
-	oc "go.opencensus.io/trace"
+	ver "github.com/prometheus/client_golang/prometheus/collectors/version"
+	"go.opentelemetry.io/contrib/exporters/autoexport"
 	"go.opentelemetry.io/otel"
 	oc_bridge "go.opentelemetry.io/otel/bridge/opencensus"
 	ot_bridge "go.opentelemetry.io/otel/bridge/opentracing"
-	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
@@ -65,7 +67,7 @@ func init() {
 	version.Version = Version
 	version.Branch = Branch
 	version.Revision = Revision
-	prometheus.MustRegister(version.NewCollector(appName))
+	prometheus.MustRegister(ver.NewCollector(appName))
 }
 
 // main entry to DEEP
@@ -85,7 +87,7 @@ func main() {
 	}
 
 	// Init the logger which will honor the log level set in config.Server
-	if reflect.DeepEqual(&config.Server.LogLevel, &logging.Level{}) {
+	if reflect.DeepEqual(&config.Server.LogLevel, &dslog.Level{}) {
 		level.Error(log.Logger).Log("msg", "invalid log level")
 		os.Exit(1)
 	}
@@ -253,12 +255,9 @@ func installOpenTracingTracer(config *app.Config) (func(), error) {
 func installOpenTelemetryTracer(config *app.Config) (func(), error) {
 	level.Info(log.Logger).Log("msg", "initialising OpenTelemetry tracer")
 
-	// for now, migrate OpenTracing Jaeger environment variables
-	migrateJaegerEnvironmentVariables()
-
-	exp, err := jaeger.New(jaeger.WithCollectorEndpoint())
+	exp, err := autoexport.NewSpanExporter(context.Background())
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create Jaeger exporter")
+		return nil, fmt.Errorf("failed to create OTEL exporter: %w", err)
 	}
 
 	resources, err := resource.New(context.Background(),
@@ -269,7 +268,7 @@ func installOpenTelemetryTracer(config *app.Config) (func(), error) {
 		resource.WithHost(),
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialise trace resources")
+		return nil, fmt.Errorf("failed to initialise trace resources: %w", err)
 	}
 
 	tp := tracesdk.NewTracerProvider(
@@ -300,38 +299,12 @@ func installOpenTelemetryTracer(config *app.Config) (func(), error) {
 	bridgeTracer.SetWarningHandler(func(msg string) {
 		level.Warn(log.Logger).Log("msg", msg, "source", "BridgeTracer.OnWarningHandler")
 	})
-	ot.SetGlobalTracer(bridgeTracer)
+	ot.SetGlobalTracer(spanprofiler.NewTracer(bridgeTracer))
 
 	// Install the OpenCensus bridge
-	oc.DefaultTracer = oc_bridge.NewTracer(tp.Tracer("OpenCensus"))
+	oc_bridge.InstallTraceBridge(oc_bridge.WithTracerProvider(tp))
 
 	return shutdown, nil
-}
-
-func migrateJaegerEnvironmentVariables() {
-	// jaeger-tracing-go: https://github.com/jaegertracing/jaeger-client-go#environment-variables
-	// opentelemetry-go: https://github.com/open-telemetry/opentelemetry-go/tree/main/exporters/jaeger#environment-variables
-	jaegerToOtel := map[string]string{
-		"JAEGER_AGENT_HOST": "OTEL_EXPORTER_JAEGER_AGENT_HOST",
-		"JAEGER_AGENT_PORT": "OTEL_EXPORTER_JAEGER_AGENT_PORT",
-		"JAEGER_ENDPOINT":   "OTEL_EXPORTER_JAEGER_ENDPOINT",
-		"JAEGER_USER":       "OTEL_EXPORTER_JAEGER_USER",
-		"JAEGER_PASSWORD":   "OTEL_EXPORTER_JAEGER_PASSWORD",
-		"JAEGER_TAGS":       "OTEL_RESOURCE_ATTRIBUTES",
-	}
-	for jaegerKey, otelKey := range jaegerToOtel {
-		value, jaegerOk := os.LookupEnv(jaegerKey)
-		_, otelOk := os.LookupEnv(otelKey)
-
-		if jaegerOk && !otelOk {
-			level.Warn(log.Logger).Log("msg", "migrating Jaeger environment variable, consider using native OpenTelemetry variables", "jaeger", jaegerKey, "otel", otelKey)
-			_ = os.Setenv(otelKey, value)
-		}
-	}
-
-	if _, ok := os.LookupEnv("JAEGER_SAMPLER_TYPE"); ok {
-		level.Warn(log.Logger).Log("msg", "JAEGER_SAMPLER_TYPE is not supported with the OpenTelemetry tracer, no sampling will be performed")
-	}
 }
 
 type otelErrorHandlerFunc func(error)
