@@ -239,37 +239,37 @@ type mockRing struct {
 }
 
 func (r mockRing) InstancesWithTokensCount() int {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (r mockRing) GetTokenRangesForInstance(instanceID string) (ring.TokenRanges, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (r mockRing) InstancesInZoneCount(zone string) int {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (r mockRing) InstancesWithTokensInZoneCount(zone string) int {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (r mockRing) WritableInstancesWithTokensCount() int {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (r mockRing) WritableInstancesWithTokensInZoneCount(zone string) int {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (r mockRing) ZonesCount() int {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 

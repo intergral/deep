@@ -21,13 +21,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/grafana/dskit/tracing"
-	"github.com/prometheus/common/version"
 	"io"
 	"os"
 	"reflect"
 	"runtime"
 	"time"
+
+	"github.com/grafana/dskit/tracing"
+	"github.com/prometheus/common/version"
 
 	"github.com/drone/envsubst"
 	"github.com/go-kit/log/level"
