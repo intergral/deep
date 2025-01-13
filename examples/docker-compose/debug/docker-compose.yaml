@@ -34,7 +34,7 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_DISABLE_LOGIN_FORM=true
-      - GF_INSTALL_PLUGINS=https://github.com/intergral/grafana-deep-tracepoint-panel/releases/download/v1.0.0/intergral-deep-tracepoint-panel-1.0.0.zip;intergral-deep-tracepoint-panel,https://github.com/intergral/grafana-deep-panel/releases/download/v1.0.1/intergral-deep-panel-1.0.1.zip;intergral-deep-panel,https://github.com/intergral/grafana-deep-datasource/releases/download/v1.0.2/intergral-deep-datasource-1.0.2.zip;intergral-deep-datasource
+      - GF_INSTALL_PLUGINS=https://github.com/intergral/plugin-signer/releases/download/intergral%2Fgrafana-deep-tracepoint-panel.v1.0.0/intergral-deep-tracepoint-panel-1.0.0.zip;intergral-deep-tracepoint-panel,https://github.com/intergral/plugin-signer/releases/download/intergral%2Fgrafana-deep-panel.v1.0.2/intergral-deep-panel-1.0.2.zip;intergral-deep-panel,https://github.com/intergral/plugin-signer/releases/download/intergral%2Fgrafana-deep-datasource.v1.0.3/intergral-deep-datasource-1.0.3.zip;intergral-deep-datasource
     ports:
       - "3000:3000"
 

@@ -20,9 +20,13 @@ package transport
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
+
+	"github.com/opentracing/opentracing-go"
 
 	frontend_v1pb "github.com/intergral/deep/modules/frontend/v1/frontendv1pb"
 )
@@ -94,4 +98,44 @@ func fromHeader(hs http.Header) []*frontend_v1pb.Header {
 		})
 	}
 	return result
+}
+
+// SplitRule allows controlling which requests go to this roundtripper
+type SplitRule struct {
+	Rules        []string
+	RoundTripper http.RoundTripper
+}
+
+func (r *SplitRule) matches(url string) bool {
+	for _, rule := range r.Rules {
+		if strings.HasPrefix(url, rule) {
+			return true
+		}
+	}
+	return false
+}
+
+type splitRoundTripper struct {
+	http.RoundTripper
+
+	rules []*SplitRule
+}
+
+// NewSplittingRoundTripper creates a new round tripper with rules
+func NewSplittingRoundTripper(rules ...*SplitRule) http.RoundTripper {
+	return &splitRoundTripper{
+		rules: rules,
+	}
+}
+
+func (s *splitRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	span, _ := opentracing.StartSpanFromContext(r.Context(), "splitRoundTripper.RoundTrip")
+	defer span.Finish()
+
+	for _, rule := range s.rules {
+		if rule.matches(r.RequestURI) {
+			return rule.RoundTripper.RoundTrip(r)
+		}
+	}
+	return nil, errors.New("no matching round tripper")
 }
