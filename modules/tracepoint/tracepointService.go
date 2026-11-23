@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	tp "github.com/intergral/deep/pkg/deeppb/tracepoint/v1"
 	"github.com/intergral/deep/pkg/deepql"
@@ -44,6 +45,11 @@ var ErrReadOnly = errors.New("tracepoint is shutting down")
 
 const (
 	tracepointRingKey = "tpRing"
+
+	// ringAutoForgetUnhealthyPeriods is how many consecutive ring heartbeat
+	// timeout periods an unhealthy instance stays in the ring before it is
+	// automatically removed. It matches the compactor and generator rings.
+	ringAutoForgetUnhealthyPeriods = 2
 )
 
 type TPService struct {
@@ -107,10 +113,67 @@ func (ts *TPService) starting(ctx context.Context) error {
 }
 
 func (ts *TPService) running(ctx context.Context) error {
-	select {
-	case <-ctx.Done():
+	forgetPeriod := ringAutoForgetUnhealthyPeriods * ts.cfg.LifecyclerConfig.RingConfig.HeartbeatTimeout
+	checkPeriod := ts.cfg.LifecyclerConfig.HeartbeatPeriod
+	if forgetPeriod <= 0 || checkPeriod <= 0 {
+		// A zero heartbeat timeout means instances never become unhealthy,
+		// and a zero heartbeat period disables heartbeats: nothing to forget.
+		<-ctx.Done()
 		return nil
 	}
+
+	ticker := time.NewTicker(checkPeriod)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-ticker.C:
+			ts.autoForgetUnhealthy(ctx, forgetPeriod)
+		}
+	}
+}
+
+// autoForgetUnhealthy removes ring instances that have not sent a heartbeat for
+// forgetPeriod. The tracepoint ring runs with a replication factor of 1, so an
+// instance that died without leaving the ring (a node lost without a drain)
+// makes every request in its token ranges fail until it is removed. This does
+// for the tracepoint ring what ring.AutoForgetDelegate does for the compactor
+// and generator rings, which run on the BasicLifecycler.
+func (ts *TPService) autoForgetUnhealthy(ctx context.Context, forgetPeriod time.Duration) {
+	err := ts.lifecycler.KVStore.CAS(ctx, ts.lifecycler.RingKey, func(in interface{}) (interface{}, bool, error) {
+		desc, ok := in.(*ring.Desc)
+		if !ok || desc == nil {
+			return nil, false, nil
+		}
+		if len(forgetStaleInstances(desc, ts.lifecycler.ID, forgetPeriod, time.Now(), ts.log)) == 0 {
+			// No change: a nil value tells the KV store not to write.
+			return nil, false, nil
+		}
+		return desc, true, nil
+	})
+	if err != nil {
+		level.Warn(ts.log).Log("msg", "failed to auto-forget unhealthy tracepoint ring instances", "err", err)
+	}
+}
+
+// forgetStaleInstances removes from desc every instance other than self whose
+// last heartbeat is older than forgetPeriod, and returns the removed ids. A
+// live instance removed by mistake adds itself back on its next heartbeat.
+func forgetStaleInstances(desc *ring.Desc, self string, forgetPeriod time.Duration, now time.Time, logger gkLog.Logger) []string {
+	var forgotten []string
+	for id, instance := range desc.Ingesters {
+		if id == self {
+			continue
+		}
+		lastHeartbeat := time.Unix(instance.GetTimestamp(), 0)
+		if now.Sub(lastHeartbeat) > forgetPeriod {
+			level.Warn(logger).Log("msg", "auto-forgetting tracepoint instance from the ring because it is unhealthy for a long time", "instance", id, "last_heartbeat", lastHeartbeat.String(), "forget_period", forgetPeriod)
+			desc.RemoveIngester(id)
+			forgotten = append(forgotten, id)
+		}
+	}
+	return forgotten
 }
 
 func (ts *TPService) stopping(_ error) error {
