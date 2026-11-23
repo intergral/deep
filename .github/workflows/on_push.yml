@@ -29,11 +29,16 @@ jobs:
         run: make test-with-cover-report
 
       - name: Test Report
-        uses: dorny/test-reporter@v1.8.0
+        # Pinned to main after v3.0.0: includes dorny/test-reporter#867, which
+        # retries the transient 404 on the check-run update (#866) that left
+        # "GO Tests" stuck in progress. Move to the first release with it.
+        uses: dorny/test-reporter@79b4b4400dc2354b89e9dd811ef9caa9bdd4f665
         if: success() || failure()
         continue-on-error: true
         with:
           name: GO Tests
+          # v2+ defaults to the job summary; keep the "GO Tests" check run.
+          use-actions-summary: 'false'
           path: report.xml
           reporter: java-junit
 

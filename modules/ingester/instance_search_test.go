@@ -638,11 +638,11 @@ func BenchmarkInstanceSearchUnderLoad(b *testing.B) {
 	fmt.Printf("Instance search throughput under load: %v elapsed %.2f MB = %.2f MiB/s throughput inspected %.2f snapshots/s pushed %.2f snapshots/s %.2f searches/s %.2f cuts/s\n",
 		elapsed,
 		float64(bytesInspected.Load())/(1024*1024),
-		float64(bytesInspected.Load())/(elapsed.Seconds())/(1024*1024),
-		float64(snapshotsInspected.Load())/(elapsed.Seconds()),
-		float64(snapshotPushed.Load())/(elapsed.Seconds()),
-		float64(searches.Load())/(elapsed.Seconds()),
-		float64(cuts)/(elapsed.Seconds()),
+		float64(bytesInspected.Load())/elapsed.Seconds()/(1024*1024),
+		float64(snapshotsInspected.Load())/elapsed.Seconds(),
+		float64(snapshotPushed.Load())/elapsed.Seconds(),
+		float64(searches.Load())/elapsed.Seconds(),
+		float64(cuts)/elapsed.Seconds(),
 	)
 
 	b.StopTimer()

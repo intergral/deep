@@ -555,13 +555,13 @@ func TestInstanceFailsLargeSnapshotsEvenAfterFlushing(t *testing.T) {
 
 	// Pushing again fails
 	err = i.PushBytesRequest(ctx, req)
-	require.Contains(t, err.Error(), (newSnapshotTooLargeError(id, i.tenantID, maxSnapshotBytes, reqSize)).Error())
+	require.Contains(t, err.Error(), newSnapshotTooLargeError(id, i.tenantID, maxSnapshotBytes, reqSize).Error())
 
 	// Pushing still fails after flush
 	err = i.CutSnapshots(0, true)
 	require.NoError(t, err)
 	err = i.PushBytesRequest(ctx, req)
-	require.Contains(t, err.Error(), (newSnapshotTooLargeError(id, i.tenantID, maxSnapshotBytes, reqSize)).Error())
+	require.Contains(t, err.Error(), newSnapshotTooLargeError(id, i.tenantID, maxSnapshotBytes, reqSize).Error())
 
 	// Cut block and then pushing works again
 	_, err = i.CutBlockIfReady(0, 0, true)
