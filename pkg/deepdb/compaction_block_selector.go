@@ -60,7 +60,7 @@ type timeWindowBlockEntry struct {
 	hash  string // Hash string used for sharding ownership, preserves backwards compatibility
 }
 
-var _ (CompactionBlockSelector) = (*timeWindowBlockSelector)(nil)
+var _ CompactionBlockSelector = (*timeWindowBlockSelector)(nil)
 
 func newTimeWindowBlockSelector(blocklist []*backend.BlockMeta, maxCompactionRange time.Duration, maxCompactionObjects int, maxBlockBytes uint64, minInputBlocks int, maxInputBlocks int) CompactionBlockSelector {
 	twbs := &timeWindowBlockSelector{
